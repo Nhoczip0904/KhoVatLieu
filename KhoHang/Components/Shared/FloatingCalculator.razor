@@ -1,0 +1,164 @@
+@using System.Data
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<div class="calc-trigger" @onclick="Toggle">
+    <i class="bi bi-calculator"></i>
+</div>
+
+@if (isVisible)
+{
+    <div class="floating-calc glass-card">
+        <div class="calc-header">
+            <span>Máy tính cầm tay</span>
+            <button class="btn-close" @onclick="Toggle"><i class="bi bi-dash-lg"></i></button>
+        </div>
+        
+        <div class="calc-display">
+            <div class="expression">@expression</div>
+            <div class="result">@displayValue</div>
+        </div>
+        
+        <div class="calc-grid">
+            <button class="btn-calc op" @onclick='() => Append(" / ")'>/</button>
+            <button class="btn-calc op" @onclick='() => Append(" * ")'>x</button>
+            <button class="btn-calc op" @onclick='() => Append(" - ")'>-</button>
+            <button class="btn-calc op" @onclick='() => Append(" + ")'>+</button>
+            
+            <button class="btn-calc" @onclick='() => Append("7")'>7</button>
+            <button class="btn-calc" @onclick='() => Append("8")'>8</button>
+            <button class="btn-calc" @onclick='() => Append("9")'>9</button>
+            <button class="btn-calc danger" @onclick="Clear">C</button>
+            
+            <button class="btn-calc" @onclick='() => Append("4")'>4</button>
+            <button class="btn-calc" @onclick='() => Append("5")'>5</button>
+            <button class="btn-calc" @onclick='() => Append("6")'>6</button>
+            <button class="btn-calc op" @onclick="Calculate">=</button>
+            
+            <button class="btn-calc" @onclick='() => Append("1")'>1</button>
+            <button class="btn-calc" @onclick='() => Append("2")'>2</button>
+            <button class="btn-calc" @onclick='() => Append("3")'>3</button>
+            <button class="btn-calc success" @onclick="Calculate">OK</button>
+            
+            <button class="btn-calc zero" @onclick='() => Append("0")'>0</button>
+            <button class="btn-calc" @onclick='() => Append(".")'>.</button>
+        </div>
+    </div>
+}
+
+<style>
+    .calc-trigger {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 65px;
+        height: 65px;
+        background: #4f46e5;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        cursor: pointer;
+        box-shadow: 0 10px 40px rgba(79, 70, 229, 0.6);
+        z-index: 100000 !important;
+        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        pointer-events: auto !important;
+        border: 2px solid white;
+    }
+    
+    .calc-trigger:hover { transform: scale(1.1); background: #4338ca; }
+    .calc-trigger:active { transform: scale(0.9); }
+    
+    .floating-calc {
+        position: fixed;
+        bottom: 110px;
+        right: 30px;
+        width: 320px;
+        padding: 1.5rem;
+        z-index: 100000 !important;
+        background: white;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+        border-radius: 20px;
+        pointer-events: auto !important;
+    }
+    
+    .calc-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        font-weight: 700;
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+    }
+    
+    .calc-display {
+        background: rgba(0,0,0,0.05);
+        border-radius: 12px;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+        text-align: right;
+        min-height: 70px;
+    }
+    
+    .expression { font-size: 0.75rem; color: var(--text-muted); min-height: 1rem; }
+    .result { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); }
+    
+    .calc-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 0.5rem;
+    }
+    
+    .btn-calc {
+        height: 45px;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        background: white;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+    
+    .btn-calc.op { background: #eff6ff; color: var(--accent-primary); }
+    .btn-calc.danger { color: var(--error); }
+    .btn-calc.success { background: var(--accent-primary); color: white; grid-row: span 2; height: 95px; }
+    .btn-calc.zero { grid-column: span 2; }
+</style>
+
+@code {
+    private bool isVisible = false;
+    private string expression = "";
+    private string displayValue = "0";
+    
+    private void Toggle() => isVisible = !isVisible;
+    
+    private void Append(string val)
+    {
+        if (displayValue == "0" && !val.Contains(".") && val != " / " && val != " * " && val != " - " && val != " + ")
+            displayValue = val;
+        else
+            displayValue += val;
+    }
+    
+    private void Clear()
+    {
+        expression = "";
+        displayValue = "0";
+    }
+    
+    private void Calculate()
+    {
+        try
+        {
+            expression = displayValue;
+            var dt = new DataTable();
+            var result = dt.Compute(displayValue, "");
+            displayValue = Convert.ToDouble(result).ToString("G10");
+        }
+        catch { displayValue = "Error"; }
+    }
+}

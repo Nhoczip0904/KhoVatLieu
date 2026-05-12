@@ -1,0 +1,140 @@
+@page "/"
+@using KhoHang.Models
+@using KhoHang.Services
+@inject WarehouseService WarehouseService
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+
+<div class="fade-in">
+    <h1 style="font-size: 2rem; margin-bottom: 2rem;">Bảng điều khiển</h1>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <div class="glass-card" style="border-left: 4px solid var(--accent-primary);">
+            <div style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.5rem;">Dự án đang chạy</div>
+            <div style="font-size: 1.75rem; font-weight: 700;">@activeProjectsCount</div>
+        </div>
+
+        <div class="glass-card" style="border-left: 4px solid var(--success);">
+            <div style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.5rem;">Số lượt giao hàng</div>
+            <div style="font-size: 1.75rem; font-weight: 700;">@totalDeliveries</div>
+        </div>
+
+        <div class="glass-card" style="border-left: 4px solid var(--warning);">
+            <div style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 0.5rem;">Doanh thu dự kiến (đ)</div>
+            <div style="font-size: 1.75rem; font-weight: 700;">@totalRevenue.ToString("N0")</div>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+        <div class="glass-card">
+            <h3 style="margin-bottom: 1.5rem;"><i class="bi bi-clock-history"></i> Giao dịch gần đây</h3>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Khách hàng</th>
+                            <th style="text-align: right;">Giá trị</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in recentDeliveries)
+                        {
+                            <tr style="cursor: pointer;" @onclick='() => Nav.NavigateTo($"/invoice/{d.Id}")'>
+                                <td>@d.Timestamp.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td style="font-weight: 700;">@d.Project?.CustomerName</td>
+                                <td style="text-align: right; font-weight: 800; color: var(--success);">@d.TotalAmount.ToString("N0") đ</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <!-- Main Warehouse Alert -->
+            <div class="glass-card" style="border-top: 4px solid var(--error);">
+                <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--error);">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Hết hàng Kho Tổng
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    @foreach (var m in lowStockMaterials)
+                    {
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0.85rem; background: #fef2f2; border-radius: 10px; border: 1px solid #fee2e2;">
+                            <span style="font-weight: 700; font-size: 0.9rem;">@m.Name</span>
+                            <span style="color: var(--error); font-weight: 800;">@m.StockQty.ToString("N0")</span>
+                        </div>
+                    }
+                    @if (!lowStockMaterials.Any())
+                    {
+                        <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 1rem;">Mọi thứ đều ổn!</div>
+                    }
+                </div>
+            </div>
+
+            <!-- Project Material Alert -->
+            <div class="glass-card" style="border-top: 4px solid var(--warning);">
+                <h3 style="margin-bottom: 1rem; font-size: 1rem; color: var(--warning);">
+                    <i class="bi bi-flag-fill"></i> Cấp bách tại Dự án
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    @foreach (var alert in projectAlerts)
+                    {
+                        <div style="padding: 0.85rem; background: #fffbeb; border-radius: 10px; border: 1px solid #fef3c7; cursor: pointer; transition: transform 0.2s;" 
+                             @onclick='() => Nav.NavigateTo($"/projects/{alert.Project.Id}")'>
+                            <div style="font-weight: 800; font-size: 0.9rem; color: #92400e; margin-bottom: 0.35rem;">
+                                <i class="bi bi-geo-alt"></i> @alert.Project.CustomerName
+                            </div>
+                            <div style="font-size: 0.75rem; color: #b45309; line-height: 1.4;">
+                                Sắp hết: @(string.Join(", ", alert.Materials.Select(x => x.Name)))
+                            </div>
+                        </div>
+                    }
+                    @if (!projectAlerts.Any())
+                    {
+                        <div style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 1rem;">Chưa có báo động nào.</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int activeProjectsCount;
+    private int totalDeliveries;
+    private decimal totalRevenue;
+    private List<Delivery> recentDeliveries = new();
+    private List<Material> lowStockMaterials = new();
+    private List<(Project Project, List<ProjectMaterial> Materials)> projectAlerts = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var stats = await WarehouseService.GetDashboardStatsAsync();
+        totalRevenue = stats.Revenue;
+        totalDeliveries = stats.Deliveries;
+        activeProjectsCount = stats.ActiveProjects;
+        recentDeliveries = stats.RecentDeliveries;
+
+        // Main Warehouse Alert Logic
+        var allMaterials = await WarehouseService.GetMasterMaterialsAsync();
+        lowStockMaterials = allMaterials.Where(m => m.StockQty <= 10).OrderBy(m => m.StockQty).Take(5).ToList();
+
+        // Project Alert Logic
+        var activeProjects = await WarehouseService.GetProjectsAsync(false);
+        projectAlerts = new();
+
+        foreach (var p in activeProjects)
+        {
+            var lowInProject = p.Materials.Where(m => 
+                (m.TotalQty > 0 && m.RemainingQty <= (m.TotalQty * 0.15)) || // < 15%
+                m.RemainingQty <= 3 // Or very low absolute number
+            ).ToList();
+
+            if (lowInProject.Any())
+            {
+                projectAlerts.Add((p, lowInProject));
+            }
+        }
+    }
+}

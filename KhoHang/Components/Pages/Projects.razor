@@ -1,0 +1,250 @@
+@page "/projects"
+@using KhoHang.Models
+@using KhoHang.Services
+@inject WarehouseService WarehouseService
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+
+<PageTitle>Quản lý Dự án & Khách hàng</PageTitle>
+
+<div class="fade-in">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem;">
+        <div>
+            <h1 style="font-size: 2.5rem; font-weight: 800; font-family: 'Outfit'; margin: 0; color: #0f172a;">Kho Dự án</h1>
+            <p style="color: var(--text-secondary); margin-top: 0.5rem;">Quản lý xuất kho và theo dõi tiến độ từng công trình.</p>
+        </div>
+        <button class="btn-primary" @onclick="() => isAdding = true">
+            <i class="bi bi-plus-lg"></i> Thiết lập dự án mới
+        </button>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div style="display: flex; gap: 2.5rem; border-bottom: 2px solid var(--border-color); margin-bottom: 2.5rem;">
+        <button style="background: transparent; border: none; padding: 1rem 0; border-bottom: 3px solid @(!showCompleted ? "var(--accent-primary)" : "transparent"); color: @(!showCompleted ? "var(--accent-primary)" : "var(--text-secondary)"); font-weight: 700; cursor: pointer; transition: all 0.2s;" @onclick="() => SetTab(false)">Đang thực hiện (@activeCount)</button>
+        <button style="background: transparent; border: none; padding: 1rem 0; border-bottom: 3px solid @(showCompleted ? "var(--accent-primary)" : "transparent"); color: @(showCompleted ? "var(--accent-primary)" : "var(--text-secondary)"); font-weight: 700; cursor: pointer; transition: all 0.2s;" @onclick="() => SetTab(true)">Đã hoàn thành (@completedCount)</button>
+    </div>
+
+    <div style="display: flex; gap: 1.5rem; margin-bottom: 2.5rem; align-items: center;">
+        <div class="search-container" style="flex: 1; margin-bottom: 0;">
+            <i class="bi bi-search" style="font-size: 1.2rem;"></i>
+            <input type="text" placeholder="Tìm tên khách hàng, số điện thoại hoặc địa chỉ..." @bind="searchText" @bind:event="oninput" style="padding: 1rem 3.5rem; font-size: 1.1rem; border-radius: 16px;" />
+        </div>
+        <div style="color: var(--text-secondary); font-weight: 600;">
+            Tìm thấy @filteredProjects.Count kết quả
+        </div>
+    </div>
+
+    @if (isAdding)
+    {
+        <div class="glass-card" style="margin-bottom: 3rem; border: 2px solid #e0e7ff; max-width: 900px; margin-left: auto; margin-right: auto; padding: 2.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2 style="font-size: 1.5rem; margin: 0; font-family: 'Outfit'; font-weight: 800;">Thiết lập dự án mới</h2>
+                <button style="background: transparent; border: none; color: var(--text-secondary);" @onclick="() => isAdding = false"><i class="bi bi-x-lg"></i></button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                <div style="grid-column: span 2;">
+                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Chọn từ danh bạ khách hàng</label>
+                    <select @onchange="OnCustomerSelected" style="width: 100%; padding: 0.8rem;">
+                        <option value="">-- Tạo mới hoặc chọn khách lẻ --</option>
+                        @foreach (var c in customers) { <option value="@c.Id">@c.Name (@c.Phone)</option> }
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Tên khách hàng</label>
+                    <input @bind="newProject.CustomerName" placeholder="VD: Anh Nam - Q1" style="width: 100%;" />
+                </div>
+                <div>
+                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Số điện thoại</label>
+                    <input @bind="newProject.Phone" placeholder="09xx..." style="width: 100%;" />
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Địa chỉ giao hàng / Công trình</label>
+                    <input @bind="newProject.Address" style="width: 100%;" />
+                </div>
+            </div>
+            
+            <div style="border-top: 1px solid var(--border-color); padding-top: 2rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3 style="font-size: 1.25rem; margin: 0; font-family: 'Outfit'; font-weight: 700;">Danh sách vật tư & Giá chốt</h3>
+                    <button type="button" class="btn-outline" @onclick="() => isSelectionModalOpen = true">
+                        <i class="bi bi-plus-circle"></i> Chọn vật liệu
+                    </button>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    @foreach (var sm in selectedMaterials)
+                    {
+                        <div style="display: grid; grid-template-columns: 2.5fr 1fr 1fr auto; gap: 1.5rem; background: #f8fafc; padding: 1.25rem; border-radius: 16px; align-items: center; border: 1px solid #e2e8f0;">
+                            <div>
+                                <div style="font-weight: 700; color: #0f172a;">@sm.Name</div>
+                                <div style="font-size: 0.8rem; color: var(--text-secondary);">ĐVT: @sm.Unit</div>
+                            </div>
+                            <div>
+                                <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Giá bán dự án</label>
+                                <input type="number" @bind="sm.CustomPrice" style="width: 100%; padding: 0.5rem;" />
+                            </div>
+                            <div>
+                                <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Tổng SL</label>
+                                <input type="number" @bind="sm.TotalQty" style="width: 100%; padding: 0.5rem;" />
+                            </div>
+                            <button style="background: transparent; border: none; color: #ef4444; cursor: pointer; font-size: 1.25rem;" @onclick="() => RemoveMaterial(sm)">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 3rem;">
+                <button class="btn-outline" style="padding: 0.75rem 2rem;" @onclick="() => isAdding = false">Hủy bỏ</button>
+                <button class="btn-primary" style="padding: 0.75rem 2rem;" @onclick="SaveProject">Lưu & Khởi tạo dự án</button>
+            </div>
+        </div>
+    }
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 2rem;">
+        @foreach (var p in PaginatedProjects)
+        {
+            <div class="glass-card" style="cursor: pointer; transition: all 0.2s; border-left: 6px solid @(p.IsCompleted ? "#94a3b8" : "#4f46e5"); position: relative;" @onclick='() => Nav.NavigateTo($"/projects/{p.Id}")'>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+                    <div style="background: @(p.IsCompleted ? "#f1f5f9" : "#eef2ff"); color: @(p.IsCompleted ? "#64748b" : "#4f46e5"); padding: 1rem; border-radius: 16px;">
+                        <i class="bi @(p.IsCompleted ? "bi-check-circle" : "bi-briefcase")" style="font-size: 1.75rem;"></i>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 700;">@p.CreatedAt.ToString("dd/MM/yyyy")</div>
+                        @if (p.IsCompleted) { <span style="background: #f1f5f9; color: #64748b; font-size: 0.7rem; font-weight: 800; padding: 0.25rem 0.5rem; border-radius: 6px; margin-top: 0.5rem; display: inline-block;">ĐÃ ĐÓNG KHO</span> }
+                    </div>
+                </div>
+                
+                <h3 style="margin: 0 0 0.5rem 0; font-size: 1.75rem; font-family: 'Outfit'; font-weight: 800; color: #0f172a;">@p.CustomerName</h3>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; color: var(--text-secondary); font-size: 1rem; margin-bottom: 1.5rem;">
+                    <span><i class="bi bi-phone"></i> @p.Phone</span>
+                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><i class="bi bi-geo-alt"></i> @p.Address</span>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
+                    <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary);">@p.Materials.Count vật tư được chốt</span>
+                    <span style="color: var(--accent-primary); font-weight: 700; font-size: 0.95rem;">Chi tiết <i class="bi bi-chevron-right"></i></span>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (TotalPages > 1)
+    {
+        <div style="margin-top: 4rem; display: flex; justify-content: center; align-items: center; gap: 2rem; background: white; padding: 1.5rem; border-radius: 20px; border: 1px solid var(--border-color); max-width: 500px; margin-left: auto; margin-right: auto;">
+            <button class="btn-outline" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center;" disabled="@(currentPage == 1)" @onclick="() => currentPage--">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <div style="text-align: center;">
+                <span style="font-weight: 800; font-size: 1.1rem; color: #0f172a;">Trang @currentPage</span>
+                <div style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 600;">Tổng cộng @TotalPages trang</div>
+            </div>
+            <button class="btn-outline" style="width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center;" disabled="@(currentPage >= TotalPages)" @onclick="() => currentPage++">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
+    }
+</div>
+
+<MaterialSelectionModal @bind-IsOpen="isSelectionModalOpen" OnMaterialsSelected="OnMaterialsSelected" />
+
+@code {
+    private List<Project> allProjects = new();
+    private List<Customer> customers = new();
+    private bool isAdding = false;
+    private Project newProject = new();
+    private List<ProjectMaterial> selectedMaterials = new();
+    private bool isSelectionModalOpen = false;
+    
+    private bool showCompleted = false;
+    private string searchText = "";
+    private int currentPage = 1;
+    private int pageSize = 6;
+
+    private int activeCount => allProjects.Count(p => !p.IsCompleted);
+    private int completedCount => allProjects.Count(p => p.IsCompleted);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+        customers = await WarehouseService.GetCustomersAsync();
+    }
+
+    private async Task LoadData()
+    {
+        // Get all to calculate counts, but we'll filter in memory for smooth UX
+        allProjects = await WarehouseService.GetProjectsAsync();
+    }
+
+    private void SetTab(bool completed)
+    {
+        showCompleted = completed;
+        currentPage = 1;
+    }
+
+    private List<Project> filteredProjects => allProjects
+        .Where(p => p.IsCompleted == showCompleted)
+        .Where(p => string.IsNullOrWhiteSpace(searchText) || 
+                    p.CustomerName.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                    (p.Phone?.Contains(searchText) ?? false) ||
+                    (p.Address?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false))
+        .OrderByDescending(p => p.CreatedAt)
+        .ToList();
+
+    private IEnumerable<Project> PaginatedProjects => filteredProjects
+        .Skip((currentPage - 1) * pageSize)
+        .Take(pageSize);
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(filteredProjects.Count / (double)pageSize));
+
+    private void OnCustomerSelected(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int id))
+        {
+            var c = customers.FirstOrDefault(x => x.Id == id);
+            if (c != null)
+            {
+                newProject.CustomerId = c.Id;
+                newProject.CustomerName = c.Name;
+                newProject.Phone = c.Phone;
+                newProject.Address = c.Address;
+            }
+        }
+    }
+
+    private void OnMaterialsSelected(List<Material> materials)
+    {
+        foreach (var m in materials)
+        {
+            if (!selectedMaterials.Any(sm => sm.MaterialId == m.Id))
+            {
+                selectedMaterials.Add(new ProjectMaterial 
+                { 
+                    MaterialId = m.Id, 
+                    Name = m.Name, 
+                    Unit = m.Unit, 
+                    CustomPrice = m.BasePrice, 
+                    TotalQty = 0,
+                    RemainingQty = 0,
+                    ImageUrl = m.ImageUrl
+                });
+            }
+        }
+    }
+
+    private void RemoveMaterial(ProjectMaterial sm) => selectedMaterials.Remove(sm);
+
+    private async Task SaveProject()
+    {
+        if (string.IsNullOrWhiteSpace(newProject.CustomerName)) return;
+        foreach(var sm in selectedMaterials) sm.RemainingQty = sm.TotalQty;
+        newProject.Materials = selectedMaterials;
+        await WarehouseService.CreateProjectAsync(newProject);
+        newProject = new();
+        selectedMaterials = new();
+        isAdding = false;
+        await LoadData();
+    }
+}

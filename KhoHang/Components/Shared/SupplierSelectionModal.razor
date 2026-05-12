@@ -1,0 +1,101 @@
+@using KhoHang.Models
+@using KhoHang.Services
+@inject WarehouseService WarehouseService
+
+@if (IsOpen)
+{
+    <div class="modal-overlay" @onclick="Close">
+        <div class="modal-content" style="max-width: 600px;" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2 style="margin: 0; font-size: 1.25rem; display: flex; align-items: center; gap: 0.75rem;">
+                    <i class="bi bi-person-badge" style="color: var(--accent-primary);"></i>
+                    Chọn Trung gian cung cấp
+                </h2>
+                <button style="background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);" @onclick="Close">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="search-container">
+                    <i class="bi bi-search"></i>
+                    <input type="text" placeholder="Tìm tên hoặc SĐT trung gian..." @bind="searchText" @bind:event="oninput" />
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 400px; overflow-y: auto; padding: 0.25rem;">
+                    <div class="selection-card @(SelectedSupplierId == null ? "selected" : "")" @onclick="() => SelectSupplier(null)">
+                        <div style="background: var(--bg-tertiary); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-slash-circle"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600;">Không chọn trung gian</div>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">Sản phẩm nhập trực tiếp / Không có trung gian</div>
+                        </div>
+                        <div class="icon-check">
+                            <i class="bi bi-check-lg"></i>
+                        </div>
+                    </div>
+
+                    @foreach (var s in filteredSuppliers)
+                    {
+                        <div class="selection-card @(SelectedSupplierId == s.Id ? "selected" : "")" @onclick="() => SelectSupplier(s.Id)">
+                            <div style="background: rgba(59, 130, 246, 0.1); width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-person" style="color: var(--accent-primary);"></i>
+                            </div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600;">@s.Name</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">@s.Phone • @s.Address</div>
+                            </div>
+                            <div class="icon-check">
+                                <i class="bi bi-check-lg"></i>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @if (!filteredSuppliers.Any() && !string.IsNullOrWhiteSpace(searchText))
+                {
+                    <div style="text-align: center; padding: 2rem; color: var(--text-muted);">
+                        Không tìm thấy trung gian nào.
+                    </div>
+                }
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn-primary" style="width: 100%; justify-content: center;" @onclick="Close">Xong</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public int? SelectedSupplierId { get; set; }
+    [Parameter] public EventCallback<int?> SelectedSupplierIdChanged { get; set; }
+
+    private List<Supplier> suppliers = new();
+    private string searchText = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        suppliers = await WarehouseService.GetSuppliersAsync();
+    }
+
+    private IEnumerable<Supplier> filteredSuppliers => suppliers
+        .Where(s => string.IsNullOrWhiteSpace(searchText) || 
+                    s.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) || 
+                    (s.Phone?.Contains(searchText) ?? false));
+
+    private async Task SelectSupplier(int? id)
+    {
+        SelectedSupplierId = id;
+        await SelectedSupplierIdChanged.InvokeAsync(id);
+    }
+
+    private async Task Close()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+}

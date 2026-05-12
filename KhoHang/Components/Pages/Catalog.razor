@@ -1,0 +1,486 @@
+@page "/catalog"
+@using KhoHang.Models
+@using KhoHang.Services
+@inject WarehouseService WarehouseService
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+
+<div class="fade-in">
+    <!-- Main Tabs (Restored to original style) -->
+    <div style="display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 0.5rem;">
+        <button class="tab-btn-large @(currentTab == "materials" ? "active" : "")" @onclick='() => currentTab = "materials"'>
+            <i class="bi bi-box"></i> Vật tư
+        </button>
+        <button class="tab-btn-large @(currentTab == "categories" ? "active" : "")" @onclick='() => currentTab = "categories"'>
+            <i class="bi bi-tags"></i> Nhóm vật tư
+        </button>
+        <button class="tab-btn-large @(currentTab == "suppliers" ? "active" : "")" @onclick='() => currentTab = "suppliers"'>
+            <i class="bi bi-truck"></i> Trung gian cung cấp
+        </button>
+    </div>
+
+    @if (currentTab == "materials")
+    {
+        <!-- Search Bar -->
+        <div style="position: relative; margin-bottom: 1rem;">
+            <i class="bi bi-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: #94a3b8;"></i>
+            <div style="display: flex; gap: 1rem;">
+                <input type="text" @bind="searchText" @bind:event="oninput" placeholder="Tìm kiếm vật tư..." 
+                       style="flex: 1; padding: 0.85rem 1rem 0.85rem 2.5rem; border-radius: 14px; border: 1px solid #e2e8f0; font-size: 1rem;" />
+                
+                <div style="display: flex; gap: 0.25rem; background: #f1f5f9; padding: 0.25rem; border-radius: 12px; border: 1px solid #e2e8f0;">
+                    <button class="view-btn @(viewMode == "grid" ? "active" : "")" @onclick='() => viewMode = "grid"' title="Xem dạng ô"><i class="bi bi-grid-fill"></i></button>
+                    <button class="view-btn @(viewMode == "table" ? "active" : "")" @onclick='() => viewMode = "table"' title="Xem dạng bảng"><i class="bi bi-list-ul"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Filters Row (Below Search) -->
+        <div style="display: flex; gap: 0.65rem; flex-wrap: wrap; margin-bottom: 2rem; padding: 0.25rem;">
+            <button class="btn-filter-pill @(selectedCategoryId == null ? "active" : "")" 
+                    @onclick="() => selectedCategoryId = null">
+                Tất cả
+            </button>
+            @foreach (var cat in categories)
+            {
+                <button class="btn-filter-pill @(selectedCategoryId == cat.Id ? "active" : "")" 
+                        @onclick="() => selectedCategoryId = (selectedCategoryId == cat.Id ? null : cat.Id)">
+                    @cat.Name
+                </button>
+            }
+        </div>
+
+        <!-- Sticky Horizontal Form (Mockup Style - Compact) -->
+        <div style="position: sticky; top: 0.5rem; z-index: 100; margin-bottom: 1.5rem;">
+            <div class="glass-card" style="padding: 1.25rem 2rem; border: 1px solid #bfdbfe; border-radius: 20px; box-shadow: 0 10px 25px rgba(37, 99, 235, 0.1);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: #1e293b;">
+                        @(editingMaterial.Id == 0 ? "Thêm vật liệu mới" : "Chỉnh sửa vật liệu")
+                    </h3>
+                    <div style="display: flex; gap: 0.75rem;">
+                        <button class="btn-cancel" style="padding: 0.4rem 1.25rem; font-size: 0.8rem;" @onclick="ResetForm">Hủy</button>
+                        <button class="btn-save" style="padding: 0.4rem 1.5rem; font-size: 0.8rem;" @onclick="SaveMaterial">Lưu sản phẩm</button>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 1.5rem;">
+                    <!-- Left: Image Area (Functional Upload) -->
+                    <div style="position: relative; width: 120px; height: 120px; border: 2px dashed #e2e8f0; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc; overflow: hidden;">
+                        @if (!string.IsNullOrEmpty(editingMaterial.ImageUrl))
+                        {
+                            <img src="@editingMaterial.ImageUrl" style="width: 100%; height: 100%; object-fit: cover;" />
+                            <button style="position: absolute; top: 2px; right: 2px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; padding: 2px 5px; font-size: 0.7rem; cursor: pointer;" @onclick="() => editingMaterial.ImageUrl = null">X</button>
+                        }
+                        else
+                        {
+                            <label style="cursor: pointer; text-align: center; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.5rem;">
+                                <i class="bi bi-camera" style="font-size: 1.25rem; color: #94a3b8;"></i>
+                                <span style="font-size: 0.65rem; color: #64748b; font-weight: 600;">Ảnh</span>
+                                <InputFile OnChange="HandleImageUpload" style="display: none;" />
+                            </label>
+                        }
+                    </div>
+
+                    <!-- Right: Fields (Compact) -->
+                    <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem 1.5rem;">
+                        <div>
+                            <label class="form-label-small">Tên vật liệu</label>
+                            <input type="text" @bind="editingMaterial.Name" placeholder="Tên..." class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
+                        </div>
+                        <div>
+                            <label class="form-label-small">Nhóm vật liệu</label>
+                            <select @bind="editingMaterial.CategoryId" class="form-input-modern" style="padding: 0.5rem 0.75rem;">
+                                <option value="0">-- Nhóm --</option>
+                                @foreach (var c in categories) { <option value="@c.Id">@c.Name</option> }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label-small">Đơn vị tính</label>
+                            <select @bind="editingMaterial.Unit" class="form-input-modern" style="padding: 0.5rem 0.75rem;">
+                                <option value="">-- ĐVT --</option>
+                                <option value="Viên">Viên</option>
+                                <option value="Khối">Khối</option>
+                                <option value="Bao">Bao</option>
+                                <option value="Cây">Cây</option>
+                                <option value="Kg">Kg</option>
+                                <option value="Cuộn">Cuộn</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label-small">Trung gian cung cấp</label>
+                            <select @bind="editingMaterial.SupplierId" class="form-input-modern" style="padding: 0.5rem 0.75rem;">
+                                <option value="">-- Chọn đơn vị --</option>
+                                @foreach (var s in suppliers) { <option value="@s.Id">@s.Name</option> }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label-small">Giá nhập</label>
+                            <input type="number" @bind="editingMaterial.CostPrice" class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
+                        </div>
+                        <div>
+                            <label class="form-label-small">Giá bán lẻ</label>
+                            <input type="number" @bind="editingMaterial.BasePrice" class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
+                        </div>
+                        <div>
+                            <label class="form-label-small">Tồn kho tổng</label>
+                            <input type="number" @bind="editingMaterial.StockQty" class="form-input-modern" style="padding: 0.5rem 0.75rem; border-color: #10b981;" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (viewMode == "grid")
+        {
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem;">
+                @foreach (var m in PaginatedMaterials)
+                {
+                    <div class="glass-card material-card" @onclick="() => ShowEditMaterial(m)" style="padding: 1rem; position: relative;">
+                        <!-- Badge Top Right -->
+                        <span class="badge" style="position: absolute; top: 1.5rem; right: 1.5rem; z-index: 10; background: rgba(255,255,255,0.9); backdrop-filter: blur(4px); color: var(--accent-primary); border: 1px solid var(--accent-primary); padding: 0.25rem 0.75rem; border-radius: 8px; font-weight: 800; font-size: 0.65rem;">
+                            @m.Category?.Name
+                        </span>
+
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <div style="width: 100%; height: 160px; background: #f8fafc; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: var(--accent-primary); overflow: hidden; border: 1px solid #e2e8f0;">
+                                @if (!string.IsNullOrEmpty(m.ImageUrl))
+                                {
+                                    <img src="@m.ImageUrl" style="width: 100%; height: 100%; object-fit: cover;" />
+                                }
+                                else
+                                {
+                                    <i class="bi bi-box-seam"></i>
+                                }
+                            </div>
+                            <div style="flex: 1; text-align: center;">
+                                <h4 style="margin: 0; font-size: 1.15rem; font-weight: 800; color: #1e293b; line-height: 1.3;">@m.Name</h4>
+                                <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.35rem; font-weight: 500;">
+                                    <i class="bi bi-shop"></i> @(m.Supplier?.Name ?? "N/A")
+                                </div>
+                                <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #f1f5f9; display: flex; flex-direction: column; align-items: center; gap: 0.25rem;">
+                                    <div style="display: flex; align-items: baseline; gap: 0.25rem;">
+                                        <span style="font-weight: 900; color: var(--accent-primary); font-size: 1.3rem;">@m.BasePrice.ToString("N0")</span>
+                                        <span style="font-size: 0.75rem; font-weight: 700; color: #94a3b8;">đ / @m.Unit</span>
+                                    </div>
+                                    <div style="font-size: 0.75rem; font-weight: 700; color: @(m.StockQty <= 0 ? "var(--error)" : "#10b981");">
+                                        <i class="bi bi-archive"></i> Kho tổng: @m.StockQty.ToString("N0") @m.Unit
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="glass-card" style="padding: 0; overflow: hidden;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Tên vật tư</th>
+                            <th>Nhóm</th>
+                            <th>Trung gian</th>
+                            <th style="text-align: center;">ĐVT</th>
+                            <th style="text-align: right;">Đơn giá</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in PaginatedMaterials)
+                        {
+                            <tr class="clickable-row" @onclick="() => ShowEditMaterial(m)">
+                                <td style="font-weight: 700;">@m.Name</td>
+                                <td>@m.Category?.Name</td>
+                                <td>@m.Supplier?.Name</td>
+                                <td style="text-align: center;">@m.Unit</td>
+                                <td style="text-align: right; font-weight: 800; color: var(--accent-primary);">@m.BasePrice.ToString("N0") đ</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+        @if (TotalPages > 1)
+        {
+            <div class="pagination-container" style="margin-top: 2rem;">
+                <button class="btn-page nav-btn" disabled="@(currentPage == 1)" @onclick="() => currentPage--"><i class="bi bi-chevron-left"></i></button>
+                <div class="page-info">Trang @currentPage / @TotalPages</div>
+                <button class="btn-page nav-btn" disabled="@(currentPage >= TotalPages)" @onclick="() => currentPage++"><i class="bi bi-chevron-right"></i></button>
+            </div>
+        }
+    }
+    else if (currentTab == "categories")
+    {
+        <div style="display: grid; grid-template-columns: 350px 1fr; gap: 2rem;">
+            <!-- Category Form -->
+            <div class="glass-card">
+                <h3 style="margin-top: 0; margin-bottom: 1.5rem; font-size: 1.1rem; color: #1e293b;">
+                    @(editingCategory?.Id > 0 ? "Chỉnh sửa nhóm" : "Thêm nhóm mới")
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    <div>
+                        <label class="form-label-small">Tên nhóm vật liệu</label>
+                        <input type="text" @bind="editingCategoryName" placeholder="VD: Gạch xây dựng..." class="form-input-modern" />
+                    </div>
+                    <div style="display: flex; gap: 0.75rem;">
+                        @if (editingCategory?.Id > 0)
+                        {
+                            <button class="btn-cancel" style="flex: 1;" @onclick="ResetCategoryForm">Hủy</button>
+                            <button class="btn-save" style="flex: 1;" @onclick="SaveCategory">Cập nhật</button>
+                        }
+                        else
+                        {
+                            <button class="btn-save" style="width: 100%;" @onclick="SaveCategory">Lưu nhóm</button>
+                        }
+                    </div>
+                </div>
+            </div>
+            <!-- Category Table -->
+            <div class="glass-card" style="padding: 0; overflow: hidden;">
+                <table class="table">
+                    <thead><tr><th>Tên nhóm</th><th style="text-align: right;">Hành động</th></tr></thead>
+                    <tbody>
+                        @foreach (var c in categories) {
+                            <tr class="clickable-row @(editingCategory?.Id == c.Id ? "row-active" : "")" @onclick="() => SelectCategory(c)">
+                                <td style="font-weight: 700;">@c.Name</td>
+                                <td style="text-align: right;" @onclick:stopPropagation="true">
+                                    <button class="btn-icon-small" style="color: var(--error);" @onclick="() => DeleteCategory(c.Id)"><i class="bi bi-trash"></i></button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+    else if (currentTab == "suppliers")
+    {
+        <div style="display: grid; grid-template-columns: 350px 1fr; gap: 2rem;">
+            <!-- Supplier Form -->
+            <div class="glass-card">
+                <h3 style="margin-top: 0; margin-bottom: 1.5rem; font-size: 1.1rem; color: #1e293b;">
+                    @(editingSupplier.Id > 0 ? "Chỉnh sửa trung gian" : "Thêm trung gian")
+                </h3>
+                <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    <div>
+                        <label class="form-label-small">Tên đơn vị</label>
+                        <input @bind="editingSupplier.Name" placeholder="Tên..." class="form-input-modern" />
+                    </div>
+                    <div>
+                        <label class="form-label-small">Số điện thoại</label>
+                        <input @bind="editingSupplier.Phone" placeholder="SĐT..." class="form-input-modern" />
+                    </div>
+                    <div style="display: flex; gap: 0.75rem;">
+                        @if (editingSupplier.Id > 0)
+                        {
+                            <button class="btn-cancel" style="flex: 1;" @onclick="ResetSupplierForm">Hủy</button>
+                            <button class="btn-save" style="flex: 1;" @onclick="SaveSupplier">Cập nhật</button>
+                        }
+                        else
+                        {
+                            <button class="btn-save" style="width: 100%;" @onclick="SaveSupplier">Lưu đơn vị</button>
+                        }
+                    </div>
+                </div>
+            </div>
+            <!-- Supplier Table -->
+            <div class="glass-card" style="padding: 0; overflow: hidden;">
+                <table class="table">
+                    <thead><tr><th>Tên trung gian</th><th>SĐT</th><th style="text-align: right;">Xóa</th></tr></thead>
+                    <tbody>
+                        @foreach (var s in suppliers) {
+                            <tr class="clickable-row @(editingSupplier.Id == s.Id ? "row-active" : "")" @onclick="() => SelectSupplier(s)">
+                                <td style="font-weight: 700;">@s.Name</td>
+                                <td>@s.Phone</td>
+                                <td style="text-align: right;" @onclick:stopPropagation="true">
+                                    <button class="btn-icon-small" style="color: var(--error);" @onclick="() => DeleteSupplier(s.Id)"><i class="bi bi-trash"></i></button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .tab-btn-large {
+        background: transparent; border: none; padding: 0.75rem 1.5rem;
+        font-size: 1.1rem; font-weight: 700; color: #64748b; cursor: pointer;
+        display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s;
+    }
+    .tab-btn-large.active { color: var(--accent-primary); border-bottom: 3px solid var(--accent-primary); margin-bottom: -2px; }
+    
+    .btn-filter-pill {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        padding: 0.5rem 1.25rem;
+        border-radius: 99px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-filter-pill:hover { background: #f1f5f9; border-color: #cbd5e1; color: #1e293b; transform: translateY(-1px); }
+    .btn-filter-pill.active { background: var(--accent-primary); border-color: var(--accent-primary); color: white; box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3); }
+    
+    .view-btn { background: transparent; border: none; padding: 0.5rem 0.75rem; color: #94a3b8; cursor: pointer; border-radius: 8px; transition: all 0.2s; }
+    .view-btn.active { background: white; color: var(--accent-primary); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .view-btn:hover:not(.active) { color: #64748b; }
+    
+    .form-label-small { display: block; font-size: 0.75rem; font-weight: 700; color: #1e293b; margin-bottom: 0.4rem; }
+    .form-input-modern { 
+        width: 100%; padding: 0.65rem 1rem; border-radius: 10px; border: 1px solid #e2e8f0; 
+        font-size: 0.95rem; color: #1e293b; transition: all 0.2s; background: white;
+    }
+    .form-input-modern:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+    
+    .btn-cancel { 
+        padding: 0.65rem 1.5rem; border-radius: 10px; border: 1px solid #e2e8f0; 
+        background: white; color: #64748b; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-cancel:hover { background: #f8fafc; color: #1e293b; border-color: #cbd5e1; }
+    
+    .btn-save { 
+        padding: 0.65rem 2rem; border-radius: 10px; border: none; 
+        background: #3b82f6; color: white; font-weight: 700; cursor: pointer; transition: all 0.2s;
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
+    }
+    .btn-save:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 6px 15px rgba(59, 130, 246, 0.3); }
+
+    .material-card { cursor: pointer; transition: transform 0.2s; }
+    .material-card:hover { transform: translateY(-5px); border-color: var(--accent-primary); }
+    
+    .btn-icon-small { background: transparent; border: none; cursor: pointer; padding: 0.25rem; font-size: 1.1rem; }
+    .clickable-row:hover { background: #f1f5f9; cursor: pointer; }
+    .row-active { background: #eff6ff !important; border-left: 3px solid #3b82f6; }
+</style>
+
+@code {
+    private List<Material> materials = new();
+    private List<Category> categories = new();
+    private List<Supplier> suppliers = new();
+    private string searchText = "";
+    private int? selectedCategoryId;
+    private int currentPage = 1;
+    private int pageSize = 8;
+    private string currentTab = "materials";
+    private string viewMode = "grid";
+
+    private Material editingMaterial = new();
+    private string editingCategoryName = "";
+    private Category? editingCategory;
+    private Supplier editingSupplier = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        materials = await WarehouseService.GetMasterMaterialsAsync();
+        categories = await WarehouseService.GetCategoriesAsync();
+        suppliers = await WarehouseService.GetSuppliersAsync();
+    }
+
+    private List<Material> filteredMaterials => materials
+        .Where(m => selectedCategoryId == null || m.CategoryId == selectedCategoryId)
+        .Where(m => string.IsNullOrWhiteSpace(searchText) || m.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    private IEnumerable<Material> PaginatedMaterials => filteredMaterials.Skip((currentPage - 1) * pageSize).Take(pageSize);
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(filteredMaterials.Count / (double)pageSize));
+
+    private void ResetForm() => editingMaterial = new();
+
+    private void ShowEditMaterial(Material m) => editingMaterial = new Material { 
+        Id = m.Id, Name = m.Name, Unit = m.Unit, BasePrice = m.BasePrice, 
+        CostPrice = m.CostPrice, CategoryId = m.CategoryId, SupplierId = m.SupplierId 
+    };
+
+    private void SelectCategory(Category c)
+    {
+        editingCategory = c;
+        editingCategoryName = c.Name;
+    }
+
+    private void ResetCategoryForm()
+    {
+        editingCategory = null;
+        editingCategoryName = "";
+    }
+
+    private void SelectSupplier(Supplier s)
+    {
+        editingSupplier = new Supplier { Id = s.Id, Name = s.Name, Phone = s.Phone, Address = s.Address, Note = s.Note };
+    }
+
+    private void ResetSupplierForm()
+    {
+        editingSupplier = new();
+    }
+
+    private async Task SaveMaterial()
+    {
+        if (string.IsNullOrWhiteSpace(editingMaterial.Name)) return;
+        if (editingMaterial.Id == 0) await WarehouseService.AddMasterMaterialAsync(editingMaterial);
+        else await WarehouseService.UpdateMasterMaterialAsync(editingMaterial);
+        editingMaterial = new();
+        await LoadData();
+    }
+
+    private async Task SaveCategory()
+    {
+        if (string.IsNullOrWhiteSpace(editingCategoryName)) return;
+        
+        if (editingCategory?.Id > 0)
+        {
+            editingCategory.Name = editingCategoryName.Trim();
+            await WarehouseService.UpdateCategoryAsync(editingCategory);
+        }
+        else
+        {
+            await WarehouseService.AddCategoryAsync(new Category { Name = editingCategoryName.Trim() });
+        }
+        ResetCategoryForm();
+        await LoadData();
+    }
+
+    private async Task DeleteCategory(int id) { await WarehouseService.DeleteCategoryAsync(id); await LoadData(); }
+
+    private async Task SaveSupplier()
+    {
+        if (string.IsNullOrWhiteSpace(editingSupplier.Name)) return;
+
+        if (editingSupplier.Id > 0)
+        {
+            await WarehouseService.UpdateSupplierAsync(editingSupplier);
+        }
+        else
+        {
+            await WarehouseService.AddSupplierAsync(editingSupplier);
+        }
+        ResetSupplierForm();
+        await LoadData();
+    }
+
+    private async Task HandleImageUpload(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            var format = "image/png";
+            var resizedImage = await file.RequestImageFileAsync(format, 400, 400);
+            using var stream = resizedImage.OpenReadStream();
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            editingMaterial.ImageUrl = $"data:{format};base64,{Convert.ToBase64String(ms.ToArray())}";
+        }
+    }
+
+    private async Task DeleteSupplier(int id) { await WarehouseService.DeleteSupplierAsync(id); await LoadData(); }
+}

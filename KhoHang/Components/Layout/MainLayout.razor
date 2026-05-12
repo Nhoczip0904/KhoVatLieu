@@ -1,0 +1,87 @@
+@inherits LayoutComponentBase
+
+<div class="page @(isSidebarOpen ? "sidebar-collapsed" : "")">
+    <div class="sidebar">
+        <div class="sidebar-header" style="padding-bottom: 2rem; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <i class="bi bi-box-seam" style="font-size: 1.5rem; color: var(--accent-primary);"></i>
+                <span class="sidebar-text" style="font-size: 1.25rem; font-weight: 700; letter-spacing: -0.5px;">KHO HÀNG V1</span>
+            </div>
+            <button class="btn-toggle-sidebar d-none d-lg-block" @onclick="ToggleSidebar">
+                <i class="bi bi-text-indent-left"></i>
+            </button>
+        </div>
+        
+        <nav style="flex: 1;">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <i class="bi bi-house-door"></i> <span class="sidebar-text">Tổng quan</span>
+            </NavLink>
+            <NavLink class="nav-link" href="projects">
+                <i class="bi bi-briefcase"></i> <span class="sidebar-text">Quản lý Dự án</span>
+            </NavLink>
+            <NavLink class="nav-link" href="catalog">
+                <i class="bi bi-journal-text"></i> <span class="sidebar-text">Danh mục sản phẩm</span>
+            </NavLink>
+            <NavLink class="nav-link" href="customers">
+                <i class="bi bi-person-badge"></i> <span class="sidebar-text">Khách hàng</span>
+            </NavLink>
+        </nav>
+
+        <div class="sidebar-footer sidebar-text" style="padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.75rem; color: #64748b;">
+            © 2024 Warehouse System
+        </div>
+    </div>
+
+    <main class="main-content">
+        <div class="top-header" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+            <button class="btn-hamburger" @onclick="ToggleSidebar">
+                <i class="bi bi-list"></i>
+            </button>
+            <div style="font-weight: 600; color: var(--text-secondary);">Hệ thống Quản lý Kho</div>
+        </div>
+        @Body
+    </main>
+</div>
+
+<style>
+    .page { display: flex; min-height: 100vh; }
+    .sidebar { width: 280px; transition: width 0.3s ease; }
+    .sidebar-collapsed .sidebar { width: 80px; padding: 1.5rem 1rem; }
+    .sidebar-collapsed .sidebar-text { display: none; }
+    .sidebar-collapsed .nav-link { justify-content: center; padding: 0.75rem; }
+    .sidebar-collapsed .nav-link i { font-size: 1.5rem; margin: 0; }
+    
+    .btn-hamburger {
+        background: white;
+        border: 1px solid var(--border-color);
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .btn-hamburger:hover { background: #f1f5f9; color: var(--accent-primary); }
+    
+    .btn-toggle-sidebar {
+        background: transparent;
+        border: none;
+        color: white;
+        opacity: 0.5;
+        cursor: pointer;
+        font-size: 1.25rem;
+    }
+    .btn-toggle-sidebar:hover { opacity: 1; }
+</style>
+
+@code {
+    private bool isSidebarOpen = false;
+
+    private void ToggleSidebar()
+    {
+        isSidebarOpen = !isSidebarOpen;
+    }
+}

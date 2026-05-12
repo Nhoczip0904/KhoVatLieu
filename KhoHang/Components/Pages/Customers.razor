@@ -1,0 +1,167 @@
+@page "/customers"
+@using KhoHang.Models
+@using KhoHang.Services
+@inject WarehouseService WarehouseService
+@rendermode InteractiveServer
+
+<div class="fade-in">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <div>
+            <h1 style="font-size: 1.75rem; margin: 0; font-weight: 700;">Quản lý khách hàng</h1>
+            <p style="color: var(--text-secondary); font-size: 0.875rem;">Danh sách khách hàng và cấu hình phí vận chuyển.</p>
+        </div>
+        <button class="btn-primary" @onclick="StartAddCustomer">
+            <i class="bi bi-person-plus"></i> Thêm khách hàng
+        </button>
+    </div>
+    <div class="search-container" style="max-width: 500px; margin-bottom: 2rem;">
+        <i class="bi bi-search"></i>
+        <input type="text" placeholder="Tìm tên khách hàng, SĐT hoặc địa chỉ..." @bind="searchText" @bind:event="oninput" />
+    </div>
+
+    @if (isEditing)
+    {
+        <div class="glass-card" style="margin-bottom: 2rem; border-color: var(--accent-primary);">
+            <h3 style="margin-top: 0; margin-bottom: 1.5rem; font-size: 1.1rem;">@(editingCustomer.Id == 0 ? "Thêm khách hàng mới" : "Chỉnh sửa khách hàng")</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+                <div>
+                    <label style="font-size: 0.75rem; font-weight: 600; margin-bottom: 0.25rem; display: block;">Tên khách hàng</label>
+                    <input @bind="editingCustomer.Name" placeholder="VD: Anh Hoàng - Villa Q2" style="width: 100%;" />
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem; font-weight: 600; margin-bottom: 0.25rem; display: block;">Số điện thoại</label>
+                    <input @bind="editingCustomer.Phone" placeholder="09xx..." style="width: 100%;" />
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="font-size: 0.75rem; font-weight: 600; margin-bottom: 0.25rem; display: block;">Địa chỉ công trình</label>
+                    <input @bind="editingCustomer.Address" placeholder="Số nhà, tên đường, quận/huyện..." style="width: 100%;" />
+                </div>
+                <div style="grid-column: span 2;">
+                    <label style="font-size: 0.75rem; font-weight: 600; margin-bottom: 0.25rem; display: block;">Ghi chú</label>
+                    <textarea @bind="editingCustomer.Note" style="width: 100%; border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem; min-height: 80px;"></textarea>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 2rem;">
+                <button class="btn-outline" @onclick="() => isEditing = false">Hủy</button>
+                <button class="btn-primary" @onclick="SaveCustomer">Lưu khách hàng</button>
+            </div>
+        </div>
+    }
+
+    <div class="glass-card" style="padding: 0; overflow: hidden;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead style="background: var(--bg-tertiary);">
+                <tr style="text-align: left; font-size: 0.875rem;">
+                    <th style="padding: 1rem;">Khách hàng</th>
+                    <th style="padding: 1rem;">Liên hệ</th>
+                    <th style="padding: 1rem;">Địa chỉ</th>
+                    <th style="padding: 1rem;">Ghi chú</th>
+                    <th style="padding: 1rem; text-align: right;">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in PaginatedCustomers)
+                {
+                    <tr style="border-bottom: 1px solid var(--border-color); cursor: pointer;" class="clickable-row" @onclick="() => StartEditCustomer(c)">
+                        <td style="padding: 1rem;">
+                            <div style="font-weight: 700; color: var(--text-primary);">@c.Name</div>
+                        </td>
+                        <td style="padding: 1rem;">@c.Phone</td>
+                        <td style="padding: 1rem; font-size: 0.875rem; color: var(--text-secondary);">@c.Address</td>
+                        <td style="padding: 1rem; font-size: 0.875rem; color: var(--text-muted);">@c.Note</td>
+                        <td style="padding: 1rem; text-align: right;" @onclick:stopPropagation="true">
+                            <button style="background: transparent; border: none; color: var(--error); cursor: pointer;" @onclick="() => DeleteCustomer(c.Id)"><i class="bi bi-trash"></i></button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination-container">
+        <button class="btn-page nav-btn" disabled="@(currentPage == 1)" @onclick="() => currentPage--">
+            <i class="bi bi-chevron-left"></i> Trước
+        </button>
+        <div class="page-info">Trang @currentPage / @TotalPages</div>
+        <button class="btn-page nav-btn" disabled="@(currentPage >= TotalPages)" @onclick="() => currentPage++">
+            Sau <i class="bi bi-chevron-right"></i>
+        </button>
+    </div>
+</div>
+
+@code {
+    private List<Customer> customers = new();
+    private bool isEditing = false;
+    private Customer editingCustomer = new();
+    private string _searchText = "";
+    private string searchText 
+    { 
+        get => _searchText; 
+        set { _searchText = value; currentPage = 1; } 
+    }
+
+    private int currentPage = 1;
+    private int pageSize = 8;
+
+    private List<Customer> filteredCustomers => customers
+        .Where(c => string.IsNullOrWhiteSpace(searchText) || 
+                    c.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
+                    (c.Phone?.Contains(searchText) ?? false) ||
+                    (c.Address?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false))
+        .ToList();
+
+    private IEnumerable<Customer> PaginatedCustomers => filteredCustomers
+        .Skip((currentPage - 1) * pageSize)
+        .Take(pageSize);
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(filteredCustomers.Count / (double)pageSize));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        customers = await WarehouseService.GetCustomersAsync();
+    }
+
+    private void StartAddCustomer()
+    {
+        editingCustomer = new Customer();
+        isEditing = true;
+    }
+
+    private void StartEditCustomer(Customer c)
+    {
+        editingCustomer = new Customer 
+        { 
+            Id = c.Id, Name = c.Name, Phone = c.Phone, 
+            Address = c.Address, 
+            Note = c.Note 
+        };
+        isEditing = true;
+    }
+
+    private async Task SaveCustomer()
+    {
+        if (string.IsNullOrWhiteSpace(editingCustomer.Name)) return;
+
+        if (editingCustomer.Id == 0) await WarehouseService.AddCustomerAsync(editingCustomer);
+        else await WarehouseService.UpdateCustomerAsync(editingCustomer);
+
+        isEditing = false;
+        await LoadData();
+    }
+
+    private async Task DeleteCustomer(int id)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", "Xóa khách hàng này?"))
+        {
+            await WarehouseService.DeleteCustomerAsync(id);
+            await LoadData();
+        }
+    }
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+}

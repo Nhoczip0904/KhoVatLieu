@@ -1,0 +1,306 @@
+@using KhoHang.Models
+@using KhoHang.Services
+@inject WarehouseService WarehouseService
+@implements IDisposable
+
+@if (IsOpen)
+{
+    <div class="modal-overlay" @onclick="Close">
+        <div class="modal-content" @onclick:stopPropagation="true">
+            <div class="modal-header">
+                <h2 style="margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                    <i class="bi bi-box-seam" style="color: var(--accent-primary);"></i>
+                    Chọn vật liệu & Sản phẩm
+                </h2>
+                <button style="background: transparent; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);" @onclick="Close">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                    <div class="search-container" style="flex: 1; margin-bottom: 0;">
+                        <i class="bi bi-search"></i>
+                        <input type="text" placeholder="Tìm kiếm tên sản phẩm..." @bind="searchText" @bind:event="oninput" />
+                    </div>
+                    <button class="btn-primary" style="padding: 0 1.25rem; border-radius: 12px; display: flex; align-items: center; gap: 0.5rem;" @onclick="ToggleScanner">
+                        <i class="bi bi-camera"></i>
+                        <span>Quét Trực Tiếp</span>
+                    </button>
+                    <label class="btn-outline" style="padding: 0.75rem 1.25rem; border-radius: 12px; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0; background: white;">
+                        <i class="bi bi-image"></i>
+                        <span>Chọn Ảnh QR</span>
+                        <InputFile OnChange="HandleQrFile" style="display: none;" accept="image/*" capture="environment" />
+                    </label>
+                </div>
+
+                <div style="display: @(isScanning ? "block" : "none"); margin-bottom: 1.5rem; border-radius: 16px; overflow: hidden; border: 2px solid var(--accent-primary); background: black;">
+                    <div id="reader" style="width: 100%;"></div>
+                </div>
+
+                <div class="filter-tabs">
+                    <div class="filter-tab @(selectedCategoryId == null ? "active" : "")" @onclick="() => FilterByCategory(null)">Tất cả</div>
+                    @foreach (var cat in categories)
+                    {
+                        <div class="filter-tab @(selectedCategoryId == cat.Id ? "active" : "")" @onclick="() => FilterByCategory(cat.Id)">@cat.Name</div>
+                    }
+                </div>
+
+                <div class="selection-grid">
+                    @foreach (var m in filteredMaterials)
+                    {
+                        var isSelected = currentSelectedIds.Contains(m.Id);
+                        var isDisabled = ExistingMaterialIds.Contains(m.Id);
+
+                        <div class="selection-card @(isSelected ? "selected" : "") @(isDisabled ? "disabled" : "")" 
+                             style="@(isDisabled ? "opacity: 0.5; cursor: not-allowed; border-style: dashed;" : "")"
+                             @onclick="() => ToggleSelection(m.Id)">
+                            <img src="@(string.IsNullOrEmpty(m.ImageUrl) ? "favicon.png" : m.ImageUrl)" class="material-img" />
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 1rem; color: var(--text-primary);">@m.Name</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">
+                                    @m.Unit • @m.BasePrice.ToString("N0") đ
+                                    <span style="margin-left: 0.5rem; font-weight: 600; color: @(m.StockQty > 0 ? "var(--accent-primary)" : "var(--error)");">
+                                        (Tồn: @m.StockQty)
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="icon-check">
+                                @if (isDisabled)
+                                {
+                                    <i class="bi bi-lock-fill" style="color: var(--text-muted);"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-check-lg"></i>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @if (!filteredMaterials.Any())
+                {
+                    <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                        <i class="bi bi-inbox" style="font-size: 3rem; display: block; margin-bottom: 1rem; opacity: 0.3;"></i>
+                        Không tìm thấy sản phẩm nào phù hợp.
+                    </div>
+                }
+            </div>
+
+            <div class="modal-footer">
+                <div style="margin-right: auto; color: var(--text-secondary); font-size: 0.875rem;">
+                    Đã chọn: <strong>@currentSelectedIds.Count</strong> sản phẩm
+                </div>
+                <button style="background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); padding: 0.6rem 1.5rem; border-radius: 10px; font-weight: 600;" @onclick="Close">Hủy</button>
+                <button class="btn-primary" style="padding: 0.6rem 2rem; border-radius: 10px;" @onclick="ConfirmSelection">Xác nhận thêm</button>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .selection-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        max-height: 500px;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+        margin-top: 1rem;
+    }
+
+    .selection-card {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        padding: 1rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+
+    .selection-card:hover:not(.disabled) {
+        background: white;
+        border-color: var(--accent-primary);
+        transform: translateX(5px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    .selection-card.selected {
+        background: #eff6ff;
+        border-color: var(--accent-primary);
+        box-shadow: 0 0 0 1px var(--accent-primary);
+    }
+
+    .selection-card.disabled {
+        opacity: 0.6;
+        background: #f1f5f9;
+        cursor: not-allowed;
+    }
+
+    .material-img {
+        width: 56px;
+        height: 56px;
+        object-fit: cover;
+        border-radius: 10px;
+        background: white;
+        border: 1px solid #e2e8f0;
+    }
+
+    .icon-check {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 2px solid #cbd5e1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: transparent;
+        transition: all 0.2s;
+    }
+
+    .selected .icon-check {
+        background: var(--accent-primary);
+        border-color: var(--accent-primary);
+        color: white;
+    }
+
+    .filter-tabs {
+        display: flex;
+        gap: 0.5rem;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+        scrollbar-width: none;
+    }
+    .filter-tab {
+        padding: 0.4rem 1rem;
+        background: #f1f5f9;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #64748b;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s;
+    }
+    .filter-tab.active {
+        background: var(--accent-primary);
+        color: white;
+    }
+</style>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public List<int> ExistingMaterialIds { get; set; } = new();
+    [Parameter] public EventCallback<List<Material>> OnMaterialsSelected { get; set; }
+
+    private List<Material> allMaterials = new();
+    private List<Category> categories = new();
+    private List<int> currentSelectedIds = new();
+    private string searchText = "";
+    private int? selectedCategoryId;
+    private bool isScanning = false;
+    private DotNetObjectReference<MaterialSelectionModal>? objRef;
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        allMaterials = await WarehouseService.GetMasterMaterialsAsync();
+        categories = await WarehouseService.GetCategoriesAsync();
+    }
+
+    private IEnumerable<Material> filteredMaterials => allMaterials
+        .Where(m => (selectedCategoryId == null || m.CategoryId == selectedCategoryId) &&
+                    (string.IsNullOrWhiteSpace(searchText) || m.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase)));
+
+    private void FilterByCategory(int? catId)
+    {
+        selectedCategoryId = catId;
+    }
+
+    private void ToggleSelection(int materialId)
+    {
+        if (ExistingMaterialIds.Contains(materialId)) return;
+
+        if (currentSelectedIds.Contains(materialId))
+            currentSelectedIds.Remove(materialId);
+        else
+            currentSelectedIds.Add(materialId);
+    }
+
+    private async Task ConfirmSelection()
+    {
+        var selected = allMaterials.Where(m => currentSelectedIds.Contains(m.Id)).ToList();
+        await OnMaterialsSelected.InvokeAsync(selected);
+        currentSelectedIds.Clear();
+        await Close();
+    }
+
+    private async Task Close()
+    {
+        if (isScanning) await ToggleScanner();
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+
+    private async Task ToggleScanner()
+    {
+        isScanning = !isScanning;
+        if (isScanning)
+        {
+            objRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("startScanner", objRef);
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("stopScanner");
+            if (objRef != null)
+            {
+                objRef.Dispose();
+                objRef = null;
+            }
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnQrScanned(int materialId)
+    {
+        if (!allMaterials.Any(m => m.Id == materialId)) return;
+        
+        if (!currentSelectedIds.Contains(materialId) && !ExistingMaterialIds.Contains(materialId))
+        {
+            currentSelectedIds.Add(materialId);
+            StateHasChanged();
+        }
+        
+        if (isScanning) await ToggleScanner();
+    }
+
+    private async Task HandleQrFile(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file == null) return;
+
+        // Convert file to base64 or blob to scan in JS
+        var format = "image/png";
+        var resizedImage = await file.RequestImageFileAsync(format, 600, 600);
+        var buffer = new byte[resizedImage.Size];
+        using var stream = resizedImage.OpenReadStream();
+        await stream.ReadAsync(buffer);
+        var base64 = $"data:{format};base64,{Convert.ToBase64String(buffer)}";
+
+        await JS.InvokeVoidAsync("scanImage", base64, objRef);
+    }
+
+    public void Dispose()
+    {
+        objRef?.Dispose();
+    }
+}

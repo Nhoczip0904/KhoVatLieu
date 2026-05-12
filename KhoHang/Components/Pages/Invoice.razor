@@ -1,0 +1,334 @@
+@page "/invoice/{Id:int}"
+@using KhoHang.Models
+@using KhoHang.Services
+@inject WarehouseService WarehouseService
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+
+@if (delivery == null)
+{
+    <div style="display: flex; justify-content: center; padding: 4rem;">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else
+{
+    <div class="invoice-container">
+        <!-- Action Bar (Hidden when printing) -->
+        <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background: var(--bg-secondary); padding: 1rem 2rem; border-radius: 12px; border: 1px solid var(--border-color);">
+            <button class="btn-outline" @onclick='() => Nav.NavigateTo($"/projects/{delivery.ProjectId}")'>
+                <i class="bi bi-arrow-left"></i> Quay lại dự án
+            </button>
+            <div style="display: flex; gap: 0.75rem;">
+                <button class="btn-primary" onclick="window.print()">
+                    <i class="bi bi-printer"></i> In hóa đơn
+                </button>
+            </div>
+        </div>
+
+        <div class="invoice-paper glass-card">
+            <div class="invoice-header">
+                <div class="brand">
+                    <div class="brand-logo"><i class="bi bi-stack"></i></div>
+                    <div class="brand-info">
+                        <h2>KHO VẬT LIỆU XÂY DỰNG</h2>
+                        <p>Chuyên cung cấp Cát, Đá, Gạch, Xi măng, Sắt thép</p>
+                        <p>Địa chỉ: Khu Công Nghệ Cao, Quận 9, TP. Thủ Đức</p>
+                        <p>Hotline: 0988.xxx.xxx</p>
+                    </div>
+                </div>
+                <div class="invoice-meta">
+                    <h1>PHIẾU XUẤT KHO</h1>
+                    <p>Mã đơn: <strong>#@delivery.Id</strong></p>
+                    <p>Ngày xuất: @delivery.Timestamp.ToString("dd/MM/yyyy HH:mm")</p>
+                </div>
+            </div>
+
+            <hr class="divider" />
+
+            <div class="customer-section">
+                <div class="info-block">
+                    <label>KHÁCH HÀNG</label>
+                    <h3>@(string.IsNullOrEmpty(delivery.Project?.CustomerName) ? delivery.Project?.Customer?.Name : delivery.Project?.CustomerName)</h3>
+                    <p><i class="bi bi-telephone"></i> @(string.IsNullOrEmpty(delivery.Project?.Phone) ? delivery.Project?.Customer?.Phone : delivery.Project?.Phone)</p>
+                    <p><i class="bi bi-geo-alt"></i> @(string.IsNullOrEmpty(delivery.Project?.Address) ? delivery.Project?.Customer?.Address : delivery.Project?.Address)</p>
+                </div>
+                <div class="info-block">
+                    <label>TRẠNG THÁI</label>
+                    <div class="status-badge">Đã xuất kho</div>
+                    @if (!string.IsNullOrEmpty(delivery.Note))
+                    {
+                        <p style="margin-top: 0.5rem; font-style: italic;">Ghi chú: @delivery.Note</p>
+                    }
+                </div>
+            </div>
+
+            <table class="invoice-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">STT</th>
+                        <th style="text-align: left;">Tên vật liệu</th>
+                        <th style="text-align: center;">Số lượng</th>
+                        <th style="text-align: center;">ĐVT</th>
+                        <th style="text-align: right;">Đơn giá</th>
+                        <th style="text-align: right;">Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ int stt = 1; }
+                    
+                    @if (delivery.Project != null && delivery.Project.Deliveries != null)
+                    {
+                        var previousDeliveries = delivery.Project.Deliveries
+                            .Where(d => d.Id != delivery.Id && d.Timestamp <= delivery.Timestamp)
+                            .OrderBy(d => d.Timestamp)
+                            .ToList();
+
+                        @foreach (var prev in previousDeliveries)
+                        {
+                            <tr style="background: rgba(0,0,0,0.02); font-style: italic;">
+                                <td style="text-align: center;">@(stt++)</td>
+                                <td colspan="4" style="font-weight: 700;">
+                                    HĐ lúc @prev.Timestamp.ToString("HH:mm") ngày @prev.Timestamp.ToString("dd/MM/yyyy")
+                                </td>
+                                <td style="text-align: right; font-weight: 700;">@prev.TotalAmount.ToString("N0")</td>
+                            </tr>
+                        }
+                    }
+
+                    @foreach (var item in delivery.Items)
+                    {
+                        <tr>
+                            <td style="text-align: center;">@(stt++)</td>
+                            <td style="font-weight: 600;">@item.Name</td>
+                            <td style="text-align: center;">@item.Qty</td>
+                            <td style="text-align: center;">@item.Unit</td>
+                            <td style="text-align: right;">@item.Price.ToString("N0")</td>
+                            <td style="text-align: right; font-weight: 700;">@item.Subtotal.ToString("N0")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <div class="summary-section">
+                <div class="notes">
+                    <p><strong>Điều khoản:</strong></p>
+                    <ul>
+                        <li>Hàng đã xuất kho vui lòng kiểm tra kỹ số lượng.</li>
+                        <li>Mọi khiếu nại về số lượng cần được phản hồi ngay khi nhận hàng.</li>
+                    </ul>
+                </div>
+                <div class="totals">
+                    <div class="total-row">
+                        <span>Tiền hàng đơn này:</span>
+                        <span>@delivery.ItemsTotal.ToString("N0") đ</span>
+                    </div>
+                    <div class="total-row highlight">
+                        <span>TỔNG CỘNG ĐƠN NÀY:</span>
+                        <span>@delivery.TotalAmount.ToString("N0") đ</span>
+                    </div>
+                    <hr />
+                    <div class="total-row">
+                        <span>@(delivery.PreviousBalance >= 0 ? "Dư nợ cũ:" : "Số dư cũ (cọc):")</span>
+                        <span>@Math.Abs(delivery.PreviousBalance).ToString("N0") đ</span>
+                    </div>
+                    <div class="total-row final">
+                        <span style="color: @(delivery.GrandTotal > 0 ? "var(--error)" : "var(--success)");">
+                            @(delivery.GrandTotal > 0 ? "TỔNG TIỀN PHẢI THANH TOÁN:" : "SỐ DƯ HIỆN TẠI:")
+                        </span>
+                        <span style="color: @(delivery.GrandTotal > 0 ? "var(--error)" : "var(--success)");">
+                            @Math.Abs(delivery.GrandTotal).ToString("N0") đ
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="signature-section">
+                <div class="sig-block">
+                    <p>Người lập phiếu</p>
+                    <div class="sig-space"></div>
+                    <p>(Ký, họ tên)</p>
+                </div>
+                <div class="sig-block">
+                    <p>Người giao hàng</p>
+                    <div class="sig-space"></div>
+                    <p>(Ký, họ tên)</p>
+                </div>
+                <div class="sig-block">
+                    <p>Khách hàng nhận</p>
+                    <div class="sig-space"></div>
+                    <p>(Ký, họ tên)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .invoice-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem 0;
+        }
+
+        .invoice-paper {
+            background: white !important;
+            color: black !important;
+            padding: 3rem !important;
+            min-height: 29.7cm;
+        }
+
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+
+        .brand {
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+
+        .brand-logo {
+            width: 60px;
+            height: 60px;
+            background: #1e293b;
+            color: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        .brand-info h2 { margin: 0; font-size: 1.25rem; font-weight: 800; color: #0f172a; }
+        .brand-info p { margin: 0; font-size: 0.875rem; color: #64748b; }
+
+        .invoice-meta { text-align: right; }
+        .invoice-meta h1 { margin: 0 0 0.5rem 0; font-size: 2rem; font-weight: 900; color: #1e293b; }
+        .invoice-meta p { margin: 0.25rem 0; font-size: 0.875rem; color: #475569; }
+
+        .divider { border: 0; border-top: 2px solid #e2e8f0; margin: 2rem 0; }
+
+        .customer-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            margin-bottom: 3rem;
+        }
+
+        .info-block label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: #94a3b8;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .info-block h3 { margin: 0 0 0.5rem 0; font-size: 1.25rem; color: #0f172a; }
+        .info-block p { margin: 0.25rem 0; font-size: 0.95rem; color: #475569; }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: #dcfce7;
+            color: #166534;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 3rem;
+        }
+
+        .invoice-table th {
+            background: #f8fafc;
+            padding: 1rem;
+            border-bottom: 2px solid #e2e8f0;
+            color: #475569;
+            font-weight: 800;
+            font-size: 0.875rem;
+        }
+
+        .invoice-table td {
+            padding: 1.25rem 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            color: #1e293b;
+            font-size: 0.95rem;
+        }
+
+        .summary-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            margin-bottom: 4rem;
+        }
+
+        .notes p { font-weight: 700; color: #475569; }
+        .notes ul { padding-left: 1.25rem; color: #64748b; font-size: 0.875rem; }
+        .notes li { margin-bottom: 0.5rem; }
+
+        .totals {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            color: #475569;
+        }
+
+        .total-row.highlight {
+            font-weight: 800;
+            font-size: 1.15rem;
+            color: #0f172a;
+            margin: 0.5rem 0;
+        }
+
+        .total-row.final {
+            font-weight: 900;
+            font-size: 1.25rem;
+            color: #1e3a8a;
+        }
+
+        .signature-section {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            text-align: center;
+            margin-top: auto;
+            padding-top: 4rem;
+        }
+
+        .sig-block p { margin: 0; font-weight: 700; color: #475569; }
+        .sig-space { height: 80px; }
+
+        @@media print {
+            .no-print { display: none !important; }
+            body { background: white !important; margin: 0; padding: 0; }
+            .invoice-container { max-width: 100%; margin: 0; padding: 0; }
+            .invoice-paper { box-shadow: none !important; border: none !important; border-radius: 0 !important; width: 100% !important; padding: 0 !important; }
+            .main-content { margin-left: 0 !important; padding: 0 !important; }
+            .sidebar { display: none !important; }
+            .page { display: block !important; }
+        }
+    </style>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private Delivery? delivery;
+
+    protected override async Task OnInitializedAsync()
+    {
+        delivery = await WarehouseService.GetDeliveryAsync(Id);
+    }
+}

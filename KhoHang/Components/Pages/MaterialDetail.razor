@@ -1,0 +1,100 @@
+@page "/material/{Id:int}"
+@using KhoHang.Models
+@using KhoHang.Services
+@inject WarehouseService WarehouseService
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+
+@if (isLoading)
+{
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh;">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else if (material == null)
+{
+    <div style="text-align: center; padding: 4rem 2rem;">
+        <i class="bi bi-x-circle text-danger" style="font-size: 3rem;"></i>
+        <h3 style="margin-top: 1rem;">Không tìm thấy vật tư</h3>
+        <p class="text-muted">Sản phẩm này có thể đã bị xóa hoặc không tồn tại.</p>
+        <button class="btn-primary mt-3" @onclick='() => Nav.NavigateTo("/")'>Về trang chủ</button>
+    </div>
+}
+else
+{
+    <div style="max-width: 600px; margin: 0 auto; padding: 1rem; animation: fadeIn 0.3s ease;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem;">
+            <button style="background: transparent; border: none; font-size: 1.2rem; cursor: pointer; color: var(--text-primary);" @onclick='() => Nav.NavigateTo(Nav.BaseUri + "catalog")'>
+                <i class="bi bi-arrow-left"></i>
+            </button>
+            <h2 style="margin: 0; font-size: 1.25rem;">Chi tiết Vật tư</h2>
+            <div style="width: 24px;"></div> <!-- Spacer for centering -->
+        </div>
+
+        <div style="background: white; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05); margin-bottom: 2rem;">
+            <div style="width: 100%; height: 250px; background: #f8fafc; display: flex; justify-content: center; align-items: center; position: relative;">
+                @if (!string.IsNullOrEmpty(material.ImageUrl))
+                {
+                    <img src="@material.ImageUrl" style="width: 100%; height: 100%; object-fit: cover;" />
+                }
+                else
+                {
+                    <i class="bi bi-box-seam" style="font-size: 4rem; color: #cbd5e1;"></i>
+                }
+                
+                @if (material.Category != null)
+                {
+                    <div style="position: absolute; top: 1rem; right: 1rem; background: rgba(255,255,255,0.9); backdrop-filter: blur(4px); padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; color: var(--warning); box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        @material.Category.Name
+                    </div>
+                }
+            </div>
+
+            <div style="padding: 1.5rem;">
+                <h1 style="margin: 0 0 0.5rem 0; font-size: 1.5rem; font-weight: 800; color: var(--text-primary);">@material.Name</h1>
+                
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; color: var(--text-secondary); font-size: 0.9rem;">
+                    @if (material.Supplier != null)
+                    {
+                        <i class="bi bi-shop text-primary"></i> <span>@material.Supplier.Name</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-box text-primary"></i> <span>Kho trực tiếp</span>
+                    }
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div style="background: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #e2e8f0;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-bottom: 0.25rem;">Tồn kho hiện tại</div>
+                        <div style="font-size: 1.25rem; font-weight: 800; color: @(material.StockQty > 0 ? "var(--success)" : "var(--error)");">
+                            @material.StockQty <span style="font-size: 0.8rem; font-weight: 600;">@material.Unit</span>
+                        </div>
+                    </div>
+                    
+                    <div style="background: #eff6ff; padding: 1rem; border-radius: 12px; border: 1px solid #bfdbfe;">
+                        <div style="font-size: 0.75rem; color: var(--accent-primary); text-transform: uppercase; font-weight: 600; margin-bottom: 0.25rem;">Giá bán lẻ</div>
+                        <div style="font-size: 1.25rem; font-weight: 800; color: var(--accent-secondary);">
+                            @material.BasePrice.ToString("N0") <span style="font-size: 0.8rem; font-weight: 600;">đ</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Material? material;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        material = await WarehouseService.GetMaterialByIdAsync(Id);
+        isLoading = false;
+    }
+}
