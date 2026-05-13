@@ -79,6 +79,7 @@ public class Project
     public string? Address { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public bool IsCompleted { get; set; } = false;
+    public int InvoiceMode { get; set; } = 1; // 0: Chỉ vật tư, 1: Đối soát tài chính (mặc định)
     
     public List<ProjectMaterial> Materials { get; set; } = new();
     public List<Delivery> Deliveries { get; set; } = new();
@@ -143,6 +144,7 @@ public class Payment
     public DateTime Timestamp { get; set; } = DateTime.Now;
     public string Method { get; set; } = "Tiền mặt";
     public string? Note { get; set; }
+    public bool ShowOnInvoice { get; set; } = true;
 }
 
 // --- PROCUREMENT & SUPPLIER DEBT ---

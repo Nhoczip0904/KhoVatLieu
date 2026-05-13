@@ -23,7 +23,7 @@ else
             var lastDelivery = previousDeliveries.FirstOrDefault();
             
             var intermediatePayments = delivery.Project?.Payments
-                .Where(p => (lastDelivery == null || p.Timestamp > lastDelivery.Timestamp) && p.Timestamp < delivery.Timestamp)
+                .Where(p => (lastDelivery == null || p.Timestamp > lastDelivery.Timestamp) && p.Timestamp < delivery.Timestamp && p.ShowOnInvoice)
                 .OrderBy(p => p.Timestamp)
                 .ToList() ?? new();
             
@@ -97,6 +97,7 @@ else
                     <tr>
                         <th style="width: 50px;">STT</th>
                         <th style="text-align: left;">Tên vật liệu</th>
+                        <th style="text-align: center; width: 100px;">Lô</th>
                         <th style="text-align: center;">Số lượng</th>
                         <th style="text-align: center;">ĐVT</th>
                         <th style="text-align: right;">Đơn giá</th>
@@ -110,7 +111,7 @@ else
                     {
                         <tr style="background: #f8fafc; font-style: italic;">
                             <td style="text-align: center;">@(stt++)</td>
-                            <td colspan="4" style="font-weight: 700; color: @(openingBalance < 0 ? "#166534" : "#475569");">
+                            <td colspan="5" style="font-weight: 700; color: @(openingBalance < 0 ? "#166534" : "#475569");">
                                 @if (lastDelivery != null)
                                 {
                                     @(openingBalance < 0 ? "Tiền cọc chốt từ hóa đơn ngày " : "Dư nợ chốt từ hóa đơn ngày ")
@@ -133,7 +134,7 @@ else
                         {
                             <tr style="background: #f0fdf4; font-style: italic;">
                                 <td style="text-align: center;">@(stt++)</td>
-                                <td colspan="4" style="color: #166534; font-weight: 600;">
+                                <td colspan="5" style="color: #166534; font-weight: 600;">
                                     <i class="bi bi-cash-stack"></i> 
                                     Khách thanh toán/Tạm ứng (@p.Timestamp.ToString("dd/MM/yyyy HH:mm"))
                                 </td>
@@ -150,6 +151,9 @@ else
                             <td style="text-align: center;">@(stt++)</td>
                             <td style="font-weight: 600; color: @(item.Qty < 0 ? "var(--error)" : "inherit")">
                                 @(item.Qty < 0 ? "[TRẢ LẠI] " : "")@item.Name
+                            </td>
+                            <td style="text-align: center; font-size: 0.85rem; color: #64748b;">
+                                @(item.LotNumber != "Mặc định" ? item.LotNumber : "")
                             </td>
                             <td style="text-align: center; color: @(item.Qty < 0 ? "var(--error)" : "inherit")">@Math.Abs(item.Qty)</td>
                             <td style="text-align: center;">@item.Unit</td>
