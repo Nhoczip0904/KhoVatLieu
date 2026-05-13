@@ -1,0 +1,189 @@
+@page "/suppliers"
+@using KhoHang.Models
+@using KhoHang.Services
+@inject WarehouseService WarehouseService
+@rendermode InteractiveServer
+
+<PageTitle>Quản lý Nhà cung cấp</PageTitle>
+
+<div class="fade-in">
+    <div class="header-stack" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2.5rem; gap: 1rem;">
+        <div>
+            <h1 class="responsive-title" style="font-size: 2.5rem; font-weight: 800; font-family: 'Outfit'; margin: 0; color: #0f172a;">Nhà cung cấp</h1>
+            <p style="color: var(--text-secondary); margin-top: 0.5rem;">Quản lý danh sách các đơn vị cung ứng vật tư.</p>
+        </div>
+        <button class="btn-primary" @onclick="ResetSupplierForm">
+            <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">Thêm mới</span><span class="d-sm-none">Thêm</span>
+        </button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 350px 1fr; gap: 2rem;">
+        <!-- Supplier Form -->
+        <div class="glass-card">
+            <h3 style="margin-top: 0; margin-bottom: 1.5rem; font-size: 1.1rem; color: #1e293b; font-weight: 700;">
+                @(editingSupplier.Id > 0 ? "Chỉnh sửa đơn vị" : "Thêm đơn vị mới")
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <div>
+                    <label class="form-label-small">Tên đơn vị</label>
+                    <input @bind="editingSupplier.Name" placeholder="Tên nhà cung cấp..." class="form-input-modern" />
+                </div>
+                <div>
+                    <label class="form-label-small">Số điện thoại</label>
+                    <input @bind="editingSupplier.Phone" placeholder="SĐT liên hệ..." class="form-input-modern" />
+                </div>
+                <div>
+                    <label class="form-label-small">Địa chỉ</label>
+                    <input @bind="editingSupplier.Address" placeholder="Địa chỉ văn phòng/kho..." class="form-input-modern" />
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    @if (editingSupplier.Id > 0)
+                    {
+                        <button class="btn-cancel" style="flex: 1;" @onclick="ResetSupplierForm">Hủy</button>
+                        <button class="btn-save" style="flex: 1;" @onclick="SaveSupplier">Cập nhật</button>
+                    }
+                    else
+                    {
+                        <button class="btn-save" style="width: 100%;" @onclick="SaveSupplier">Lưu thông tin</button>
+                    }
+                </div>
+            </div>
+        </div>
+        
+        <!-- Supplier Table -->
+        <div class="glass-card" style="padding: 0; overflow: hidden;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Tên đơn vị</th>
+                        <th>SĐT</th>
+                        <th>Địa chỉ</th>
+                        <th style="text-align: right;">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in pagedSuppliers)
+                    {
+                        <tr class="clickable-row @(editingSupplier.Id == s.Id ? "row-active" : "")" @onclick="() => SelectSupplier(s)">
+                            <td style="font-weight: 700;">@s.Name</td>
+                            <td>@s.Phone</td>
+                            <td style="font-size: 0.85rem; color: #64748b;">@s.Address</td>
+                            <td style="text-align: right;" @onclick:stopPropagation="true">
+                                <button class="btn-icon-small" style="color: var(--error);" @onclick="() => DeleteSupplier(s.Id)"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!suppliers.Any())
+                    {
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted">Chưa có nhà cung cấp nào.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            
+            <!-- Pagination -->
+            @if (totalPages > 1)
+            {
+                <div style="text-align: center; width: 100%; padding: 1rem 0; border-top: 1px solid #f1f5f9;">
+                    <div style="display: inline-flex; justify-content: center; align-items: center; gap: 1rem;">
+                        <button class="btn-page-nav" disabled="@(currentPage == 1)" @onclick="() => currentPage--">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <div style="font-weight: 700; color: #475569; font-size: 0.9rem;">Trang @currentPage / @totalPages</div>
+                        <button class="btn-page-nav" disabled="@(currentPage >= totalPages)" @onclick="() => currentPage++">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-label-small { display: block; font-size: 0.75rem; font-weight: 700; color: #1e293b; margin-bottom: 0.4rem; }
+    .form-input-modern { 
+        width: 100%; padding: 0.65rem 1rem; border-radius: 10px; border: 1px solid #e2e8f0; 
+        font-size: 0.95rem; color: #1e293b; transition: all 0.2s; background: white;
+    }
+    .form-input-modern:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+    
+    .btn-cancel { 
+        padding: 0.65rem 1.5rem; border-radius: 10px; border: 1px solid #e2e8f0; 
+        background: white; color: #64748b; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-cancel:hover { background: #f8fafc; color: #1e293b; border-color: #cbd5e1; }
+    
+    .btn-save { 
+        padding: 0.65rem 2rem; border-radius: 10px; border: none; 
+        background: #3b82f6; color: white; font-weight: 700; cursor: pointer; transition: all 0.2s;
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
+    }
+    .btn-save:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 6px 15px rgba(59, 130, 246, 0.3); }
+    
+    .btn-icon-small { background: transparent; border: none; cursor: pointer; padding: 0.25rem; font-size: 1.1rem; }
+    .clickable-row:hover { background: #f1f5f9; cursor: pointer; }
+    .row-active { background: #eff6ff !important; border-left: 3px solid #3b82f6; }
+    
+    .btn-page-nav {
+        background: white; border: 1px solid #e2e8f0; border-radius: 8px; width: 32px; height: 32px; 
+        display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-page-nav:hover:not(:disabled) { background: #f1f5f9; border-color: #cbd5e1; }
+    .btn-page-nav:disabled { opacity: 0.3; cursor: not-allowed; }
+</style>
+
+@code {
+    private List<Supplier> suppliers = new();
+    private Supplier editingSupplier = new();
+
+    // Phân trang
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalPages => (int)Math.Ceiling((double)suppliers.Count / pageSize);
+    private IEnumerable<Supplier> pagedSuppliers => suppliers.Skip((currentPage - 1) * pageSize).Take(pageSize);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        suppliers = await WarehouseService.GetSuppliersAsync();
+        currentPage = 1; // Reset về trang 1 khi load lại
+    }
+
+    private void SelectSupplier(Supplier s)
+    {
+        editingSupplier = new Supplier { Id = s.Id, Name = s.Name, Phone = s.Phone, Address = s.Address, Note = s.Note };
+    }
+
+    private void ResetSupplierForm()
+    {
+        editingSupplier = new();
+    }
+
+    private async Task SaveSupplier()
+    {
+        if (string.IsNullOrWhiteSpace(editingSupplier.Name)) return;
+
+        if (editingSupplier.Id > 0)
+        {
+            await WarehouseService.UpdateSupplierAsync(editingSupplier);
+        }
+        else
+        {
+            await WarehouseService.AddSupplierAsync(editingSupplier);
+        }
+        ResetSupplierForm();
+        await LoadData();
+    }
+
+    private async Task DeleteSupplier(int id)
+    {
+        await WarehouseService.DeleteSupplierAsync(id);
+        await LoadData();
+    }
+}

@@ -8,29 +8,29 @@
 <PageTitle>Quản lý Dự án & Khách hàng</PageTitle>
 
 <div class="fade-in">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem;">
+    <div class="header-stack" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; gap: 1rem;">
         <div>
-            <h1 style="font-size: 2.5rem; font-weight: 800; font-family: 'Outfit'; margin: 0; color: #0f172a;">Kho Dự án</h1>
+            <h1 class="responsive-title" style="font-size: 2.5rem; font-weight: 800; font-family: 'Outfit'; margin: 0; color: #0f172a;">Dự án & Xuất kho</h1>
             <p style="color: var(--text-secondary); margin-top: 0.5rem;">Quản lý xuất kho và theo dõi tiến độ từng công trình.</p>
         </div>
         <button class="btn-primary" @onclick="() => isAdding = true">
-            <i class="bi bi-plus-lg"></i> Thiết lập dự án mới
+            <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">Dự án mới</span><span class="d-sm-none">Thêm</span>
         </button>
     </div>
 
     <!-- Tab Navigation -->
-    <div style="display: flex; gap: 2.5rem; border-bottom: 2px solid var(--border-color); margin-bottom: 2.5rem;">
-        <button style="background: transparent; border: none; padding: 1rem 0; border-bottom: 3px solid @(!showCompleted ? "var(--accent-primary)" : "transparent"); color: @(!showCompleted ? "var(--accent-primary)" : "var(--text-secondary)"); font-weight: 700; cursor: pointer; transition: all 0.2s;" @onclick="() => SetTab(false)">Đang thực hiện (@activeCount)</button>
-        <button style="background: transparent; border: none; padding: 1rem 0; border-bottom: 3px solid @(showCompleted ? "var(--accent-primary)" : "transparent"); color: @(showCompleted ? "var(--accent-primary)" : "var(--text-secondary)"); font-weight: 700; cursor: pointer; transition: all 0.2s;" @onclick="() => SetTab(true)">Đã hoàn thành (@completedCount)</button>
+    <div class="scroll-x-auto" style="display: flex; gap: 2rem; border-bottom: 2px solid var(--border-color); margin-bottom: 2.5rem;">
+        <button style="background: transparent; border: none; padding: 1rem 0; border-bottom: 3px solid @(!showCompleted ? "var(--accent-primary)" : "transparent"); color: @(!showCompleted ? "var(--accent-primary)" : "var(--text-secondary)"); font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap;" @onclick="() => SetTab(false)">Đang thực hiện (@activeCount)</button>
+        <button style="background: transparent; border: none; padding: 1rem 0; border-bottom: 3px solid @(showCompleted ? "var(--accent-primary)" : "transparent"); color: @(showCompleted ? "var(--accent-primary)" : "var(--text-secondary)"); font-weight: 700; cursor: pointer; transition: all 0.2s; white-space: nowrap;" @onclick="() => SetTab(true)">Đã hoàn thành (@completedCount)</button>
     </div>
 
-    <div style="display: flex; gap: 1.5rem; margin-bottom: 2.5rem; align-items: center;">
+    <div class="search-stack" style="display: flex; gap: 1rem; margin-bottom: 2.5rem; align-items: center;">
         <div class="search-container" style="flex: 1; margin-bottom: 0;">
             <i class="bi bi-search" style="font-size: 1.2rem;"></i>
-            <input type="text" placeholder="Tìm tên khách hàng, số điện thoại hoặc địa chỉ..." @bind="searchText" @bind:event="oninput" style="padding: 1rem 3.5rem; font-size: 1.1rem; border-radius: 16px;" />
+            <input type="text" placeholder="Tìm tên khách hàng, SĐT..." @bind="searchText" @bind:event="oninput" style="padding: 1rem 3rem; font-size: 1rem; border-radius: 16px;" />
         </div>
-        <div style="color: var(--text-secondary); font-weight: 600;">
-            Tìm thấy @filteredProjects.Count kết quả
+        <div style="color: var(--text-secondary); font-weight: 600; font-size: 0.9rem;" class="d-none d-sm-block">
+            @filteredProjects.Count kết quả
         </div>
     </div>
 
@@ -42,24 +42,24 @@
                 <button style="background: transparent; border: none; color: var(--text-secondary);" @onclick="() => isAdding = false"><i class="bi bi-x-lg"></i></button>
             </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
-                <div style="grid-column: span 2;">
-                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Chọn từ danh bạ khách hàng</label>
-                    <select @onchange="OnCustomerSelected" style="width: 100%; padding: 0.8rem;">
+            <div class="responsive-grid-form" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 2rem;">
+                <div style="grid-column: 1 / -1;">
+                    <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Chọn từ danh bạ khách hàng</label>
+                    <select @onchange="OnCustomerSelected" class="form-select-modern">
                         <option value="">-- Tạo mới hoặc chọn khách lẻ --</option>
                         @foreach (var c in customers) { <option value="@c.Id">@c.Name (@c.Phone)</option> }
                     </select>
                 </div>
-                <div>
-                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Tên khách hàng</label>
+                <div class="form-col-sm">
+                    <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Tên khách hàng</label>
                     <input @bind="newProject.CustomerName" placeholder="VD: Anh Nam - Q1" style="width: 100%;" />
                 </div>
-                <div>
-                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Số điện thoại</label>
+                <div class="form-col-sm">
+                    <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Số điện thoại</label>
                     <input @bind="newProject.Phone" placeholder="09xx..." style="width: 100%;" />
                 </div>
-                <div style="grid-column: span 2;">
-                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Địa chỉ giao hàng / Công trình</label>
+                <div style="grid-column: 1 / -1;">
+                    <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase;">Địa chỉ giao hàng / Công trình</label>
                     <input @bind="newProject.Address" style="width: 100%;" />
                 </div>
             </div>
@@ -103,7 +103,7 @@
         </div>
     }
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 2rem;">
+    <div class="grid-responsive-3">
         @foreach (var p in PaginatedProjects)
         {
             <div class="glass-card" style="cursor: pointer; transition: all 0.2s; border-left: 6px solid @(p.IsCompleted ? "#94a3b8" : "#4f46e5"); position: relative;" @onclick='() => Nav.NavigateTo($"/projects/{p.Id}")'>
@@ -147,6 +147,16 @@
         </div>
     }
 </div>
+
+<style>
+    @@media (max-width: 768px) {
+        .responsive-title { font-size: 1.75rem !important; }
+        .header-stack { flex-direction: column; align-items: flex-start !important; }
+        .search-stack { flex-direction: column; align-items: stretch !important; }
+        .form-col-sm { grid-column: 1 / -1; }
+        .responsive-grid-form { gap: 0.75rem !important; }
+    }
+</style>
 
 <MaterialSelectionModal @bind-IsOpen="isSelectionModalOpen" OnMaterialsSelected="OnMaterialsSelected" />
 

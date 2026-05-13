@@ -14,8 +14,9 @@
     "LAN (Cần cho Camera trực tiếp)": {
       "commandName": "Project",
       "dotnetRunMessages": true,
-      "launchBrowser": false,
-      "applicationUrl": "https://localhost:7164;https://0.0.0.0:7164;http://localhost:5134;http://0.0.0.0:5134",
+      "launchBrowser": true,
+      "launchUrl": "",
+      "applicationUrl": "https://localhost:7164;http://localhost:5134;https://0.0.0.0:7164;http://0.0.0.0:5134",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

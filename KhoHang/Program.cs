@@ -23,27 +23,50 @@ using (var scope = app.Services.CreateScope())
 {
     var dbFactory = scope.ServiceProvider.GetRequiredService<IDbContextFactory<KhoDbContext>>();
     using var context = dbFactory.CreateDbContext();
-    context.Database.EnsureCreated();
+    await context.Database.EnsureCreatedAsync();
+
+    // Thủ thuật cập nhật schema thủ công cho hệ thống dùng EnsureCreated
+    var sql = @"
+        CREATE TABLE IF NOT EXISTS ""MaterialLots"" (
+            ""Id"" INTEGER NOT NULL CONSTRAINT ""PK_MaterialLots"" PRIMARY KEY AUTOINCREMENT,
+            ""MaterialId"" INTEGER NOT NULL,
+            ""LotNumber"" TEXT NOT NULL,
+            ""StockQty"" REAL NOT NULL,
+            ""BasePrice"" TEXT NULL,
+            ""ProductionDate"" TEXT NULL,
+            ""Note"" TEXT NULL,
+            CONSTRAINT ""FK_MaterialLots_Materials_MaterialId"" FOREIGN KEY (""MaterialId"") REFERENCES ""Materials"" (""Id"") ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS ""IX_MaterialLots_MaterialId"" ON ""MaterialLots"" (""MaterialId"");
+    ";
+    await context.Database.ExecuteSqlRawAsync(sql);
+
+    // Thêm cột vào các bảng liên quan nếu chưa có
+    try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE MaterialLots ADD COLUMN BasePrice TEXT;"); } catch { }
+    try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE PurchaseOrderItems ADD COLUMN BasePrice TEXT;"); } catch { }
+    
+    var tables = new[] { "PurchaseOrderItems", "DeliveryItems" };
+    foreach (var table in tables)
+    {
+        try { await context.Database.ExecuteSqlRawAsync($"ALTER TABLE {table} ADD COLUMN LotNumber TEXT;"); } catch { }
+    }
     
     var service = scope.ServiceProvider.GetRequiredService<WarehouseService>();
-    service.SeedDataAsync().Wait();
+    await service.SeedDataAsync();
 }
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
 
 app.UseHttpsRedirection();
-
-
+app.UseStaticFiles(); // Thay cho MapStaticAssets để tương thích ngược
 app.UseAntiforgery();
 
-app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-app.Run();
+await app.RunAsync();

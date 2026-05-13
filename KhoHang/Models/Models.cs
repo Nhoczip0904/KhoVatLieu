@@ -30,6 +30,7 @@ public class Material
     public decimal CostPrice { get; set; }
     public decimal BasePrice { get; set; }
     public double StockQty { get; set; } = 0;
+    public double MinStockLevel { get; set; } = 0;
     public string? ImageUrl { get; set; }
     
     public int? CategoryId { get; set; }
@@ -37,6 +38,22 @@ public class Material
 
     public int? SupplierId { get; set; }
     public Supplier? Supplier { get; set; }
+
+    public List<MaterialLot> Lots { get; set; } = new();
+}
+
+public class MaterialLot
+{
+    public int Id { get; set; }
+    public int MaterialId { get; set; }
+    public Material? Material { get; set; }
+    
+    [Required]
+    public string LotNumber { get; set; } = string.Empty;
+    public double StockQty { get; set; }
+    public decimal? BasePrice { get; set; } // Custom selling price for this lot
+    public DateTime? ProductionDate { get; set; }
+    public string? Note { get; set; } // For color variations, etc.
 }
 
 public class Customer
@@ -112,6 +129,8 @@ public class DeliveryItem
     public decimal Price { get; set; }
     public double Qty { get; set; }
     public decimal Subtotal { get; set; }
+
+    public string? LotNumber { get; set; } // Which lot was delivered
 }
 
 public class Payment
@@ -123,4 +142,79 @@ public class Payment
     public DateTime Timestamp { get; set; } = DateTime.Now;
     public string Method { get; set; } = "Tiền mặt";
     public string? Note { get; set; }
+}
+
+// --- PROCUREMENT & SUPPLIER DEBT ---
+public class PurchaseOrder
+{
+    public int Id { get; set; }
+    public int SupplierId { get; set; }
+    public Supplier? Supplier { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.Now;
+    public decimal TotalAmount { get; set; }
+    public string? Note { get; set; }
+    
+    public List<PurchaseOrderItem> Items { get; set; } = new();
+}
+
+public class PurchaseOrderItem
+{
+    public int Id { get; set; }
+    public int PurchaseOrderId { get; set; }
+    public int MaterialId { get; set; }
+    public Material? Material { get; set; }
+    public double Qty { get; set; }
+    public decimal CostPrice { get; set; }
+    public decimal Subtotal { get; set; }
+
+    public string? LotNumber { get; set; } // Specified during import
+    public decimal? BasePrice { get; set; } // Proposed selling price for this lot
+}
+
+public class SupplierPayment
+{
+    public int Id { get; set; }
+    public int SupplierId { get; set; }
+    public Supplier? Supplier { get; set; }
+    public decimal Amount { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.Now;
+    public string Method { get; set; } = "Tiền mặt";
+    public string? Note { get; set; }
+}
+
+// --- ADVANCED INVENTORY ---
+public class InventoryTransaction
+{
+    public int Id { get; set; }
+    public int MaterialId { get; set; }
+    public Material? Material { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.Now;
+    public string Type { get; set; } = string.Empty; // "Nhập", "Xuất", "Điều chỉnh", "Trả hàng"
+    public double QtyChange { get; set; }
+    public string? ReferenceId { get; set; } // ID of PurchaseOrder, Delivery, etc.
+    public string? Note { get; set; }
+}
+
+// --- CUSTOMER RETURNS ---
+public class CustomerReturn
+{
+    public int Id { get; set; }
+    public int ProjectId { get; set; }
+    public Project? Project { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.Now;
+    public decimal TotalAmount { get; set; } // Amount to deduct from Project
+    public string? Note { get; set; }
+    
+    public List<CustomerReturnItem> Items { get; set; } = new();
+}
+
+public class CustomerReturnItem
+{
+    public int Id { get; set; }
+    public int CustomerReturnId { get; set; }
+    public int ProjectMaterialId { get; set; }
+    public ProjectMaterial? ProjectMaterial { get; set; }
+    public double Qty { get; set; }
+    public decimal Price { get; set; }
+    public decimal Subtotal { get; set; }
 }

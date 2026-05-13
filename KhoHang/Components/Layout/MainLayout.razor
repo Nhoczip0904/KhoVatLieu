@@ -1,29 +1,50 @@
 @inherits LayoutComponentBase
 
-<div class="page @(isSidebarOpen ? "sidebar-collapsed" : "")">
+<div class="page @(isSidebarOpen ? "sidebar-open" : "") @(isSidebarCollapsed ? "sidebar-collapsed" : "")">
+    <div class="sidebar-backdrop" @onclick="ToggleSidebar"></div>
+    
     <div class="sidebar">
         <div class="sidebar-header" style="padding-bottom: 2rem; display: flex; align-items: center; justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 0.5rem;">
                 <i class="bi bi-box-seam" style="font-size: 1.5rem; color: var(--accent-primary);"></i>
                 <span class="sidebar-text" style="font-size: 1.25rem; font-weight: 700; letter-spacing: -0.5px;">KHO HÀNG V1</span>
             </div>
-            <button class="btn-toggle-sidebar d-none d-lg-block" @onclick="ToggleSidebar">
+            <button class="btn-toggle-sidebar d-none d-lg-block" @onclick="ToggleCollapse">
                 <i class="bi bi-text-indent-left"></i>
             </button>
         </div>
         
-        <nav style="flex: 1;">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+        <nav style="flex: 1; display: flex; flex-direction: column; gap: 0.25rem;">
+            <div class="sidebar-section-header sidebar-text">HỆ THỐNG</div>
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All" @onclick="CloseSidebarOnMobile">
                 <i class="bi bi-house-door"></i> <span class="sidebar-text">Tổng quan</span>
             </NavLink>
-            <NavLink class="nav-link" href="projects">
-                <i class="bi bi-briefcase"></i> <span class="sidebar-text">Quản lý Dự án</span>
+
+            <div class="sidebar-section-header sidebar-text">QUẢN LÝ BÁN HÀNG</div>
+            <NavLink class="nav-link" href="projects" @onclick="CloseSidebarOnMobile">
+                <i class="bi bi-briefcase"></i> <span class="sidebar-text">Dự án & Xuất kho</span>
             </NavLink>
-            <NavLink class="nav-link" href="catalog">
-                <i class="bi bi-journal-text"></i> <span class="sidebar-text">Danh mục sản phẩm</span>
-            </NavLink>
-            <NavLink class="nav-link" href="customers">
+            <NavLink class="nav-link" href="customers" @onclick="CloseSidebarOnMobile">
                 <i class="bi bi-person-badge"></i> <span class="sidebar-text">Khách hàng</span>
+            </NavLink>
+
+            <div class="sidebar-section-header sidebar-text">QUẢN LÝ KHO</div>
+            <NavLink class="nav-link" href="catalog" @onclick="CloseSidebarOnMobile">
+                <i class="bi bi-journal-text"></i> <span class="sidebar-text">Danh mục vật tư</span>
+            </NavLink>
+            <NavLink class="nav-link" href="procurement" @onclick="CloseSidebarOnMobile">
+                <i class="bi bi-box-arrow-in-down"></i> <span class="sidebar-text">Nhập Hàng (PO)</span>
+            </NavLink>
+            <NavLink class="nav-link" href="inventory-ledger" @onclick="CloseSidebarOnMobile">
+                <i class="bi bi-journal-check"></i> <span class="sidebar-text">Sổ Kho & Tồn Kho</span>
+            </NavLink>
+            <NavLink class="nav-link" href="suppliers" @onclick="CloseSidebarOnMobile">
+                <i class="bi bi-truck"></i> <span class="sidebar-text">Nhà cung cấp</span>
+            </NavLink>
+
+            <div class="sidebar-section-header sidebar-text">TÀI CHÍNH</div>
+            <NavLink class="nav-link" href="supplier-debt" @onclick="CloseSidebarOnMobile">
+                <i class="bi bi-wallet2"></i> <span class="sidebar-text">Công Nợ NCC</span>
             </NavLink>
         </nav>
 
@@ -34,7 +55,7 @@
 
     <main class="main-content">
         <div class="top-header" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
-            <button class="btn-hamburger" @onclick="ToggleSidebar">
+            <button class="btn-hamburger d-lg-none" @onclick="ToggleSidebar">
                 <i class="bi bi-list"></i>
             </button>
             <div style="font-weight: 600; color: var(--text-secondary);">Hệ thống Quản lý Kho</div>
@@ -45,8 +66,11 @@
 
 <style>
     .page { display: flex; min-height: 100vh; }
-    .sidebar { width: 280px; transition: width 0.3s ease; }
+    .sidebar { width: 280px; transition: all 0.3s ease; }
+    .main-content { margin-left: 280px; transition: all 0.3s ease; flex: 1; }
+
     .sidebar-collapsed .sidebar { width: 80px; padding: 1.5rem 1rem; }
+    .sidebar-collapsed .main-content { margin-left: 80px; }
     .sidebar-collapsed .sidebar-text { display: none; }
     .sidebar-collapsed .nav-link { justify-content: center; padding: 0.75rem; }
     .sidebar-collapsed .nav-link i { font-size: 1.5rem; margin: 0; }
@@ -75,13 +99,35 @@
         font-size: 1.25rem;
     }
     .btn-toggle-sidebar:hover { opacity: 1; }
+    .sidebar-section-header {
+        font-size: 0.65rem;
+        font-weight: 800;
+        color: #64748b;
+        padding: 1.25rem 1.5rem 0.5rem 1.5rem;
+        letter-spacing: 1px;
+    }
+
+    .sidebar-collapsed .sidebar-section-header {
+        display: none;
+    }
 </style>
 
 @code {
     private bool isSidebarOpen = false;
+    private bool isSidebarCollapsed = false;
 
     private void ToggleSidebar()
     {
         isSidebarOpen = !isSidebarOpen;
+    }
+
+    private void ToggleCollapse()
+    {
+        isSidebarCollapsed = !isSidebarCollapsed;
+    }
+
+    private void CloseSidebarOnMobile()
+    {
+        isSidebarOpen = false;
     }
 }

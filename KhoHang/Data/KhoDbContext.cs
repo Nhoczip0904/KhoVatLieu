@@ -16,6 +16,14 @@ public class KhoDbContext : DbContext
     public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Payment> Payments => Set<Payment>();
+    
+    public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
+    public DbSet<PurchaseOrderItem> PurchaseOrderItems => Set<PurchaseOrderItem>();
+    public DbSet<SupplierPayment> SupplierPayments => Set<SupplierPayment>();
+    public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
+    public DbSet<CustomerReturn> CustomerReturns => Set<CustomerReturn>();
+    public DbSet<CustomerReturnItem> CustomerReturnItems => Set<CustomerReturnItem>();
+    public DbSet<MaterialLot> MaterialLots => Set<MaterialLot>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -23,6 +31,11 @@ public class KhoDbContext : DbContext
             .HasMany(p => p.Materials)
             .WithOne()
             .HasForeignKey(pm => pm.ProjectId);
+
+        modelBuilder.Entity<Material>()
+            .HasMany(m => m.Lots)
+            .WithOne(l => l.Material)
+            .HasForeignKey(l => l.MaterialId);
 
         modelBuilder.Entity<Project>()
             .HasMany(p => p.Deliveries)
@@ -38,5 +51,15 @@ public class KhoDbContext : DbContext
             .HasMany(p => p.Payments)
             .WithOne(p => p.Project)
             .HasForeignKey(p => p.ProjectId);
+            
+        modelBuilder.Entity<PurchaseOrder>()
+            .HasMany(p => p.Items)
+            .WithOne()
+            .HasForeignKey(pi => pi.PurchaseOrderId);
+
+        modelBuilder.Entity<CustomerReturn>()
+            .HasMany(r => r.Items)
+            .WithOne()
+            .HasForeignKey(ri => ri.CustomerReturnId);
     }
 }

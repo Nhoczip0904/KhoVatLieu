@@ -65,3 +65,67 @@ window.scanImage = (base64Data, dotNetHelper) => {
             alert("Không tìm thấy mã QR trong ảnh này. Hãy thử chụp rõ hơn!");
         });
 };
+window.printQR = (name, url) => {
+    const printWin = window.open('', '', 'width=400,height=600');
+    printWin.document.write(`
+        <html>
+            <head>
+                <title>In mã QR - ${name}</title>
+                <style>
+                    body { text-align: center; font-family: 'Inter', sans-serif; padding: 40px; }
+                    .qr-container { border: 2px solid #000; padding: 20px; display: inline-block; border-radius: 10px; }
+                    h2 { margin: 0 0 10px 0; font-size: 24px; }
+                    .info { margin-top: 10px; font-size: 14px; font-weight: bold; }
+                </style>
+            </head>
+            <body>
+                <div class="qr-container">
+                    <h2>${name}</h2>
+                    <img src="${url}" style="width: 250px; height: 250px;" />
+                    <div class="info">KHO VẬT LIỆU</div>
+                </div>
+                <script>
+                    window.onload = () => {
+                        setTimeout(() => {
+                            window.print();
+                            window.close();
+                        }, 500);
+                    };
+                </script>
+            </body>
+        </html>
+    `);
+    printWin.document.close();
+};
+window.downloadExcel = (htmlContent, fileName) => {
+    const template = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+            <meta charset="utf-8" />
+            <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Sheet1</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+            <style>
+                table { border-collapse: collapse; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+                .header { background-color: #10b981; color: white; font-weight: bold; text-align: center; }
+                .label { font-weight: bold; background-color: #f8fafc; }
+                .number { text-align: right; }
+                .center { text-align: center; }
+                td, th { border: 1px solid #e2e8f0; padding: 8px; }
+                .title { font-size: 18px; font-weight: bold; color: #059669; }
+                .footer { font-weight: bold; color: #ef4444; font-size: 14px; }
+            </style>
+        </head>
+        <body>
+            ${htmlContent}
+        </body>
+        </html>`;
+
+    const blob = new Blob([template], { type: 'application/vnd.ms-excel' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", fileName + ".xls");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};

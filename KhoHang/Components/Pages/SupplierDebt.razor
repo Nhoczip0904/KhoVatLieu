@@ -1,0 +1,198 @@
+@page "/supplier-debt"
+@inject KhoHang.Services.WarehouseService WarehouseService
+@using KhoHang.Models
+
+<PageTitle>Công Nợ Nhà Cung Cấp</PageTitle>
+
+<div class="fade-in">
+    <div class="header-stack" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2.5rem; gap: 1rem;">
+        <div>
+            <h1 class="responsive-title" style="font-size: 2.5rem; font-weight: 800; font-family: 'Outfit'; margin: 0; color: #0f172a;">Công nợ Nhà cung cấp</h1>
+            <p style="color: var(--text-secondary); margin-top: 0.5rem;">Quản lý tiền hàng và lịch sử thanh toán cho các đơn vị cung cấp.</p>
+        </div>
+    </div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tên Nhà cung cấp</th>
+                        <th>Số điện thoại</th>
+                        <th class="text-end">Tổng tiền nhập</th>
+                        <th class="text-end">Đã thanh toán</th>
+                        <th class="text-end">Công nợ hiện tại</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var debt in supplierDebts)
+                    {
+                        <tr>
+                            <td><strong>@debt.Supplier.Name</strong></td>
+                            <td>@debt.Supplier.Phone</td>
+                            <td class="text-end text-primary">@debt.TotalPurchased.ToString("N0") đ</td>
+                            <td class="text-end text-success">@debt.TotalPaid.ToString("N0") đ</td>
+                            <td class="text-end fw-bold text-danger">@debt.CurrentDebt.ToString("N0") đ</td>
+                            <td>
+                                <button class="btn btn-sm btn-primary" @onclick="() => OpenPaymentModal(debt.Supplier, debt.CurrentDebt)" disabled="@(debt.CurrentDebt <= 0)">
+                                    <i class="bi bi-cash-coin"></i> Trả nợ
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                    @if (!supplierDebts.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">Chưa có dữ liệu nhà cung cấp.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white">
+        <h5 class="mb-0 mt-2">Lịch sử thanh toán cho Nhà cung cấp</h5>
+    </div>
+    <div class="card-body">
+        <table class="table table-sm table-striped">
+            <thead>
+                <tr>
+                    <th>Ngày thanh toán</th>
+                    <th>Nhà cung cấp</th>
+                    <th class="text-end">Số tiền</th>
+                    <th>Hình thức</th>
+                    <th>Ghi chú</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var payment in payments)
+                {
+                    <tr>
+                        <td>@payment.Timestamp.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@payment.Supplier?.Name</td>
+                        <td class="text-end text-success fw-bold">@payment.Amount.ToString("N0") đ</td>
+                        <td>@payment.Method</td>
+                        <td>@payment.Note</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Payment -->
+@if (isPaymentModalOpen && selectedSupplier != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Thanh toán cho @selectedSupplier.Name</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="ClosePaymentModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        Công nợ hiện tại: <strong>@maxDebtToPay.ToString("N0") đ</strong>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Số tiền trả (VNĐ)</label>
+                        <input type="number" class="form-control" @bind="newPayment.Amount" min="0" max="@maxDebtToPay" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Hình thức</label>
+                        <select class="form-select" @bind="newPayment.Method">
+                            <option value="Tiền mặt">Tiền mặt</option>
+                            <option value="Chuyển khoản">Chuyển khoản</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ghi chú</label>
+                        <textarea class="form-control" rows="2" @bind="newPayment.Note"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="ClosePaymentModal">Hủy</button>
+                    <button type="button" class="btn btn-success" @onclick="SavePayment" disabled="@(!CanSavePayment)">Xác nhận</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<SupplierDebtModel> supplierDebts = new();
+    private List<SupplierPayment> payments = new();
+    
+    private bool isPaymentModalOpen = false;
+    private Supplier? selectedSupplier;
+    private SupplierPayment newPayment = new();
+    private decimal maxDebtToPay = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        var suppliers = await WarehouseService.GetSuppliersAsync();
+        var allPOs = await WarehouseService.GetPurchaseOrdersAsync();
+        payments = await WarehouseService.GetSupplierPaymentsAsync();
+        
+        supplierDebts = suppliers.Select(s => 
+        {
+            var totalPurchased = allPOs.Where(po => po.SupplierId == s.Id).Sum(po => po.TotalAmount);
+            var totalPaid = payments.Where(p => p.SupplierId == s.Id).Sum(p => p.Amount);
+            return new SupplierDebtModel
+            {
+                Supplier = s,
+                TotalPurchased = totalPurchased,
+                TotalPaid = totalPaid
+            };
+        }).ToList();
+    }
+
+    private void OpenPaymentModal(Supplier supplier, decimal debt)
+    {
+        selectedSupplier = supplier;
+        maxDebtToPay = debt;
+        newPayment = new SupplierPayment 
+        { 
+            SupplierId = supplier.Id,
+            Amount = debt,
+            Timestamp = DateTime.Now,
+            Method = "Chuyển khoản"
+        };
+        isPaymentModalOpen = true;
+    }
+
+    private void ClosePaymentModal()
+    {
+        isPaymentModalOpen = false;
+        selectedSupplier = null;
+    }
+
+    private bool CanSavePayment => newPayment.Amount > 0 && newPayment.Amount <= maxDebtToPay;
+
+    private async Task SavePayment()
+    {
+        await WarehouseService.AddSupplierPaymentAsync(newPayment);
+        await LoadData();
+        ClosePaymentModal();
+    }
+
+    private class SupplierDebtModel
+    {
+        public required Supplier Supplier { get; set; }
+        public decimal TotalPurchased { get; set; }
+        public decimal TotalPaid { get; set; }
+        public decimal CurrentDebt => TotalPurchased - TotalPaid;
+    }
+}
+</div>

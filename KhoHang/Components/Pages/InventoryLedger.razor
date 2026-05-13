@@ -1,0 +1,249 @@
+@page "/inventory-ledger"
+@inject KhoHang.Services.WarehouseService WarehouseService
+@using KhoHang.Models
+
+<PageTitle>Sổ Kho & Tồn Kho</PageTitle>
+
+<div class="fade-in">
+    <div class="header-stack" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2.5rem; gap: 1rem;">
+        <div>
+            <h1 class="responsive-title" style="font-size: 2.5rem; font-weight: 800; font-family: 'Outfit'; margin: 0; color: #0f172a;">Sổ Kho & Tồn Kho</h1>
+            <p style="color: var(--text-secondary); margin-top: 0.5rem;">Kiểm soát biến động tồn kho và cảnh báo định mức.</p>
+        </div>
+    </div>
+
+<!-- Cảnh báo Tồn kho -->
+@if (lowStockMaterials.Any())
+{
+    <div class="alert alert-warning shadow-sm border-start border-warning border-4 mb-4">
+        <h5><i class="bi bi-exclamation-triangle-fill"></i> Cảnh báo Tồn Kho Thấp</h5>
+        <p class="mb-2">Có <strong>@lowStockMaterials.Count</strong> vật tư đang ở mức tồn kho dưới định mức tối thiểu:</p>
+        <ul class="mb-0">
+            @foreach (var mat in lowStockMaterials)
+            {
+                <li>
+                    <strong>@mat.Name</strong> - Hiện còn: <span class="text-danger fw-bold">@mat.StockQty</span> @mat.Unit
+                    (Tối thiểu: @mat.MinStockLevel) - <span class="text-muted">Nhà cung cấp: @(mat.Supplier?.Name ?? "N/A")</span>
+                </li>
+            }
+        </ul>
+    </div>
+}
+<!-- Filters -->
+<div class="glass-card mb-4" style="padding: 1.5rem;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; align-items: flex-end;">
+        <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.5rem; display: block;">Loại giao dịch</label>
+            <select class="form-select-modern" @bind="filterType" @bind:after="ApplyFilters">
+                <option value="">Tất cả</option>
+                <option value="Nhập">Nhập hàng</option>
+                <option value="Xuất">Xuất kho</option>
+                <option value="Điều chỉnh">Điều chỉnh</option>
+                <option value="Trả hàng">Trả hàng</option>
+            </select>
+        </div>
+        <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.5rem; display: block;">Từ ngày</label>
+            <input type="date" class="form-input-modern" @bind="fromDate" @bind:after="ApplyFilters" />
+        </div>
+        <div>
+            <label style="font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.5rem; display: block;">Đến ngày</label>
+            <input type="date" class="form-input-modern" @bind="toDate" @bind:after="ApplyFilters" />
+        </div>
+        <div>
+            <div style="font-size: 0.65rem; color: var(--text-muted); text-align: center; font-style: italic;">
+                <i class="bi bi-info-circle"></i> Danh sách tự động cập nhật
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-white">
+        <h5 class="mb-0 mt-2">Lịch sử Biến động Kho</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Ngày giờ</th>
+                        <th>Loại phiếu</th>
+                        <th>Vật tư</th>
+                        <th class="text-end">Số lượng thay đổi</th>
+                        <th>Ghi chú</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var tran in pagedTransactions)
+                    {
+                        <tr>
+                            <td>@tran.Timestamp.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                            <td>
+                                @if (tran.Type == "Nhập" || tran.Type == "Trả hàng")
+                                {
+                                    <span style="background: #d1fae5; color: #065f46; padding: 0.35rem 0.75rem; border-radius: 8px; font-weight: 700; font-size: 0.75rem;">
+                                        <i class="bi bi-arrow-down-left"></i> @tran.Type
+                                    </span>
+                                }
+                                else if (tran.Type == "Xuất")
+                                {
+                                    <span style="background: #fef2f2; color: #dc2626; padding: 0.35rem 0.75rem; border-radius: 8px; font-weight: 700; font-size: 0.75rem;">
+                                        <i class="bi bi-arrow-up-right"></i> @tran.Type
+                                    </span>
+                                }
+                                else if (tran.Type == "Điều chỉnh")
+                                {
+                                    <span style="background: #eff6ff; color: #1e40af; padding: 0.35rem 0.75rem; border-radius: 8px; font-weight: 700; font-size: 0.75rem;">
+                                        <i class="bi bi-sliders"></i> @tran.Type
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">@tran.Type</span>
+                                }
+                            </td>
+                            <td><strong>@tran.Material?.Name</strong></td>
+                            <td class="text-end fw-bold @(tran.Type == "Xuất" ? "text-danger" : "text-success")">
+                                @(tran.Type == "Xuất" ? "-" : "+")@tran.QtyChange @tran.Material?.Unit
+                            </td>
+                            <td style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.4;">
+                                @tran.Note
+                            </td>
+                        </tr>
+                    }
+                    @if (!transactions.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">Chưa có giao dịch biến động kho nào.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (totalPages > 1)
+        {
+            <div style="text-align: center; width: 100%; margin-top: 1.5rem; padding: 0.5rem 0;">
+                <div class="pagination-container" style="display: inline-flex; justify-content: center; align-items: center; gap: 1rem; margin: 0; padding: 0;">
+                <button class="btn-page nav-btn" disabled="@(currentPage == 1)" @onclick="() => currentPage--" style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <div class="page-info" style="font-weight: 700; color: #475569; font-size: 0.9rem;">Trang @currentPage / @totalPages</div>
+                <button class="btn-page nav-btn" disabled="@(currentPage >= totalPages)" @onclick="() => currentPage++" style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+        }
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+        <h5 class="mb-0">Tồn Kho Hiện Tại</h5>
+        <div style="width: 300px;">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                <input type="text" class="form-control border-start-0" placeholder="Tìm tên vật tư..." @bind="stockSearch" @bind:event="oninput" @onkeyup="ApplyStockFilters" />
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Vật tư</th>
+                        <th>Nhóm</th>
+                        <th>Trung gian</th>
+                        <th class="text-end">Tồn kho</th>
+                        <th class="text-end">Định mức</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in pagedMaterials)
+                    {
+                        <tr>
+                            <td class="fw-bold">@m.Name</td>
+                            <td><span class="badge bg-light text-dark">@m.Category?.Name</span></td>
+                            <td class="text-muted small">@m.Supplier?.Name</td>
+                            <td class="text-end fw-bold @(m.StockQty <= m.MinStockLevel ? "text-danger" : "text-success")">
+                                @m.StockQty.ToString("N0") @m.Unit
+                            </td>
+                            <td class="text-end text-muted">@m.MinStockLevel.ToString("N0")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (totalStockPages > 1)
+        {
+            <div style="text-align: center; width: 100%; margin-top: 1.5rem; padding: 0.5rem 0;">
+                <div class="pagination-container" style="display: inline-flex; justify-content: center; align-items: center; gap: 1rem; margin: 0; padding: 0;">
+                <button class="btn-page nav-btn" disabled="@(currentStockPage == 1)" @onclick="() => currentStockPage--" style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <div class="page-info" style="font-weight: 700; color: #475569; font-size: 0.9rem;">Trang @currentStockPage / @totalStockPages</div>
+                <button class="btn-page nav-btn" disabled="@(currentStockPage >= totalStockPages)" @onclick="() => currentStockPage++" style="background: white; border: 1px solid #e2e8f0; border-radius: 8px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<InventoryTransaction> allTransactions = new();
+    private List<InventoryTransaction> transactions = new();
+    private List<Material> lowStockMaterials = new();
+    private List<Material> allMaterials = new();
+    private List<Material> filteredMaterials = new();
+
+    private string filterType = "";
+    private DateTime? fromDate = DateTime.Today.AddDays(-30);
+    private DateTime? toDate = DateTime.Today;
+    private string stockSearch = "";
+
+    // Phân trang Giao dịch
+    private int currentPage = 1;
+    private int pageSize = 15;
+    private int totalPages => (int)Math.Ceiling((double)transactions.Count / pageSize);
+    private IEnumerable<InventoryTransaction> pagedTransactions => transactions.Skip((currentPage - 1) * pageSize).Take(pageSize);
+
+    // Phân trang Tồn kho
+    private int currentStockPage = 1;
+    private int pageSizeStock = 10;
+    private int totalStockPages => (int)Math.Ceiling((double)filteredMaterials.Count / pageSizeStock);
+    private IEnumerable<Material> pagedMaterials => filteredMaterials.Skip((currentStockPage - 1) * pageSizeStock).Take(pageSizeStock);
+
+    protected override async Task OnInitializedAsync()
+    {
+        allTransactions = await WarehouseService.GetInventoryTransactionsAsync();
+        lowStockMaterials = await WarehouseService.GetLowStockMaterialsAsync();
+        allMaterials = await WarehouseService.GetMasterMaterialsAsync();
+        ApplyFilters();
+        ApplyStockFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        transactions = allTransactions
+            .Where(t => (string.IsNullOrEmpty(filterType) || t.Type == filterType) &&
+                        (!fromDate.HasValue || t.Timestamp.Date >= fromDate.Value.Date) &&
+                        (!toDate.HasValue || t.Timestamp.Date <= toDate.Value.Date))
+            .ToList();
+        currentPage = 1; // Reset về trang 1 khi lọc
+    }
+
+    private void ApplyStockFilters()
+    {
+        filteredMaterials = allMaterials
+            .Where(m => string.IsNullOrEmpty(stockSearch) || m.Name.Contains(stockSearch, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        currentStockPage = 1;
+    }
+}
+</div>
