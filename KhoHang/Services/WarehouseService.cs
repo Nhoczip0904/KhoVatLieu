@@ -71,16 +71,44 @@ public class WarehouseService
         // 3. Materials
         var materials = new List<Material>
         {
-            new Material { Name = "Cát vàng", Unit = "Khối", CostPrice = 300000, BasePrice = 350000, CategoryId = categories[0].Id, SupplierId = suppliers[0].Id, StockQty = 500 },
-            new Material { Name = "Cát xây tô", Unit = "Khối", CostPrice = 180000, BasePrice = 220000, CategoryId = categories[0].Id, SupplierId = suppliers[1].Id, StockQty = 1000 },
-            new Material { Name = "Gạch ống 8x18", Unit = "Viên", CostPrice = 900, BasePrice = 1200, CategoryId = categories[2].Id, SupplierId = suppliers[0].Id, StockQty = 15000 },
-            new Material { Name = "Xi măng Hà Tiên", Unit = "Bao", CostPrice = 85000, BasePrice = 95000, CategoryId = categories[3].Id, SupplierId = suppliers[1].Id, StockQty = 300 },
-            new Material { Name = "Thép Hòa Phát phi 10", Unit = "Cây", CostPrice = 110000, BasePrice = 125000, CategoryId = categories[4].Id, SupplierId = suppliers[0].Id, StockQty = 200 },
-            new Material { Name = "Thép cuộn", Unit = "Kg", CostPrice = 15000, BasePrice = 17500, CategoryId = categories[4].Id, SupplierId = suppliers[0].Id, StockQty = 5000 },
-            new Material { Name = "Gạch thẻ", Unit = "Viên", CostPrice = 1100, BasePrice = 1400, CategoryId = categories[2].Id, SupplierId = suppliers[0].Id, StockQty = 20000 },
-            new Material { Name = "Xi măng trắng", Unit = "Bao", CostPrice = 120000, BasePrice = 135000, CategoryId = categories[3].Id, SupplierId = suppliers[1].Id, StockQty = 150 }
+            new Material { Name = "Cát vàng", Unit = "Khối", CategoryId = categories[0].Id, SupplierId = suppliers[0].Id, StockQty = 500 },
+            new Material { Name = "Cát xây tô", Unit = "Khối", CategoryId = categories[0].Id, SupplierId = suppliers[1].Id, StockQty = 1000 },
+            new Material { Name = "Gạch ống 8x18", Unit = "Viên", CategoryId = categories[2].Id, SupplierId = suppliers[0].Id, StockQty = 15000 },
+            new Material { Name = "Xi măng Hà Tiên", Unit = "Bao", CategoryId = categories[3].Id, SupplierId = suppliers[1].Id, StockQty = 300 },
+            new Material { Name = "Thép Hòa Phát phi 10", Unit = "Cây", CategoryId = categories[4].Id, SupplierId = suppliers[0].Id, StockQty = 200 },
+            new Material { Name = "Thép cuộn", Unit = "Kg", CategoryId = categories[4].Id, SupplierId = suppliers[0].Id, StockQty = 5000 },
+            new Material { Name = "Gạch thẻ", Unit = "Viên", CategoryId = categories[2].Id, SupplierId = suppliers[0].Id, StockQty = 20000 },
+            new Material { Name = "Xi măng trắng", Unit = "Bao", CategoryId = categories[3].Id, SupplierId = suppliers[1].Id, StockQty = 150 }
         };
         context.Materials.AddRange(materials);
+        await context.SaveChangesAsync();
+
+        // 3.1 Create Default Lots
+        var initialPrices = new Dictionary<string, (decimal Cost, decimal Base)>
+        {
+            { "Cát vàng", (300000, 350000) },
+            { "Cát xây tô", (180000, 220000) },
+            { "Gạch ống 8x18", (900, 1200) },
+            { "Xi măng Hà Tiên", (85000, 95000) },
+            { "Thép Hòa Phát phi 10", (110000, 125000) },
+            { "Thép cuộn", (15000, 17500) },
+            { "Gạch thẻ", (1100, 1400) },
+            { "Xi măng trắng", (120000, 135000) }
+        };
+
+        foreach (var m in materials)
+        {
+            var prices = initialPrices.ContainsKey(m.Name) ? initialPrices[m.Name] : (0, 0);
+            context.MaterialLots.Add(new MaterialLot
+            {
+                MaterialId = m.Id,
+                LotNumber = "Mặc định",
+                StockQty = m.StockQty,
+                CostPrice = prices.Cost,
+                BasePrice = prices.Base,
+                Note = "Lô khởi tạo hệ thống"
+            });
+        }
         await context.SaveChangesAsync();
 
         // 4. Customers
@@ -187,10 +215,22 @@ public class WarehouseService
             .FirstOrDefaultAsync(m => m.Id == id);
     }
 
-    public async Task AddMasterMaterialAsync(Material material)
+    public async Task AddMasterMaterialAsync(Material material, decimal costPrice, decimal basePrice)
     {
         using var context = _dbFactory.CreateDbContext();
         context.Materials.Add(material);
+        await context.SaveChangesAsync();
+
+        // Tự động tạo lô Mặc định cho sản phẩm mới
+        context.MaterialLots.Add(new MaterialLot
+        {
+            MaterialId = material.Id,
+            LotNumber = "Mặc định",
+            StockQty = material.StockQty,
+            CostPrice = costPrice,
+            BasePrice = basePrice,
+            Note = "Lô khởi tạo tự động"
+        });
         await context.SaveChangesAsync();
     }
 
@@ -359,6 +399,8 @@ public class WarehouseService
             delivery.Project = await context.Projects
                 .Include(p => p.Customer)
                 .Include(p => p.Deliveries)
+                    .ThenInclude(d => d.Items)
+                .Include(p => p.Payments)
                 .FirstOrDefaultAsync(p => p.Id == delivery.ProjectId);
         }
 
@@ -448,10 +490,10 @@ public class WarehouseService
                     {
                         MaterialId = mainMaterial.Id,
                         Timestamp = delivery.Timestamp,
-                        Type = "Xuất",
+                        Type = deliveredItem.Qty < 0 ? "Trả hàng" : "Xuất",
                         QtyChange = -deliveredItem.Qty,
                         ReferenceId = delivery.Id.ToString(),
-                        Note = $"Xuất cho dự án: {delivery.Project?.CustomerName ?? "Ẩn danh"}. Lô: {deliveredItem.LotNumber ?? "N/A"}. Tổng giá trị đơn: {delivery.TotalAmount:N0}đ"
+                        Note = (deliveredItem.Qty < 0 ? "Khách trả hàng " : "Xuất ") + $"cho dự án: {delivery.Project?.CustomerName ?? "Ẩn danh"}. Lô: {deliveredItem.LotNumber ?? "N/A"}"
                     });
                 }
             }
@@ -541,7 +583,8 @@ public class WarehouseService
                     MaterialId = material.Id,
                     LotNumber = lotNum,
                     StockQty = item.Qty,
-                    BasePrice = item.BasePrice,
+                    CostPrice = item.CostPrice,
+                    BasePrice = item.BasePrice ?? 0,
                     Note = lotNum == "Mặc định" ? "Nhập kho chung" : "Nhập theo lô"
                 };
                 context.MaterialLots.Add(lot);
@@ -549,13 +592,11 @@ public class WarehouseService
             else
             {
                 lot.StockQty += item.Qty;
-                if (item.BasePrice.HasValue) lot.BasePrice = item.BasePrice;
+                lot.CostPrice = item.CostPrice; // Cập nhật giá nhập mới nhất cho lô này
+                if (item.BasePrice.HasValue) lot.BasePrice = item.BasePrice.Value;
                 context.MaterialLots.Update(lot);
             }
 
-            // Cập nhật giá gốc và tồn kho tổng
-            material.CostPrice = item.CostPrice;
-            if (item.BasePrice.HasValue && item.BasePrice > 0) material.BasePrice = item.BasePrice.Value;
             material.StockQty += item.Qty;
             
             context.Materials.Update(material);
@@ -592,6 +633,13 @@ public class WarehouseService
     }
 
     // --- Advanced Inventory Methods ---
+    public async Task RecordInventoryTransactionAsync(InventoryTransaction transaction)
+    {
+        using var context = _dbFactory.CreateDbContext();
+        context.InventoryTransactions.Add(transaction);
+        await context.SaveChangesAsync();
+    }
+
     public async Task<List<InventoryTransaction>> GetInventoryTransactionsAsync()
     {
         using var context = _dbFactory.CreateDbContext();
@@ -611,46 +659,131 @@ public class WarehouseService
     }
 
     // --- Customer Return Methods ---
-    public async Task AddCustomerReturnAsync(CustomerReturn cr)
+    public async Task<int> AddCustomerReturnAsync(CustomerReturn cr)
     {
         using var context = _dbFactory.CreateDbContext();
-        context.CustomerReturns.Add(cr);
         
+        // 1. Save the return record first
+        context.CustomerReturns.Add(cr);
+        await context.SaveChangesAsync(); 
+
+        // 2. Prepare itemized delivery records
+        var deliveryItems = new List<DeliveryItem>();
         foreach (var item in cr.Items)
         {
-            // Update project material remaining qty
             var pm = await context.ProjectMaterials.FindAsync(item.ProjectMaterialId);
             if (pm != null)
             {
-                // This means the customer returned it, so maybe add it back to main stock
-                var mainMaterial = await context.Materials.FindAsync(pm.MaterialId);
-                if (mainMaterial != null)
+                deliveryItems.Add(new DeliveryItem
                 {
-                    mainMaterial.StockQty += item.Qty;
+                    ProjectMaterialId = item.ProjectMaterialId,
+                    Name = pm.Name,
+                    Unit = pm.Unit,
+                    Qty = -item.Qty,
+                    Price = item.Price,
+                    Subtotal = -item.Subtotal,
+                    LotNumber = item.LotNumber
+                });
+
+                // Update main warehouse stock
+                var mainMat = await context.Materials.FindAsync(pm.MaterialId);
+                if (mainMat != null)
+                {
+                    mainMat.StockQty += item.Qty;
+                    var lotNum = string.IsNullOrEmpty(item.LotNumber) ? "Mặc định" : item.LotNumber;
+                    var lot = await context.MaterialLots.FirstOrDefaultAsync(l => l.MaterialId == mainMat.Id && l.LotNumber == lotNum);
+                    if (lot != null)
+                    {
+                        lot.StockQty += item.Qty;
+                        context.MaterialLots.Update(lot);
+                    }
+                    
                     context.InventoryTransactions.Add(new InventoryTransaction
                     {
-                        MaterialId = mainMaterial.Id,
-                        Timestamp = cr.Timestamp,
+                        MaterialId = mainMat.Id,
+                        Timestamp = DateTime.Now,
                         Type = "Trả hàng",
                         QtyChange = item.Qty,
-                        Note = $"Khách trả hàng. Dự án: {cr.ProjectId}"
+                        Note = $"Khách trả hàng. Dự án: {cr.ProjectId}. Lô: {lotNum}",
+                        ReferenceId = "RET-" + cr.Id
                     });
                 }
             }
         }
-        
-        // Add a negative delivery to reduce project debt
+
+        // 3. Create negative delivery for debt tracking
         var negativeDelivery = new Delivery
         {
             ProjectId = cr.ProjectId,
             Timestamp = cr.Timestamp,
             TotalAmount = -cr.TotalAmount,
-            Note = "Khách trả hàng. Phiếu trả số: " + cr.Id + " - " + cr.Note,
+            Note = "Khách trả hàng. Phiếu trả số: " + cr.Id + (string.IsNullOrEmpty(cr.Note) ? "" : " - " + cr.Note),
             ItemsTotal = -cr.TotalAmount,
-            Items = new List<DeliveryItem>()
+            Items = deliveryItems
         };
+
+        // Fallback only if somehow no items were processed
+        if (!negativeDelivery.Items.Any())
+        {
+            negativeDelivery.Items.Add(new DeliveryItem
+            {
+                Name = "Trả hàng vật tư (Tổng cộng)",
+                Qty = 1,
+                Unit = "Lượt",
+                Price = -cr.TotalAmount,
+                Subtotal = -cr.TotalAmount
+            });
+        }
+
         context.Deliveries.Add(negativeDelivery);
+        await context.SaveChangesAsync();
         
+        return negativeDelivery.Id;
+    }
+
+    public async Task AddMaterialLotAsync(MaterialLot lot)
+    {
+        using var context = _dbFactory.CreateDbContext();
+        context.MaterialLots.Add(lot);
+        await context.SaveChangesAsync();
+
+        // Cập nhật kho tổng của vật tư
+        var material = await context.Materials.FindAsync(lot.MaterialId);
+        if (material != null)
+        {
+            material.StockQty += lot.StockQty;
+            context.Materials.Update(material);
+
+            // Ghi log biến động kho nếu có số lượng khởi tạo
+            if (lot.StockQty != 0)
+            {
+                context.InventoryTransactions.Add(new InventoryTransaction
+                {
+                    MaterialId = lot.MaterialId,
+                    Timestamp = DateTime.Now,
+                    Type = "Nhập",
+                    QtyChange = lot.StockQty,
+                    Note = $"Khởi tạo lô mới: {lot.LotNumber}",
+                    ReferenceId = $"LOT-{lot.Id}"
+                });
+            }
+        }
+        await context.SaveChangesAsync();
+    }
+
+    public async Task UpdateMaterialLotFullAsync(MaterialLot lot)
+    {
+        using var context = _dbFactory.CreateDbContext();
+        context.MaterialLots.Update(lot);
+        
+        // Update aggregate stock qty on material
+        var material = await context.Materials.Include(m => m.Lots).FirstOrDefaultAsync(m => m.Id == lot.MaterialId);
+        if (material != null)
+        {
+            material.StockQty = material.Lots.Sum(l => l.StockQty);
+            context.Materials.Update(material);
+        }
+
         await context.SaveChangesAsync();
     }
 
@@ -660,6 +793,17 @@ public class WarehouseService
         return await context.MaterialLots
             .Where(l => l.MaterialId == materialId && l.StockQty != 0)
             .OrderBy(l => l.LotNumber)
+            .ToListAsync();
+    }
+
+    public async Task<List<CustomerReturn>> GetCustomerReturnsByProjectIdAsync(int projectId)
+    {
+        using var context = _dbFactory.CreateDbContext();
+        return await context.CustomerReturns
+            .Include(r => r.Items)
+                .ThenInclude(i => i.ProjectMaterial)
+            .Where(r => r.ProjectId == projectId)
+            .OrderByDescending(r => r.Timestamp)
             .ToListAsync();
     }
 }

@@ -39,7 +39,7 @@ public class KhoDbContext : DbContext
 
         modelBuilder.Entity<Project>()
             .HasMany(p => p.Deliveries)
-            .WithOne()
+            .WithOne(d => d.Project)
             .HasForeignKey(d => d.ProjectId);
 
         modelBuilder.Entity<Delivery>()

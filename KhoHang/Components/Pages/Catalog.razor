@@ -100,6 +100,10 @@
                         <!-- Right: Fields (Compact) -->
                         <div class="form-fields-grid">
                             <div>
+                                <label class="form-label-small">Mã sản phẩm</label>
+                                <input type="text" @bind="editingMaterial.ProductCode" placeholder="Mã..." class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
+                            </div>
+                            <div>
                                 <label class="form-label-small">Tên vật liệu</label>
                                 <input type="text" @bind="editingMaterial.Name" placeholder="Tên..." class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
                             </div>
@@ -139,50 +143,81 @@
                                        class="form-input-modern @(editingMaterial.Lots != null && editingMaterial.Lots.Any() ? "bg-light" : "")" 
                                        style="padding: 0.5rem 0.75rem;" />
                             </div>
-                            <div>
-                                <label class="form-label-small">Giá nhập</label>
-                                <input type="number" @bind="editingMaterial.CostPrice" class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
-                            </div>
-                            <div>
-                                <label class="form-label-small">Giá bán</label>
-                                <input type="number" @bind="editingMaterial.BasePrice" class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
-                            </div>
+                            @if (editingMaterial.Id == 0)
+                            {
+                                <div>
+                                    <label class="form-label-small">Giá nhập khởi tạo</label>
+                                    <input type="number" @bind="editingCostPrice" class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
+                                </div>
+                                <div>
+                                    <label class="form-label-small">Giá bán khởi tạo</label>
+                                    <input type="number" @bind="editingBasePrice" class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
+                                </div>
+                            }
 
                             <!-- Lot Management Section (Always Visible) -->
                             <div style="grid-column: span 3; margin-top: 1rem; background: #f1f5f9; padding: 1.25rem; border-radius: 12px; border: 1px solid #e2e8f0;">
-                                <h5 style="margin-top: 0; margin-bottom: 0.75rem; font-size: 0.8rem; font-weight: 800; color: #475569; text-transform: uppercase; display: flex; align-items: center; gap: 0.5rem;">
-                                    <i class="bi bi-layers-half"></i> Tồn kho theo Lô (Batch/Lot tracking)
-                                </h5>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                                    <h5 style="margin: 0; font-size: 0.8rem; font-weight: 800; color: #475569; text-transform: uppercase; display: flex; align-items: center; gap: 0.5rem;">
+                                        <i class="bi bi-layers-half"></i> Tồn kho theo Lô (Batch/Lot tracking)
+                                    </h5>
+                                    @if (editingMaterial.Id > 0)
+                                    {
+                                        <button class="btn-primary" style="padding: 0.35rem 0.75rem; font-size: 0.75rem;" @onclick="AddNewLot">
+                                            <i class="bi bi-plus-lg"></i> Thêm lô mới
+                                        </button>
+                                    }
+                                </div>
                                 
-                                @if (editingMaterial.Lots != null && editingMaterial.Lots.Any(l => l.StockQty != 0))
+                                @if (editingMaterial.Lots != null && editingMaterial.Lots.Any(l => l.Id == 0 || l.StockQty != 0 || originalLotQtys.ContainsKey(l.Id)))
                                 {
-                                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.75rem;">
-                                        @foreach (var lot in editingMaterial.Lots.Where(l => l.StockQty != 0 || originalLotQtys.ContainsKey(l.Id)))
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 1rem;">
+                                        @foreach (var lot in editingMaterial.Lots.Where(l => l.Id == 0 || l.StockQty != 0 || originalLotQtys.ContainsKey(l.Id)))
                                         {
                                             <div style="background: white; padding: 0.75rem; border-radius: 10px; border: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                                                    <div style="font-size: 0.8rem; font-weight: 800; color: var(--accent-primary);">Lô: @lot.LotNumber</div>
-                                                    @if (originalLotQtys.ContainsKey(lot.Id) && originalLotQtys[lot.Id] != lot.StockQty)
-                                                    {
-                                                        <span style="font-size: 0.6rem; padding: 2px 6px; background: #fef9c3; color: #854d0e; border-radius: 4px; font-weight: 700;">Đã sửa</span>
-                                                    }
+                                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                                                    <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1;">
+                                                        <span style="font-size: 0.75rem; font-weight: 700; color: #64748b; white-space: nowrap;">Tên Lô:</span>
+                                                        <input type="text" @bind="lot.LotNumber" style="border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 6px; padding: 4px 10px; font-size: 0.85rem; font-weight: 800; color: var(--accent-primary); flex: 1;" />
+                                                    </div>
                                                 </div>
-                                                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                                    <input type="number" step="any" @bind="lot.StockQty" 
-                                                           @oninput="@(e => { if(double.TryParse(e.Value?.ToString(), out var v)) { lot.StockQty = v; RecalculateTotal(); } })"
-                                                           style="width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.35rem 0.5rem; font-weight: 700; color: #0f172a;" />
-                                                    <span style="font-size: 0.75rem; font-weight: 600; color: #64748b;">@editingMaterial.Unit</span>
+                                                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                                    <div>
+                                                        <label style="font-size: 0.65rem; font-weight: 700; color: #64748b;">Số lượng (@editingMaterial.Unit)</label>
+                                                        <input type="number" step="any" @bind="lot.StockQty" 
+                                                               @oninput="@((ChangeEventArgs e) => { if(double.TryParse(e.Value?.ToString(), out var v)) { lot.StockQty = v; RecalculateTotal(); } })"
+                                                               style="width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.35rem 0.5rem; font-weight: 700;" />
+                                                    </div>
+                                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                                                        <div>
+                                                            <label style="font-size: 0.65rem; font-weight: 700; color: #64748b;">Giá nhập</label>
+                                                            <input type="number" @bind="lot.CostPrice" style="width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.3rem;" />
+                                                        </div>
+                                                        <div>
+                                                            <label style="font-size: 0.65rem; font-weight: 700; color: #64748b;">Giá bán</label>
+                                                            <input type="number" @bind="lot.BasePrice" style="width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.3rem;" />
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.25rem;">@lot.Note</div>
+                                                <div style="margin-top: 0.5rem;">
+                                                    <span style="font-size: 0.7rem; font-weight: 700; color: #64748b;">Ghi chú Lô:</span>
+                                                    <textarea @bind="lot.Note" placeholder="Ghi chú cho lô này..." style="border: 1px solid #e2e8f0; background: #f8fafc; border-radius: 6px; padding: 4px 10px; font-size: 0.8rem; width: 100%; margin-top: 0.25rem; min-height: 60px; resize: vertical;"></textarea>
+                                                </div>
                                             </div>
                                         }
                                     </div>
                                 }
                                 else
                                 {
-                                    <div style="text-align: center; padding: 1rem; color: var(--text-muted); border: 1px dashed #cbd5e1; border-radius: 10px; font-size: 0.85rem;">
+                                    <div style="text-align: center; padding: 1.5rem; color: var(--text-muted); border: 1px dashed #cbd5e1; border-radius: 10px; font-size: 0.85rem;">
                                         <i class="bi bi-info-circle"></i> Vật tư này chưa có thông tin Lô. 
-                                        <div style="font-size: 0.75rem; margin-top: 0.25rem;">Hãy thực hiện <b>Nhập hàng</b> hoặc <b>Kiểm kho</b> để khởi tạo lô mới.</div>
+                                        <div style="font-size: 0.75rem; margin-top: 0.25rem;">Hãy thực hiện <b>Nhập hàng</b> hoặc bấm <b>Thêm lô mới</b> để khởi tạo.</div>
+                                        @if (editingMaterial.Id > 0)
+                                        {
+                                            <button class="btn-outline" style="margin-top: 0.75rem; font-size: 0.75rem;" @onclick="AddNewLot">
+                                                <i class="bi bi-plus-lg"></i> Khởi tạo Lô đầu tiên
+                                            </button>
+                                        }
                                     </div>
                                 }
                             </div>
@@ -220,13 +255,16 @@
                                 }
                             </div>
                             <div style="flex: 1; text-align: center; padding: 0 0.5rem;">
-                                <h4 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #0f172a; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 3.1rem;">@m.Name</h4>
+                                <h4 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #0f172a; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 3.1rem;">
+                                    @if (!string.IsNullOrEmpty(m.ProductCode)) { <span style="color: #64748b; font-size: 0.8rem; display: block; font-weight: 600;">[@m.ProductCode]</span> }
+                                    @m.Name
+                                </h4>
                                 <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
                                     <i class="bi bi-building"></i> <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@(m.Supplier?.Name ?? "Chưa rõ")</span>
                                 </div>
                                 <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed #e2e8f0; display: flex; flex-direction: column; align-items: center; gap: 0.4rem;">
                                     <div style="display: flex; align-items: baseline; gap: 0.25rem;">
-                                        <span style="font-weight: 900; color: var(--accent-primary); font-size: 1.3rem;">@m.BasePrice.ToString("N0")</span>
+                                        <span style="font-weight: 900; color: var(--accent-primary); font-size: 1.3rem;">@(m.Lots.OrderBy(l => l.Id).FirstOrDefault()?.BasePrice.ToString("N0") ?? "0")</span>
                                         <span style="font-size: 0.75rem; font-weight: 700; color: #94a3b8;">đ / @m.Unit</span>
                                     </div>
                                     <div style="font-size: 0.75rem; font-weight: 700; color: @(m.StockQty <= 0 ? "var(--error)" : "#10b981");">
@@ -262,13 +300,16 @@
                                 <td>
                                     <div style="display: flex; align-items: center; gap: 0.75rem;">
                                         <img src="@(string.IsNullOrEmpty(m.ImageUrl) ? "favicon.png" : m.ImageUrl)" style="width: 32px; height: 32px; border-radius: 6px; object-fit: cover;" />
-                                        <span style="font-weight: 700;">@m.Name</span>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 700;">@m.Name</span>
+                                            @if (!string.IsNullOrEmpty(m.ProductCode)) { <span style="font-size: 0.7rem; color: #94a3b8; font-weight: 700;">@m.ProductCode</span> }
+                                        </div>
                                     </div>
                                 </td>
                                 <td><span class="badge" style="background: #eff6ff; color: #2563eb; border: 1px solid #dbeafe;">@m.Category?.Name</span></td>
                                 <td style="font-size: 0.85rem; color: #64748b;">@m.Supplier?.Name</td>
                                 <td style="text-align: center; font-weight: 600;">@m.Unit</td>
-                                <td style="text-align: right; font-weight: 800; color: var(--accent-primary);">@m.BasePrice.ToString("N0") đ</td>
+                                <td style="text-align: right; font-weight: 800; color: var(--accent-primary);">@(m.Lots.OrderBy(l => l.Id).FirstOrDefault()?.BasePrice.ToString("N0") ?? "0") đ</td>
                                 <td style="text-align: center;">
                                     <button class="btn-outline" style="padding: 0.25rem 0.4rem;" @onclick:stopPropagation="true" @onclick="() => ShowQR(m)">
                                         <i class="bi bi-qr-code"></i>
@@ -475,7 +516,10 @@
     private string qrCodeUrl = "";
 
     private Material editingMaterial = new();
+    private decimal editingCostPrice;
+    private decimal editingBasePrice;
     private Dictionary<int, double> originalLotQtys = new(); // Lưu số lượng gốc để so sánh
+    private Dictionary<int, (decimal Cost, decimal Base)> originalLotPrices = new();
     private string editingCategoryName = "";
     private Category? editingCategory;
 
@@ -494,7 +538,9 @@
 
     private List<Material> filteredMaterials => materials
         .Where(m => selectedCategoryId == null || m.CategoryId == selectedCategoryId)
-        .Where(m => string.IsNullOrWhiteSpace(searchText) || m.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+        .Where(m => string.IsNullOrWhiteSpace(searchText) || 
+                   m.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) || 
+                   (m.ProductCode != null && m.ProductCode.Contains(searchText, StringComparison.OrdinalIgnoreCase)))
         .ToList();
 
     private IEnumerable<Material> PaginatedMaterials => filteredMaterials.Skip((currentPage - 1) * pageSize).Take(pageSize);
@@ -503,6 +549,8 @@
     private void ResetForm()
     {
         editingMaterial = new();
+        editingCostPrice = 0;
+        editingBasePrice = 0;
         isFormOpen = false;
     }
 
@@ -514,6 +562,21 @@
         }
     }
 
+    private void AddNewLot()
+    {
+        if (editingMaterial.Lots == null) editingMaterial.Lots = new();
+        
+        editingMaterial.Lots.Add(new MaterialLot
+        {
+            MaterialId = editingMaterial.Id,
+            LotNumber = $"Lô mới {DateTime.Now:dd/MM/yy HH:mm}",
+            StockQty = 0,
+            CostPrice = editingCostPrice,
+            BasePrice = editingBasePrice,
+            Note = "Thêm mới từ danh mục"
+        });
+    }
+
     private async Task EditMaterial(Material m)
     {
         var fresh = await WarehouseService.GetMaterialByIdAsync(m.Id);
@@ -521,6 +584,15 @@
         {
             editingMaterial = fresh;
             originalLotQtys = fresh.Lots.ToDictionary(l => l.Id, l => l.StockQty);
+            originalLotPrices = fresh.Lots.ToDictionary(l => l.Id, l => (l.CostPrice, l.BasePrice));
+            
+            // Lấy giá từ lô đầu tiên làm mặc định cho form nếu cần (nhưng form giờ dùng cho tạo mới)
+            var firstLot = fresh.Lots.OrderBy(l => l.Id).FirstOrDefault();
+            if (firstLot != null) {
+                editingCostPrice = firstLot.CostPrice;
+                editingBasePrice = firstLot.BasePrice;
+            }
+
             isFormOpen = true;
         }
     }
@@ -552,21 +624,43 @@
     {
         if (string.IsNullOrWhiteSpace(editingMaterial.Name)) return;
         
-        // 1. Kiểm tra và cập nhật các lô có thay đổi số lượng TRƯỚC để ghi log
+        // 1. Kiểm tra và cập nhật các lô có thay đổi số lượng hoặc giá TRƯỚC để ghi log
         if (editingMaterial.Id > 0)
         {
-            foreach (var lot in editingMaterial.Lots)
+            foreach (var lot in editingMaterial.Lots.ToList())
             {
-                if (originalLotQtys.ContainsKey(lot.Id) && originalLotQtys[lot.Id] != lot.StockQty)
+                if (lot.Id == 0)
                 {
-                    // Hàm này sẽ cập nhật cả số lượng Lô và Kho tổng trong DB, đồng thời ghi Log
-                    await WarehouseService.UpdateMaterialLotQtyAsync(lot.Id, lot.StockQty, "Điều chỉnh thủ công từ form Sửa vật tư");
+                    // Thêm lô mới
+                    await WarehouseService.AddMaterialLotAsync(lot);
+                }
+                else
+                {
+                    // Cập nhật lô cũ
+                    bool qtyChanged = originalLotQtys.ContainsKey(lot.Id) && originalLotQtys[lot.Id] != lot.StockQty;
+                    bool priceChanged = originalLotPrices.ContainsKey(lot.Id) && (originalLotPrices[lot.Id].Cost != lot.CostPrice || originalLotPrices[lot.Id].Base != lot.BasePrice);
+                    
+                    if (qtyChanged || priceChanged)
+                    {
+                        await WarehouseService.UpdateMaterialLotFullAsync(lot);
+                        
+                        if (qtyChanged)
+                        {
+                            await WarehouseService.RecordInventoryTransactionAsync(new InventoryTransaction
+                            {
+                                MaterialId = editingMaterial.Id,
+                                Type = "Điều chỉnh",
+                                QtyChange = lot.StockQty - originalLotQtys[lot.Id],
+                                Note = $"Điều chỉnh kho thủ công cho Lô: {lot.LotNumber}"
+                            });
+                        }
+                    }
                 }
             }
         }
 
-        // 2. Lưu thông tin cơ bản của vật tư (Lúc này DB đã có số lượng mới từ bước 1)
-        if (editingMaterial.Id == 0) await WarehouseService.AddMasterMaterialAsync(editingMaterial);
+        // 2. Lưu thông tin cơ bản của vật tư
+        if (editingMaterial.Id == 0) await WarehouseService.AddMasterMaterialAsync(editingMaterial, editingCostPrice, editingBasePrice);
         else await WarehouseService.UpdateMasterMaterialAsync(editingMaterial);
 
         editingMaterial = new();

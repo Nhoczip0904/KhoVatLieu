@@ -31,8 +31,9 @@ namespace KhoHang.Components.Pages
                         MaterialId = m.Id, 
                         Material = m,
                         Qty = 1,
-                        CostPrice = m.CostPrice,
-                        BasePrice = m.BasePrice
+                        CostPrice = m.Lots.OrderBy(l => l.Id).FirstOrDefault()?.CostPrice ?? 0,
+                        BasePrice = m.Lots.OrderBy(l => l.Id).FirstOrDefault()?.BasePrice ?? 0,
+                        LotNumber = "Mặc định"
                     });
                 }
             }
@@ -76,7 +77,7 @@ namespace KhoHang.Components.Pages
                 bool matchesSupplier = !selectedSupplierIds.Any() || 
                                        p.Items.Any(i => {
                                            var m = materials.FirstOrDefault(mat => mat.Id == i.MaterialId);
-                                           return m != null && selectedSupplierIds.Contains(m.SupplierId);
+                                           return m != null && selectedSupplierIds.Contains((int)m.SupplierId);
                                        });
 
                 return matchesSearch && matchesDate && matchesSupplier;
@@ -108,17 +109,40 @@ namespace KhoHang.Components.Pages
         protected void OpenCreateModal()
         {
             newPo = new PurchaseOrder { Timestamp = DateTime.Now, Items = new List<PurchaseOrderItem>() };
-            AddNewItemRow();
             isCreateModalOpen = true;
         }
 
         protected void CloseCreateModal() => isCreateModalOpen = false;
 
-        protected void AddNewItemRow() => newPo.Items.Add(new PurchaseOrderItem { Qty = 1 });
+        protected void AddNewItemRow() => newPo.Items.Add(new PurchaseOrderItem { Qty = 1, LotNumber = "Mặc định" });
 
         protected void RemoveItemRow(PurchaseOrderItem item)
         {
             newPo.Items.Remove(item);
+            CalculateTotal();
+        }
+
+        protected void CopyItemRow(PurchaseOrderItem item)
+        {
+            var index = newPo.Items.IndexOf(item);
+            var newItem = new PurchaseOrderItem
+            {
+                MaterialId = item.MaterialId,
+                Material = item.Material,
+                Qty = item.Qty,
+                CostPrice = item.CostPrice,
+                BasePrice = item.BasePrice,
+                LotNumber = item.LotNumber
+            };
+
+            if (index != -1 && index < newPo.Items.Count - 1)
+            {
+                newPo.Items.Insert(index + 1, newItem);
+            }
+            else
+            {
+                newPo.Items.Add(newItem);
+            }
             CalculateTotal();
         }
 
@@ -128,7 +152,7 @@ namespace KhoHang.Components.Pages
             {
                 item.MaterialId = id;
                 var m = materials.FirstOrDefault(x => x.Id == id);
-                if (m != null) item.CostPrice = m.CostPrice;
+                if (m != null) item.CostPrice = m.Lots.OrderBy(l => l.Id).FirstOrDefault()?.CostPrice ?? 0;
             }
             CalculateTotal();
         }

@@ -32,12 +32,17 @@ else
             </div>
             @if (!project.IsCompleted)
             {
-                <button class="btn-primary" style="background: var(--success);" @onclick="ConfirmComplete">
-                    <i class="bi bi-check-all"></i> <span class="d-none d-sm-inline">Hoàn thành dự án</span><span class="d-sm-none">Xong</span>
-                </button>
-                <button class="btn-outline text-warning border-warning" @onclick="OpenReturnModal">
-                    <i class="bi bi-arrow-return-left"></i> Khách trả hàng
-                </button>
+                <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+                    <button class="btn-primary" style="background: var(--success);" @onclick="ConfirmComplete">
+                        <i class="bi bi-check-all"></i> <span class="d-none d-sm-inline">Hoàn thành dự án</span><span class="d-sm-none">Xong</span>
+                    </button>
+                    <button class="btn-outline text-warning border-warning" @onclick="OpenReturnModal">
+                        <i class="bi bi-arrow-return-left"></i> Khách trả hàng
+                    </button>
+                    <button class="btn-primary" @onclick="() => isPaymentModalOpen = true">
+                        <i class="bi bi-cash-stack"></i> Ghi nhận thanh toán
+                    </button>
+                </div>
             }
         </div>
 
@@ -120,14 +125,22 @@ else
                                             <span>Đã giao: @(m.TotalQty - m.RemainingQty)</span>
                                             <span>@m.CustomPrice.ToString("N0") đ/@m.Unit</span>
                                         </div>
+
+                                        @if (!project.IsCompleted)
+                                        {
+                                            <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem;">
+                                                <button class="btn-primary" style="flex: 1; padding: 0.4rem; font-size: 0.75rem; background: var(--accent-primary); color: white; border: none; border-radius: 8px; font-weight: 700; box-shadow: 0 4px 10px rgba(67, 97, 238, 0.2);" 
+                                                        @onclick="() => AddExtraRow(m)">
+                                                    <i class="bi bi-plus-circle"></i> THÊM VÀO PHIẾU
+                                                </button>
+                                            </div>
+                                            
+                                            <button style="position: absolute; top: 0.5rem; right: 0.5rem; background: transparent; border: none; color: #94a3b8; cursor: pointer; padding: 2px;" 
+                                                    @onclick="() => StartEditingMaterial(m)">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </button>
+                                        }
                                     </div>
-                                    @if (!project.IsCompleted)
-                                    {
-                                        <button style="position: absolute; top: 0.5rem; right: 0.5rem; background: transparent; border: none; color: #94a3b8; cursor: pointer; padding: 2px;" 
-                                                @onclick="() => StartEditingMaterial(m)">
-                                            <i class="bi bi-pencil-square"></i>
-                                        </button>
-                                    }
                                 }
                             </div>
                         }
@@ -136,26 +149,79 @@ else
 
                 <!-- History Sections -->
                 <div style="display: grid; grid-template-columns: 1fr; gap: 2rem;">
-                    <!-- Delivery History -->
+                    <!-- Delivery & Return History -->
                     <div class="glass-card">
-                        <h3 style="margin-bottom: 1.5rem;">Lịch sử giao hàng</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h3 style="margin: 0;">Lịch sử giao nhận & Trả hàng</h3>
+                            <div style="font-size: 0.8rem; color: var(--text-muted);">Tổng cộng @deliveries.Count() phiếu</div>
+                        </div>
                         @if (!deliveries.Any())
                         {
-                            <p style="color: var(--text-muted); text-align: center; padding: 1rem;">Chưa có lần giao hàng nào.</p>
+                            <p style="color: var(--text-muted); text-align: center; padding: 1rem;">Chưa có lịch sử giao dịch.</p>
                         }
-                        <div style="max-height: 450px; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; padding-right: 0.5rem;" class="custom-scrollbar">
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 450px; overflow-y: auto;" class="custom-scrollbar">
                             @foreach (var d in deliveries.OrderByDescending(x => x.Timestamp))
+                            {
+                                <div style="background: white; padding: 1rem; border-radius: 12px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid @(d.TotalAmount >= 0 ? "var(--success)" : "var(--error)");">
+                                    <div>
+                                        @{
+                                            bool hExport = d.Items.Any(i => i.Qty > 0);
+                                            bool hReturn = d.Items.Any(i => i.Qty < 0);
+                                        }
+                                        <div style="font-weight: 700; color: var(--text-primary);">
+                                            <i class="bi @(hExport && hReturn ? "bi-arrow-left-right" : hReturn ? "bi-arrow-return-left" : "bi-truck")"></i>
+                                            @if (hExport && hReturn) { @("Giao & Trả hàng") }
+                                            else if (hReturn) { @("Trả hàng") }
+                                            else { @("Giao hàng") }
+                                            #@d.Id
+                                        </div>
+                                        <div style="font-size: 0.75rem; color: var(--text-muted);">@d.Timestamp.ToString("dd/MM/yyyy HH:mm")</div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 1.5rem;">
+                                        <div style="text-align: right;">
+                                            <div style="font-weight: 700; color: @(d.TotalAmount >= 0 ? "var(--success)" : "var(--error)");">
+                                                @(d.TotalAmount >= 0 ? "" : "-")@Math.Abs(d.TotalAmount).ToString("N0") đ
+                                            </div>
+                                            <div style="font-size: 0.65rem; color: var(--text-muted);">Chốt nợ: @d.GrandTotal.ToString("N0") đ</div>
+                                        </div>
+                                        <button class="btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.75rem;" @onclick='() => Nav.NavigateTo($"/invoice/{d.Id}")'>
+                                            <i class="bi bi-printer"></i> Hóa đơn
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Return History -->
+                    <div class="glass-card">
+                        <h3 style="margin-bottom: 1.5rem; color: var(--warning);">Lịch sử trả hàng</h3>
+                        @if (!customerReturns.Any())
+                        {
+                            <p style="color: var(--text-muted); text-align: center; padding: 1rem;">Chưa có đơn trả hàng nào.</p>
+                        }
+                        <div style="max-height: 450px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.75rem; padding-right: 0.5rem;" class="custom-scrollbar">
+                            @foreach (var r in customerReturns)
                             {
                                 <div style="padding: 1rem; border: 1px solid var(--border-color); border-radius: 12px; display: flex; justify-content: space-between; align-items: center; background: white;">
                                     <div>
-                                        <div style="font-weight: 600;">Giao hàng #@d.Id</div>
-                                        <div style="font-size: 0.75rem; color: var(--text-secondary);">@d.Timestamp.ToString("dd/MM/yyyy HH:mm")</div>
+                                        <div style="font-weight: 700; color: var(--error);">Phiếu trả #@r.Id</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-secondary);">@r.Timestamp.ToString("dd/MM/yyyy HH:mm")</div>
+                                        <div style="font-size: 0.75rem; color: var(--text-muted);">
+                                            @string.Join(", ", r.Items.Select(i => $"{i.Qty} {i.ProjectMaterial?.Unit} {i.ProjectMaterial?.Name}"))
+                                        </div>
                                     </div>
-                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
-                                        <div style="font-weight: 700; color: var(--success);">@d.TotalAmount.ToString("N0") đ</div>
-                                        <button class="btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.7rem;" @onclick='() => Nav.NavigateTo($"/invoice/{d.Id}")'>
-                                            <i class="bi bi-printer"></i> Hóa đơn
-                                        </button>
+                                    <div style="text-align: right;">
+                                        <div style="font-weight: 800; color: var(--error);">- @r.TotalAmount.ToString("N0") đ</div>
+                                        @{
+                                            var dId = deliveries.FirstOrDefault(d => d.TotalAmount < 0 && d.Note != null && d.Note.Contains($"Phiếu trả số: {r.Id}"))?.Id;
+                                        }
+                                        @if (dId.HasValue)
+                                        {
+                                            <button class="btn-outline" style="padding: 0.2rem 0.5rem; font-size: 0.65rem; margin-top: 0.25rem;" @onclick='() => Nav.NavigateTo($"/invoice/{dId.Value}")'>
+                                                <i class="bi bi-printer"></i> HĐ Trả
+                                            </button>
+                                        }
                                     </div>
                                 </div>
                             }
@@ -199,13 +265,34 @@ else
                     <div class="glass-card" style="border-top: 4px solid var(--accent-primary);">
                         <h3 style="margin-bottom: 1.5rem;">Phiếu xuất kho dự thảo</h3>
                         <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                            @if (!draftItems.Any())
+                            {
+                                <div style="text-align: center; padding: 2rem; border: 2px dashed var(--border-color); border-radius: 16px; color: var(--text-muted);">
+                                    <i class="bi bi-cart-plus" style="font-size: 2rem; display: block; margin-bottom: 1rem;"></i>
+                                    <p style="font-size: 0.85rem;">Chưa có vật tư nào được chọn.<br/>Vui lòng bấm <b>"THÊM VÀO PHIẾU"</b> từ danh sách bên trái.</p>
+                                </div>
+                            }
                             @foreach (var item in draftItems)
                             {
                                 var mat = project.Materials.FirstOrDefault(m => m.Id == item.ProjectMaterialId);
                                 <div style="padding-bottom: 1rem; border-bottom: 1px dashed var(--border-color); position: relative;">
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                                         <label style="font-size: 0.8rem; font-weight: 700;">@item.Name (@item.Unit) · Còn: @(mat?.RemainingQty ?? 0)</label>
-                                        <div style="display: flex; gap: 0.5rem;">
+                                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                            <!-- Toggle Switch -->
+                                            <div style="display: flex; background: #f1f5f9; padding: 2px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                                <button type="button" @onclick="() => item.IsReturn = false" 
+                                                        style="padding: 0.2rem 0.5rem; font-size: 0.65rem; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s;
+                                                               @(item.IsReturn ? "background: transparent; color: #64748b;" : "background: var(--accent-primary); color: white; font-weight: 700;")">
+                                                    XUẤT
+                                                </button>
+                                                <button type="button" @onclick="() => item.IsReturn = true" 
+                                                        style="padding: 0.2rem 0.5rem; font-size: 0.65rem; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s;
+                                                               @(!item.IsReturn ? "background: transparent; color: #64748b;" : "background: var(--error); color: white; font-weight: 700;")">
+                                                    TRẢ
+                                                </button>
+                                            </div>
+
                                             <button class="btn-outline" style="padding: 0.1rem 0.4rem; font-size: 0.65rem;" @onclick="() => { if(mat != null) AddExtraRow(mat); }" title="Thêm dòng cho vật tư này">
                                                 <i class="bi bi-plus-circle"></i> Lô khác
                                             </button>
@@ -222,13 +309,13 @@ else
                                         <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Chọn Lô (Tự cập nhật giá)</div>
                                         <select class="form-select-modern" style="padding: 0.4rem; font-size: 0.85rem;" 
                                                 value="@item.LotNumber" 
-                                                @onchange="@(e => OnLotSelected(item, e.Value?.ToString() ?? ""))">
+                                                @onchange="@((ChangeEventArgs e) => OnLotSelected(item, e.Value?.ToString() ?? ""))">
                                             <option value="">-- Chọn lô hàng (Nếu có) --</option>
                                             @if (availableLots.ContainsKey(item.MaterialId))
                                             {
                                                 foreach (var lot in availableLots[item.MaterialId])
                                                 {
-                                                    <option value="@lot.LotNumber">Lô: @lot.LotNumber (Tồn: @lot.StockQty @item.Unit @(lot.BasePrice.HasValue ? $"· Giá: {lot.BasePrice.Value:N0}" : ""))</option>
+                                                    <option value="@lot.LotNumber">Lô: @lot.LotNumber (Tồn: @lot.StockQty @item.Unit · Giá: @lot.BasePrice.ToString("N0"))</option>
                                                 }
                                             }
                                         </select>
@@ -237,17 +324,18 @@ else
                                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
                                         <div>
                                             <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Số lượng</div>
-                                            <input type="number" @bind="item.Qty" @bind:event="oninput" style="width: 100%; padding: 0.5rem; font-weight: 600;" />
+                                            <input type="number" @bind="item.Qty" 
+                                                   style="width: 100%; padding: 0.5rem; font-weight: 600; color: @(item.IsReturn ? "var(--error)" : "inherit")" />
                                         </div>
                                         <div>
                                             <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Đơn giá</div>
-                                            <input type="number" @bind="item.Price" @bind:event="oninput" style="width: 100%; padding: 0.5rem; font-weight: 600;" />
+                                            <input type="number" @bind="item.Price" style="width: 100%; padding: 0.5rem; font-weight: 600;" />
                                         </div>
                                     </div>
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
                                         <button class="btn-outline" style="padding: 0.2rem 0.5rem; font-size: 0.65rem;" @onclick="() => item.Qty = (decimal)(mat?.RemainingQty ?? 0)">MAX</button>
-                                        <div style="font-size: 0.85rem; font-weight: 700; color: var(--accent-primary);">
-                                            @((item.Qty * item.Price).ToString("N0")) đ
+                                        <div style="font-size: 0.85rem; font-weight: 700; color: @(item.IsReturn ? "var(--error)" : "var(--accent-primary)");">
+                                            @(item.IsReturn ? "-" : "")@((item.Qty * item.Price).ToString("N0")) đ
                                         </div>
                                     </div>
                                 </div>
@@ -259,34 +347,6 @@ else
                     </div>
                 }
 
-                <!-- Payment Form -->
-                @if (!project.IsCompleted)
-                {
-                    <div class="glass-card" style="border-top: 4px solid var(--success);">
-                        <h3 style="margin-bottom: 1.5rem;">Ghi nhận thanh toán</h3>
-                        <div style="display: flex; flex-direction: column; gap: 1rem;">
-                            <div>
-                                <label style="font-size: 0.75rem; font-weight: 600;">Số tiền (đ)</label>
-                                <input type="number" @bind="paymentAmount" style="width: 100%; padding: 0.5rem; margin-top: 0.25rem;" />
-                            </div>
-                            <div>
-                                <label style="font-size: 0.75rem; font-weight: 600;">Hình thức</label>
-                                <select @bind="paymentMethod" style="width: 100%; padding: 0.5rem; margin-top: 0.25rem;">
-                                    <option value="Tiền mặt">Tiền mặt</option>
-                                    <option value="Chuyển khoản">Chuyển khoản</option>
-                                    <option value="Khác">Khác</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label style="font-size: 0.75rem; font-weight: 600;">Ghi chú</label>
-                                <input type="text" @bind="paymentNote" placeholder="VD: Đợt 1, Cọc..." style="width: 100%; padding: 0.5rem; margin-top: 0.25rem;" />
-                            </div>
-                            <button class="btn-primary" style="width: 100%; background: var(--success);" @onclick="AddPayment">
-                                <i class="bi bi-cash-stack"></i> Xác nhận thanh toán
-                            </button>
-                        </div>
-                    </div>
-                }
             </div>
         </div>
     </div>
@@ -425,6 +485,7 @@ else
                         <thead>
                             <tr>
                                 <th>Vật liệu đã giao</th>
+                                <th>Chọn Lô trả về</th>
                                 <th>ĐVT</th>
                                 <th>SL trả lại</th>
                                 <th>Thành tiền (trừ đi)</th>
@@ -438,13 +499,30 @@ else
                                 {
                                     <tr>
                                         <td>@m.Name</td>
+                                        <td>
+                                            <select class="form-select-modern" style="padding: 0.4rem; font-size: 0.85rem;" @bind="returnLots[m.Id]">
+                                                <option value="">-- Kho chung --</option>
+                                                @if (availableLots.ContainsKey(m.MaterialId))
+                                                {
+                                                    foreach (var lot in availableLots[m.MaterialId])
+                                                    {
+                                                        <option value="@lot.LotNumber">Lô: @lot.LotNumber (Tồn: @lot.StockQty)</option>
+                                                    }
+                                                }
+                                            </select>
+                                        </td>
                                         <td>@m.Unit</td>
                                         <td>
                                             <input type="number" @bind="returnItems[m.Id]" @bind:event="oninput" max="@delivered" min="0" class="form-input-modern" style="padding: 0.4rem; width: 100px;" />
                                             <small class="text-muted d-block">Tối đa: @delivered</small>
                                         </td>
                                         <td class="text-danger fw-bold text-end">
-                                            @((((decimal)(returnItems.ContainsKey(m.Id) ? returnItems[m.Id] : 0)) * m.CustomPrice).ToString("N0")) đ
+                                            <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem;">
+                                                <input type="number" @bind="returnPrices[m.Id]" @bind:event="oninput" class="form-input-modern" style="padding: 0.4rem; width: 120px; text-align: right; color: var(--error); font-weight: 700;" />
+                                                <small class="text-muted" style="font-weight: 400;">
+                                                    Tồng: @((((decimal)(returnItems.ContainsKey(m.Id) ? returnItems[m.Id] : 0)) * returnPrices[m.Id]).ToString("N0")) đ
+                                                </small>
+                                            </div>
                                         </td>
                                     </tr>
                                 }
@@ -465,6 +543,43 @@ else
                 <div style="display: flex; gap: 1rem; justify-content: flex-end;">
                     <button class="btn-outline" @onclick="() => isReturnModalOpen = false">Hủy</button>
                     <button class="btn-primary" style="background: var(--warning); color: #000;" @onclick="ConfirmReturn" disabled="@(TotalReturnAmount <= 0)">Xác nhận Trả hàng</button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Payment Modal -->
+    @if (isPaymentModalOpen)
+    {
+        <div class="modal-overlay">
+            <div class="modal-content" style="max-width: 450px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                    <h3 style="margin: 0; color: var(--success);">Ghi nhận thanh toán</h3>
+                    <button style="background: transparent; border: none; font-size: 1.5rem; cursor: pointer;" @onclick="() => isPaymentModalOpen = false">&times;</button>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.5rem;">Số tiền (đ)</label>
+                        <input type="number" @bind="paymentAmount" class="form-input-modern" style="font-size: 1.1rem; font-weight: 700;" autofocus />
+                    </div>
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.5rem;">Hình thức</label>
+                        <select @bind="paymentMethod" class="form-select-modern">
+                            <option value="Tiền mặt">Tiền mặt</option>
+                            <option value="Chuyển khoản">Chuyển khoản</option>
+                            <option value="Khác">Khác</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.5rem;">Ghi chú</label>
+                        <input type="text" @bind="paymentNote" placeholder="VD: Đợt 1, Cọc..." class="form-input-modern" />
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.5rem;">
+                        <button class="btn-outline" @onclick="() => isPaymentModalOpen = false">Hủy</button>
+                        <button class="btn-primary" style="background: var(--success);" @onclick="AddPayment">
+                            <i class="bi bi-check-lg"></i> Xác nhận
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -494,6 +609,7 @@ else
     [Parameter] public int Id { get; set; }
     private Project? project;
     private List<Delivery> deliveries = new();
+    private List<CustomerReturn> customerReturns = new();
     // Delivery fields (Dynamic List)
     public class DraftItem
     {
@@ -504,6 +620,7 @@ else
         public decimal Qty { get; set; }
         public decimal Price { get; set; }
         public string LotNumber { get; set; } = "";
+        public bool IsReturn { get; set; }
     }
 
     private List<DraftItem> draftItems = new();
@@ -514,6 +631,7 @@ else
     private bool showDeliveryReview = false;
     private bool isConfiguringMaterials = false;
     private bool isEditingSingleMaterial = false;
+    private bool isPaymentModalOpen = false;
     private ProjectMaterial? materialToEdit;
     private List<ProjectMaterial> selectedMaterialsToConfig = new();
     private Delivery? previewDelivery;
@@ -526,6 +644,8 @@ else
     // Return fields
     private bool isReturnModalOpen = false;
     private Dictionary<int, double> returnItems = new();
+    private Dictionary<int, decimal> returnPrices = new();
+    private Dictionary<int, string> returnLots = new();
     private string returnNote = "";
 
     protected override async Task OnInitializedAsync()
@@ -540,16 +660,7 @@ else
         {
             deliveries = await WarehouseService.GetDeliveriesByProjectIdAsync(Id);
             
-            // Khởi tạo danh sách dự thảo với các vật tư của dự án
-            draftItems = project.Materials.Select(m => new DraftItem {
-                ProjectMaterialId = m.Id,
-                MaterialId = m.MaterialId,
-                Name = m.Name,
-                Unit = m.Unit,
-                Qty = 0,
-                Price = m.CustomPrice,
-                LotNumber = ""
-            }).ToList();
+            if (draftItems == null) draftItems = new();
             
             // Load available lots for each material
             foreach (var m in project.Materials)
@@ -557,12 +668,14 @@ else
                 var lots = await WarehouseService.GetMaterialLotsAsync(m.MaterialId);
                 availableLots[m.MaterialId] = lots;
             }
+
+            customerReturns = await WarehouseService.GetCustomerReturnsByProjectIdAsync(Id);
         }
     }
 
     private void AddExtraRow(ProjectMaterial m)
     {
-        draftItems.Add(new DraftItem {
+        var newItem = new DraftItem {
             ProjectMaterialId = m.Id,
             MaterialId = m.MaterialId,
             Name = m.Name,
@@ -570,7 +683,20 @@ else
             Qty = 0,
             Price = m.CustomPrice,
             LotNumber = ""
-        });
+        };
+
+        // Tự động chọn lô hàng cũ nhất nếu có
+        if (availableLots.ContainsKey(m.MaterialId) && availableLots[m.MaterialId].Any())
+        {
+            var oldestLot = availableLots[m.MaterialId].OrderBy(l => l.Id).FirstOrDefault();
+            if (oldestLot != null)
+            {
+                newItem.LotNumber = oldestLot.LotNumber;
+                if (oldestLot.BasePrice > 0) newItem.Price = oldestLot.BasePrice;
+            }
+        }
+
+        draftItems.Add(newItem);
     }
 
     private void RemoveDraftItem(DraftItem item)
@@ -584,9 +710,9 @@ else
         if (!string.IsNullOrEmpty(lotNum))
         {
             var lot = availableLots[item.MaterialId].FirstOrDefault(l => l.LotNumber == lotNum);
-            if (lot != null && lot.BasePrice.HasValue)
+            if (lot != null)
             {
-                item.Price = lot.BasePrice.Value;
+                item.Price = lot.BasePrice;
             }
         }
     }
@@ -601,16 +727,19 @@ else
         if (project == null) return;
         
         var itemsToDeliver = draftItems
-            .Where(d => d.Qty > 0)
-            .Select(d => new DeliveryItem 
-            { 
-                ProjectMaterialId = d.ProjectMaterialId, 
-                Qty = (double)d.Qty,
-                Price = d.Price,
-                Name = d.Name,
-                Unit = d.Unit,
-                LotNumber = d.LotNumber,
-                Subtotal = d.Qty * d.Price
+            .Where(d => d.Qty != 0)
+            .Select(d => {
+                var finalQty = d.IsReturn ? -d.Qty : d.Qty;
+                return new DeliveryItem 
+                { 
+                    ProjectMaterialId = d.ProjectMaterialId, 
+                    Qty = (double)finalQty,
+                    Price = d.Price,
+                    Name = d.Name,
+                    Unit = d.Unit,
+                    LotNumber = d.LotNumber,
+                    Subtotal = finalQty * d.Price
+                };
             }).ToList();
 
         if (!itemsToDeliver.Any()) return;
@@ -671,6 +800,7 @@ else
         await WarehouseService.AddPaymentAsync(payment);
         paymentAmount = 0;
         paymentNote = "";
+        isPaymentModalOpen = false;
         await LoadData();
     }
 
@@ -689,7 +819,7 @@ else
             MaterialId = m.Id,
             Name = m.Name,
             Unit = m.Unit,
-            CustomPrice = m.BasePrice,
+            CustomPrice = m.Lots.OrderBy(l => l.Id).FirstOrDefault()?.BasePrice ?? 0,
             TotalQty = 0,
             RemainingQty = 0,
             ImageUrl = m.ImageUrl,
@@ -767,6 +897,16 @@ else
             if (delivered > 0)
             {
                 returnItems[m.Id] = 0;
+                returnPrices[m.Id] = m.CustomPrice;
+                
+                // Mặc định chọn lô "Mặc định" nếu có, hoặc lô đầu tiên
+                var defaultLot = "";
+                if (availableLots.ContainsKey(m.MaterialId) && availableLots[m.MaterialId].Any())
+                {
+                    var macDinh = availableLots[m.MaterialId].FirstOrDefault(l => l.LotNumber == "Mặc định");
+                    defaultLot = macDinh?.LotNumber ?? availableLots[m.MaterialId].First().LotNumber;
+                }
+                returnLots[m.Id] = defaultLot;
             }
         }
         returnNote = "";
@@ -775,7 +915,7 @@ else
 
     private decimal TotalReturnAmount => project?.Materials
         .Where(m => returnItems.ContainsKey(m.Id))
-        .Sum(m => (decimal)returnItems[m.Id] * m.CustomPrice) ?? 0;
+        .Sum(m => (decimal)returnItems[m.Id] * (returnPrices.ContainsKey(m.Id) ? returnPrices[m.Id] : m.CustomPrice)) ?? 0;
 
     private async Task ConfirmReturn()
     {
@@ -785,12 +925,14 @@ else
         foreach (var kvp in returnItems.Where(k => k.Value > 0))
         {
             var mat = project.Materials.First(m => m.Id == kvp.Key);
+            var price = returnPrices.ContainsKey(mat.Id) ? returnPrices[mat.Id] : mat.CustomPrice;
+            var lotNum = returnLots.ContainsKey(mat.Id) ? returnLots[mat.Id] : "";
             items.Add(new CustomerReturnItem
             {
                 ProjectMaterialId = mat.Id,
                 Qty = kvp.Value,
-                Price = mat.CustomPrice,
-                Subtotal = (decimal)kvp.Value * mat.CustomPrice
+                Price = price,
+                Subtotal = (decimal)kvp.Value * price
             });
             // Update remaining qty (increase it because they returned)
             mat.RemainingQty += kvp.Value;
@@ -806,26 +948,8 @@ else
             Items = items
         };
 
-        await WarehouseService.AddCustomerReturnAsync(cr);
-
-        // Also add a negative delivery or payment so it balances?
-        // Actually, reducing TotalAmount or adding a negative Delivery is better to reflect in project balance.
-        var negativeDelivery = new Delivery
-        {
-            ProjectId = project.Id,
-            Timestamp = DateTime.Now,
-            TotalAmount = -TotalReturnAmount,
-            Note = "Khách trả hàng. Trừ vào công nợ: " + returnNote,
-            Items = new List<DeliveryItem>() // No items for this fake delivery, to avoid double counting stock
-        };
-        // wait, RecordDeliveryAsync will deduct stock. Better to just add the Delivery record directly in WarehouseService
-        // Wait, just adding negative delivery to DB context manually is safer, or write a dedicated method.
-        // Let's just create a mock Payment with negative amount so it reduces the debt! 
-        // Oh wait, if it's a payment, `TotalPaid` increases, so Debt decreases. A positive Payment reduces debt!
-        // Yes, let's just create a payment. But wait, it's not real money.
-        // Or we can add it to deliveries.
-        // I will add a new method in WarehouseService: `AddCustomerReturnAsync` will ALSO add a negative Delivery for balancing.
+        var deliveryId = await WarehouseService.AddCustomerReturnAsync(cr);
         isReturnModalOpen = false;
-        await LoadData();
+        Nav.NavigateTo($"/invoice/{deliveryId}");
     }
 }

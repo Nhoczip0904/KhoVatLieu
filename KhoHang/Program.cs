@@ -42,6 +42,7 @@ using (var scope = app.Services.CreateScope())
     await context.Database.ExecuteSqlRawAsync(sql);
 
     // Thêm cột vào các bảng liên quan nếu chưa có
+    try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE Materials ADD COLUMN ProductCode TEXT;"); } catch { }
     try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE MaterialLots ADD COLUMN BasePrice TEXT;"); } catch { }
     try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE PurchaseOrderItems ADD COLUMN BasePrice TEXT;"); } catch { }
     

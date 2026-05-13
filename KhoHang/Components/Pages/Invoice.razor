@@ -14,6 +14,23 @@
 else
 {
     <div class="invoice-container">
+        @{
+            var previousDeliveries = delivery.Project?.Deliveries
+                .Where(d => d.Timestamp < delivery.Timestamp)
+                .OrderByDescending(d => d.Timestamp)
+                .ToList() ?? new();
+            
+            var lastDelivery = previousDeliveries.FirstOrDefault();
+            
+            var intermediatePayments = delivery.Project?.Payments
+                .Where(p => (lastDelivery == null || p.Timestamp > lastDelivery.Timestamp) && p.Timestamp < delivery.Timestamp)
+                .OrderBy(p => p.Timestamp)
+                .ToList() ?? new();
+            
+            // Nếu có hóa đơn trước, số dư mở màn là GrandTotal của hóa đơn đó.
+            // Nếu không có hóa đơn trước, số dư mở màn là PreviousBalance của chính nó trừ đi các thanh toán trung gian (để khớp logic).
+            decimal openingBalance = lastDelivery?.GrandTotal ?? (delivery.PreviousBalance + intermediatePayments.Sum(p => p.Amount));
+        }
         <!-- Action Bar (Hidden when printing) -->
         <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background: var(--bg-secondary); padding: 1rem 2rem; border-radius: 12px; border: 1px solid var(--border-color);">
             <button class="btn-outline" @onclick='() => Nav.NavigateTo($"/projects/{delivery.ProjectId}")'>
@@ -38,9 +55,17 @@ else
                     </div>
                 </div>
                 <div class="invoice-meta">
-                    <h1>PHIẾU XUẤT KHO</h1>
+                    @{
+                        bool hasExport = delivery.Items.Any(i => i.Qty > 0);
+                        bool hasReturn = delivery.Items.Any(i => i.Qty < 0);
+                    }
+                    <h1>
+                        @if (hasExport && hasReturn) { @("PHIẾU GIAO & TRẢ HÀNG") }
+                        else if (hasReturn) { @("PHIẾU TRẢ HÀNG") }
+                        else { @("PHIẾU XUẤT KHO") }
+                    </h1>
                     <p>Mã đơn: <strong>#@delivery.Id</strong></p>
-                    <p>Ngày xuất: @delivery.Timestamp.ToString("dd/MM/yyyy HH:mm")</p>
+                    <p>Ngày lập: @delivery.Timestamp.ToString("dd/MM/yyyy HH:mm")</p>
                 </div>
             </div>
 
@@ -55,7 +80,11 @@ else
                 </div>
                 <div class="info-block">
                     <label>TRẠNG THÁI</label>
-                    <div class="status-badge">Đã xuất kho</div>
+                    <div class="status-badge" style="@(hasExport && hasReturn ? "background: #f1f5f9; color: #475569;" : hasReturn ? "background: #fef2f2; color: #991b1b;" : "")">
+                        @if (hasExport && hasReturn) { @("Giao & Trả hàng") }
+                        else if (hasReturn) { @("Đã trả hàng") }
+                        else { @("Đã xuất kho") }
+                    </div>
                     @if (!string.IsNullOrEmpty(delivery.Note))
                     {
                         <p style="margin-top: 0.5rem; font-style: italic;">Ghi chú: @delivery.Note</p>
@@ -77,34 +106,57 @@ else
                 <tbody>
                     @{ int stt = 1; }
                     
-                    @if (delivery.Project != null && delivery.Project.Deliveries != null)
+                    @if (openingBalance != 0)
                     {
-                        var previousDeliveries = delivery.Project.Deliveries
-                            .Where(d => d.Id != delivery.Id && d.Timestamp <= delivery.Timestamp)
-                            .OrderBy(d => d.Timestamp)
-                            .ToList();
+                        <tr style="background: #f8fafc; font-style: italic;">
+                            <td style="text-align: center;">@(stt++)</td>
+                            <td colspan="4" style="font-weight: 700; color: @(openingBalance < 0 ? "#166534" : "#475569");">
+                                @if (lastDelivery != null)
+                                {
+                                    @(openingBalance < 0 ? "Tiền cọc chốt từ hóa đơn ngày " : "Dư nợ chốt từ hóa đơn ngày ")
+                                    @lastDelivery.Timestamp.ToString("dd/MM/yyyy")
+                                }
+                                else
+                                {
+                                    @(openingBalance < 0 ? "Tiền cọc đầu kỳ" : "Dư nợ đầu kỳ")
+                                }
+                            </td>
+                            <td style="text-align: right; font-weight: 800; color: @(openingBalance < 0 ? "#166534" : "#1e293b");">
+                                @Math.Abs(openingBalance).ToString("N0")
+                            </td>
+                        </tr>
+                    }
 
-                        @foreach (var prev in previousDeliveries)
+                    @if (intermediatePayments.Any())
+                    {
+                        @foreach (var p in intermediatePayments)
                         {
-                            <tr style="background: rgba(0,0,0,0.02); font-style: italic;">
+                            <tr style="background: #f0fdf4; font-style: italic;">
                                 <td style="text-align: center;">@(stt++)</td>
-                                <td colspan="4" style="font-weight: 700;">
-                                    HĐ lúc @prev.Timestamp.ToString("HH:mm") ngày @prev.Timestamp.ToString("dd/MM/yyyy")
+                                <td colspan="4" style="color: #166534; font-weight: 600;">
+                                    <i class="bi bi-cash-stack"></i> 
+                                    Khách thanh toán/Tạm ứng (@p.Timestamp.ToString("dd/MM/yyyy HH:mm"))
                                 </td>
-                                <td style="text-align: right; font-weight: 700;">@prev.TotalAmount.ToString("N0")</td>
+                                <td style="text-align: right; font-weight: 800; color: #166534;">
+                                    -@p.Amount.ToString("N0")
+                                </td>
                             </tr>
                         }
                     }
 
                     @foreach (var item in delivery.Items)
                     {
-                        <tr>
+                        <tr style="@(item.Qty < 0 ? "background: #fff1f2;" : "")">
                             <td style="text-align: center;">@(stt++)</td>
-                            <td style="font-weight: 600;">@item.Name</td>
-                            <td style="text-align: center;">@item.Qty</td>
+                            <td style="font-weight: 600; color: @(item.Qty < 0 ? "var(--error)" : "inherit")">
+                                @(item.Qty < 0 ? "[TRẢ LẠI] " : "")@item.Name
+                            </td>
+                            <td style="text-align: center; color: @(item.Qty < 0 ? "var(--error)" : "inherit")">@Math.Abs(item.Qty)</td>
                             <td style="text-align: center;">@item.Unit</td>
                             <td style="text-align: right;">@item.Price.ToString("N0")</td>
-                            <td style="text-align: right; font-weight: 700;">@item.Subtotal.ToString("N0")</td>
+                            <td style="text-align: right; font-weight: 700; color: @(item.Qty < 0 ? "var(--error)" : "inherit")">
+                                @(item.Qty < 0 ? "-" : "")@Math.Abs(item.Subtotal).ToString("N0")
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -119,24 +171,45 @@ else
                     </ul>
                 </div>
                 <div class="totals">
-                    <div class="total-row">
-                        <span>Tiền hàng đơn này:</span>
-                        <span>@delivery.ItemsTotal.ToString("N0") đ</span>
+                    @if (delivery.Items.Any(i => i.Qty > 0))
+                    {
+                        <div class="total-row">
+                            <span>Giá trị hàng giao mới:</span>
+                            <span>@delivery.Items.Where(i => i.Qty > 0).Sum(i => i.Subtotal).ToString("N0") đ</span>
+                        </div>
+                    }
+                    @if (delivery.Items.Any(i => i.Qty < 0))
+                    {
+                        <div class="total-row" style="color: #166534;">
+                            <span>Giá trị hàng trả lại:</span>
+                            <span>-@Math.Abs(delivery.Items.Where(i => i.Qty < 0).Sum(i => i.Subtotal)).ToString("N0") đ</span>
+                        </div>
+                    }
+
+                    <div class="total-row highlight" style="border-top: 1px solid #e2e8f0; padding-top: 0.75rem; margin-top: 0.5rem;">
+                        <span style="color: @(delivery.TotalAmount < 0 ? "#166534" : "inherit")">
+                            @(delivery.TotalAmount < 0 ? "TỔNG CỘNG KHẤU TRỪ:" : "TỔNG PHÁT SINH ĐƠN NÀY:")
+                        </span>
+                        <span style="color: @(delivery.TotalAmount < 0 ? "#166534" : "inherit")">
+                            @(delivery.TotalAmount < 0 ? "-" : "")@Math.Abs(delivery.TotalAmount).ToString("N0") đ
+                        </span>
                     </div>
-                    <div class="total-row highlight">
-                        <span>TỔNG CỘNG ĐƠN NÀY:</span>
-                        <span>@delivery.TotalAmount.ToString("N0") đ</span>
-                    </div>
-                    <hr />
+
+                    <div style="margin: 1rem 0; border-top: 2px solid #000;"></div>
+
                     <div class="total-row">
-                        <span>@(delivery.PreviousBalance >= 0 ? "Dư nợ cũ:" : "Số dư cũ (cọc):")</span>
-                        <span>@Math.Abs(delivery.PreviousBalance).ToString("N0") đ</span>
+                        <span style="color: @(delivery.PreviousBalance < 0 ? "#166534" : "inherit")">
+                            @(delivery.PreviousBalance < 0 ? "Tiền cọc trước đơn này:" : "Nợ cũ trước đơn này:")
+                        </span>
+                        <span style="color: @(delivery.PreviousBalance < 0 ? "#166534" : "inherit")">
+                            @(delivery.PreviousBalance < 0 ? "-" : "")@Math.Abs(delivery.PreviousBalance).ToString("N0") đ
+                        </span>
                     </div>
                     <div class="total-row final">
-                        <span style="color: @(delivery.GrandTotal > 0 ? "var(--error)" : "var(--success)");">
-                            @(delivery.GrandTotal > 0 ? "TỔNG TIỀN PHẢI THANH TOÁN:" : "SỐ DƯ HIỆN TẠI:")
+                        <span style="color: @(delivery.GrandTotal > 0 ? "#b91c1c" : "#166534");">
+                            @(delivery.GrandTotal > 0 ? "TỔNG NỢ CÒN LẠI:" : "KHÁCH HÀNG CÒN DƯ:")
                         </span>
-                        <span style="color: @(delivery.GrandTotal > 0 ? "var(--error)" : "var(--success)");">
+                        <span style="color: @(delivery.GrandTotal > 0 ? "#b91c1c" : "#166534");">
                             @Math.Abs(delivery.GrandTotal).ToString("N0") đ
                         </span>
                     </div>

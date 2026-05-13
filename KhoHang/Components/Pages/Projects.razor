@@ -235,7 +235,7 @@
                     MaterialId = m.Id, 
                     Name = m.Name, 
                     Unit = m.Unit, 
-                    CustomPrice = m.BasePrice, 
+                    CustomPrice = m.Lots.OrderBy(l => l.Id).FirstOrDefault()?.BasePrice ?? 0, 
                     TotalQty = 0,
                     RemainingQty = 0,
                     ImageUrl = m.ImageUrl

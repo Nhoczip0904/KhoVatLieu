@@ -23,12 +23,11 @@ public class Supplier
 public class Material
 {
     public int Id { get; set; }
+    public string? ProductCode { get; set; }
     [Required]
     public string Name { get; set; } = string.Empty;
     [Required]
     public string Unit { get; set; } = string.Empty;
-    public decimal CostPrice { get; set; }
-    public decimal BasePrice { get; set; }
     public double StockQty { get; set; } = 0;
     public double MinStockLevel { get; set; } = 0;
     public string? ImageUrl { get; set; }
@@ -51,7 +50,8 @@ public class MaterialLot
     [Required]
     public string LotNumber { get; set; } = string.Empty;
     public double StockQty { get; set; }
-    public decimal? BasePrice { get; set; } // Custom selling price for this lot
+    public decimal CostPrice { get; set; }
+    public decimal BasePrice { get; set; }
     public DateTime? ProductionDate { get; set; }
     public string? Note { get; set; } // For color variations, etc.
 }
@@ -90,6 +90,7 @@ public class ProjectMaterial
     public int Id { get; set; }
     public int ProjectId { get; set; }
     public int MaterialId { get; set; }
+    public Material? Material { get; set; }
     
     public string Name { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
@@ -217,4 +218,5 @@ public class CustomerReturnItem
     public double Qty { get; set; }
     public decimal Price { get; set; }
     public decimal Subtotal { get; set; }
+    public string? LotNumber { get; set; }
 }

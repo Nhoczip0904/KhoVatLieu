@@ -75,7 +75,7 @@ else
                     <div style="background: #eff6ff; padding: 1rem; border-radius: 12px; border: 1px solid #bfdbfe;">
                         <div style="font-size: 0.75rem; color: var(--accent-primary); text-transform: uppercase; font-weight: 600; margin-bottom: 0.25rem;">Giá bán lẻ</div>
                         <div style="font-size: 1.25rem; font-weight: 800; color: var(--accent-secondary);">
-                            @material.BasePrice.ToString("N0") <span style="font-size: 0.8rem; font-weight: 600;">đ</span>
+                            @(material.Lots.OrderBy(l => l.Id).FirstOrDefault()?.BasePrice.ToString("N0") ?? "0") <span style="font-size: 0.8rem; font-weight: 600;">đ</span>
                         </div>
                     </div>
                 </div>
