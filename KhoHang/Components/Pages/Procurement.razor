@@ -16,15 +16,44 @@
             <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">Tạo Phiếu Nhập</span><span class="d-sm-none">Thêm</span>
         </button>
     </div>
+    
+    <!-- View Mode Tabs -->
+    <div style="display: flex; gap: 2rem; border-bottom: 2px solid #e2e8f0; margin-bottom: 2rem;">
+        <button style="background: transparent; border: none; padding: 1rem 0; border-bottom: 3px solid @(viewMode == 0 ? "var(--accent-primary)" : "transparent"); color: @(viewMode == 0 ? "var(--accent-primary)" : "var(--text-secondary)"); font-weight: 700; cursor: pointer; transition: all 0.2s;" @onclick="() => { viewMode = 0; currentPage = 1; }">Theo Phiếu Nhập</button>
+        <button style="background: transparent; border: none; padding: 1rem 0; border-bottom: 3px solid @(viewMode == 1 ? "var(--accent-primary)" : "transparent"); color: @(viewMode == 1 ? "var(--accent-primary)" : "var(--text-secondary)"); font-weight: 700; cursor: pointer; transition: all 0.2s;" @onclick="() => { viewMode = 1; currentPage = 1; }">Theo Vật Tư (Lịch sử nhập lẻ)</button>
+    </div>
+    <!-- Category Filter Badges -->
+    <div class="filter-tabs mb-4" style="display: flex; gap: 0.5rem; flex-wrap: wrap; background: white; padding: 1.25rem; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+        <div class="filter-tab @(selectedCategoryId == null ? "active" : "")" 
+             style="padding: 0.6rem 1.5rem; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; @(selectedCategoryId == null ? "background: var(--accent-primary); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);" : "background: #f1f5f9; color: #64748b;")"
+             @onclick="() => FilterByCategory(null)">
+            Tất cả nhóm
+        </div>
+        @foreach (var cat in categories)
+        {
+            <div class="filter-tab @(selectedCategoryId == cat.Id ? "active" : "")" 
+                 style="padding: 0.6rem 1.5rem; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; @(selectedCategoryId == cat.Id ? "background: var(--accent-primary); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);" : "background: #f1f5f9; color: #64748b;")"
+                 @onclick="() => FilterByCategory(cat.Id)">
+                @cat.Name
+            </div>
+        }
+    </div>
 
     <div style="background: white; padding: 1.5rem; border-radius: 16px; border: 1px solid #e2e8f0; margin-bottom: 2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; align-items: flex-end;">
             <!-- Search -->
             <div style="grid-column: span 2;">
-                <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.5rem;">Tìm kiếm nhanh</label>
+                <label style="display: block; font-size: 0.75rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.5rem;">Tìm kiếm @(viewMode == 0 ? "Phiếu / NCC" : "Vật tư cụ thể")</label>
                 <div class="search-container" style="margin-bottom: 0;">
                     <i class="bi bi-search"></i>
-                    <input type="text" placeholder="Mã phiếu hoặc tên nhà cung cấp..." @bind="searchText" @bind:event="oninput" />
+                    @if (viewMode == 0)
+                    {
+                        <input type="text" placeholder="Mã phiếu hoặc tên nhà cung cấp..." @bind="searchText" @bind:event="oninput" />
+                    }
+                    else
+                    {
+                        <input type="text" placeholder="Tên vật tư cần theo dõi (Sắt, Cát, Xi măng...)" @bind="materialSearchText" @bind:event="oninput" />
+                    }
                 </div>
             </div>
 
@@ -81,50 +110,108 @@
     <div class="card shadow-sm mb-4">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Mã PO</th>
-                            <th>Ngày nhập</th>
-                            <th>Nhà cung cấp</th>
-                            <th>Tổng tiền</th>
-                            <th>Ghi chú</th>
-                            <th>Chi tiết</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var po in PagedPOs)
-                        {
+                @if (viewMode == 0)
+                {
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
                             <tr>
-                                <td><strong>#@po.Id.ToString("D5")</strong></td>
-                                <td>@po.Timestamp.ToString("dd/MM/yyyy HH:mm")</td>
-                                <td>
-                                    @{
-                                        var supplierNames = po.Items
-                                            .Select(i => materials.FirstOrDefault(m => m.Id == i.MaterialId)?.Supplier?.Name)
-                                            .Where(n => !string.IsNullOrEmpty(n))
-                                            .Distinct()
-                                            .ToList();
-                                        if (!supplierNames.Any()) supplierNames = new List<string?> { po.Supplier?.Name ?? "N/A" };
-                                        <span>@string.Join(", ", supplierNames)</span>
-                                    }
-                                </td>
-                                <td class="text-danger fw-bold">@po.TotalAmount.ToString("N0") đ</td>
-                                <td>@po.Note</td>
-                                <td>
-                                    <div class="btn-group">
-                                        <button class="btn btn-sm btn-outline-info" @onclick="() => ViewDetails(po)">
-                                            <i class="bi bi-eye"></i> Xem
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-success" @onclick="() => ExportSingleOrder(po)">
-                                            <i class="bi bi-file-earmark-excel"></i> Excel
-                                        </button>
-                                    </div>
-                                </td>
+                                <th>Mã PO</th>
+                                <th>Ngày nhập</th>
+                                <th>Nhà cung cấp</th>
+                                <th>Vật tư</th>
+                                <th>Tổng tiền</th>
+                                <th>Ghi chú</th>
+                                <th>Chi tiết</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach (var po in PagedPOs)
+                            {
+                                <tr>
+                                    <td><strong>#@po.Id.ToString("D5")</strong></td>
+                                    <td>@po.Timestamp.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>
+                                        @{
+                                            var supplierNames = po.Items
+                                                .Select(i => materials.FirstOrDefault(m => m.Id == i.MaterialId)?.Supplier?.Name)
+                                                .Where(n => !string.IsNullOrEmpty(n))
+                                                .Distinct()
+                                                .ToList();
+                                            if (!supplierNames.Any()) supplierNames = new List<string?> { po.Supplier?.Name ?? "N/A" };
+                                            <span>@string.Join(", ", supplierNames)</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div style="display: flex; flex-wrap: wrap; gap: 0.3rem; max-width: 300px;">
+                                            @foreach (var item in po.Items.Take(5))
+                                            {
+                                                var mat = materials.FirstOrDefault(m => m.Id == item.MaterialId);
+                                                <span style="background: #f1f5f9; border: 1px solid #e2e8f0; color: #475569; padding: 0.15rem 0.5rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700;">
+                                                    @mat?.Name (@item.Qty.ToString("0.##")) @(item.LotNumber != "Mặc định" ? $"[{item.LotNumber}]" : "")
+                                                </span>
+                                            }
+                                            @if (po.Items.Count > 5)
+                                            {
+                                                <span style="font-size: 0.7rem; color: #94a3b8; font-weight: 700;">+ @(po.Items.Count - 5) món khác...</span>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td class="text-danger fw-bold">@po.TotalAmount.ToString("N0") đ</td>
+                                    <td>@po.Note</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-info" @onclick="() => ViewDetails(po)">
+                                                <i class="bi bi-eye"></i> Xem
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-success" @onclick="() => ExportSingleOrder(po)">
+                                                <i class="bi bi-file-earmark-excel"></i> Excel
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Ngày nhập</th>
+                                <th>Vật tư</th>
+                                <th>Số lượng</th>
+                                <th>ĐVT</th>
+                                <th>Đơn giá</th>
+                                <th>Thành tiền</th>
+                                <th>Nơi nhập</th>
+                                <th>Mã Phiếu</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var x in PagedItems)
+                            {
+                                var mat = materials.FirstOrDefault(m => m.Id == (int)x.Item.MaterialId);
+                                <tr>
+                                    <td>@x.PO.Timestamp.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        <strong>@mat?.Name</strong>
+                                        @if (x.Item.LotNumber != "Mặc định")
+                                        {
+                                            <div style="font-size: 0.7rem; color: var(--accent-primary); font-weight: 800;">Lô: @x.Item.LotNumber</div>
+                                        }
+                                    </td>
+                                    <td class="fw-bold text-primary">@x.Item.Qty.ToString("0.##")</td>
+                                    <td>@mat?.Unit</td>
+                                    <td>@x.Item.CostPrice.ToString("N0") đ</td>
+                                    <td class="fw-bold">@((x.Item.Qty * (double)x.Item.CostPrice).ToString("N0")) đ</td>
+                                    <td style="font-size: 0.85rem;">@(mat?.Supplier?.Name ?? "N/A")</td>
+                                    <td><button class="btn btn-link btn-sm p-0" @onclick="() => ViewDetails(x.PO)">#@x.PO.Id.ToString("D5")</button></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
             </div>
 
             <!-- Pagination (Catalog Style) -->
@@ -144,7 +231,6 @@
             }
         </div>
     </div>
-</div>
 
     <!-- Create Modal -->
     @if (isCreateModalOpen)
@@ -180,12 +266,13 @@
                         <table class="table align-middle" style="border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed;">
                             <thead style="position: sticky; top: 0; z-index: 10; background: #f8fafc;">
                                 <tr style="color: #64748b; font-size: 0.7rem; text-transform: uppercase; font-weight: 800;">
-                                    <th style="width: 25%; padding: 0.75rem 1rem; border-bottom: 1px solid #e2e8f0;">Vật tư / Sản phẩm</th>
-                                    <th style="width: 20%; padding: 0.75rem 1rem; border-bottom: 1px solid #e2e8f0;">Lô / Batch</th>
+                                    <th style="width: 22%; padding: 0.75rem 1rem; border-bottom: 1px solid #e2e8f0;">Vật tư / Sản phẩm</th>
+                                    <th style="width: 18%; padding: 0.75rem 1rem; border-bottom: 1px solid #e2e8f0;">Lô / Batch</th>
+                                    <th style="width: 7%; padding: 0.75rem 1rem; border-bottom: 1px solid #e2e8f0; text-align: center;">ĐVT</th>
                                     <th style="width: 8%; padding: 0.75rem 1rem; border-bottom: 1px solid #e2e8f0; text-align: center;">SL</th>
                                     <th style="width: 14%; padding: 0.75rem 1rem; border-bottom: 1px solid #e2e8f0; text-align: right;">Giá Nhập (đ)</th>
-                                    <th style="width: 14%; padding: 0.75rem 1rem; border-bottom: 1px solid #e2e8f0; text-align: right;">Giá Lẻ (đ)</th>
-                                    <th style="width: 14%; padding: 0.75rem 1rem; border-bottom: 1px solid #e2e8f0; text-align: right;">Thành tiền</th>
+                                    <th style="width: 13%; padding: 0.75rem 1rem; border-bottom: 1px solid #e2e8f0; text-align: right;">Giá Lẻ (đ)</th>
+                                    <th style="width: 13%; padding: 0.75rem 1rem; border-bottom: 1px solid #e2e8f0; text-align: right;">Thành tiền</th>
                                     <th style="width: 50px; padding: 0.75rem 1rem; border-bottom: 1px solid #e2e8f0;"></th>
                                 </tr>
                             </thead>
@@ -222,7 +309,7 @@
                                             {
                                                 <div style="margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.4rem;">
                                                     <!-- Nút Lô Mới -->
-                                                    <div @onclick='() => { item.LotNumber = ""; item.CostPrice = 0; item.BasePrice = 0; CalculateTotal(); }'
+                                                    <div @onclick="() => ResetLot(item)"
                                                          style="background: #3b82f6; border: 1px solid #2563eb; border-radius: 6px; padding: 0.25rem 0.6rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 0.3rem; box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);">
                                                         <i class="bi bi-plus-circle-fill" style="color: white; font-size: 0.75rem;"></i>
                                                         <div style="font-size: 0.7rem; font-weight: 900; color: white; letter-spacing: 0.05em;">LÔ MỚI</div>
@@ -232,7 +319,7 @@
                                                     {
                                                         @foreach (var lot in m.Lots.Where(l => l.StockQty > 0).OrderByDescending(l => l.Id))
                                                         {
-                                                            <div @onclick="() => { item.LotNumber = lot.LotNumber; item.CostPrice = lot.CostPrice; item.BasePrice = lot.BasePrice; CalculateTotal(); }"
+                                                            <div @onclick="() => SelectLot(item, lot)"
                                                                  style="background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.25rem 0.5rem; cursor: pointer; transition: all 0.2s;"
                                                                  onmouseover="this.style.background='#e2e8f0'; this.style.borderColor='var(--accent-primary)'"
                                                                  onmouseout="this.style.background='#f1f5f9'; this.style.borderColor='#e2e8f0'">
@@ -246,17 +333,32 @@
                                                 </div>
                                             }
                                         </td>
+                                        <td style="padding: 0.4rem 0.5rem; text-align: center;">
+                                            <div style="font-size: 0.85rem; color: #64748b; font-weight: 600;">@m?.Unit</div>
+                                        </td>
                                         <td style="padding: 0.4rem 0.5rem;">
-                                            <input type="number" class="form-control-modern" style="width: 100%; border: 1px solid #e2e8f0; padding: 0.4rem 0.6rem; border-radius: 6px; text-align: center; font-weight: 700; font-size: 0.85rem;" 
+                                            <input type="number" step="any" class="form-control-modern" style="width: 100%; border: 1px solid #e2e8f0; padding: 0.4rem 0.6rem; border-radius: 6px; text-align: center; font-weight: 700; font-size: 0.85rem;" 
                                                     value="@item.Qty" @onchange="@((ChangeEventArgs e) => { if(double.TryParse(e.Value?.ToString(), out var v)) item.Qty = v; CalculateTotal(); })" />
                                         </td>
                                         <td style="padding: 0.4rem 0.5rem;">
-                                            <input type="number" class="form-control-modern" style="width: 100%; border: 1px solid #e2e8f0; padding: 0.4rem 0.6rem; border-radius: 6px; text-align: right; font-weight: 700; font-size: 0.85rem; color: #1e293b;" 
-                                                    value="@((double)item.CostPrice)" @onchange="@((ChangeEventArgs e) => { if(decimal.TryParse(e.Value?.ToString(), out var v)) item.CostPrice = v; CalculateTotal(); })" />
+                                            <input type="text" class="form-control-modern" style="width: 100%; border: 1px solid #e2e8f0; padding: 0.4rem 0.6rem; border-radius: 6px; text-align: right; font-weight: 700; font-size: 0.85rem; color: #1e293b;" 
+                                                    value="@item.CostPrice.ToString("N0")" 
+                                                    @oninput="@((ChangeEventArgs e) => { 
+                                                        var raw = e.Value?.ToString()?.Replace(",", ""); 
+                                                        if(decimal.TryParse(raw, out var v)) item.CostPrice = v; 
+                                                        CalculateTotal(); 
+                                                    })" 
+                                                    onkeyup="formatCurrencyInput(this)" />
                                         </td>
                                         <td style="padding: 0.4rem 0.5rem;">
-                                            <input type="number" class="form-control-modern" style="width: 100%; border: 1px solid #e2e8f0; padding: 0.4rem 0.6rem; border-radius: 6px; text-align: right; font-size: 0.85rem;" 
-                                                    value="@((double?)item.BasePrice)" @onchange="@((ChangeEventArgs e) => { if(decimal.TryParse(e.Value?.ToString(), out var v)) item.BasePrice = v; })" placeholder="Bán lẻ..." />
+                                            <input type="text" class="form-control-modern" style="width: 100%; border: 1px solid #e2e8f0; padding: 0.4rem 0.6rem; border-radius: 6px; text-align: right; font-size: 0.85rem;" 
+                                                    value="@(item.BasePrice?.ToString("N0"))" 
+                                                    @oninput="@((ChangeEventArgs e) => { 
+                                                        var raw = e.Value?.ToString()?.Replace(",", ""); 
+                                                        if(decimal.TryParse(raw, out var v)) item.BasePrice = v; 
+                                                        else if(string.IsNullOrEmpty(raw)) item.BasePrice = null;
+                                                    })" 
+                                                    onkeyup="formatCurrencyInput(this)" placeholder="Bán lẻ..." />
                                         </td>
                                         <td style="padding: 0.5rem 1rem; text-align: right; font-weight: 800; color: #0f172a; font-size: 0.95rem;">
                                             @(((decimal)item.Qty * item.CostPrice).ToString("N0"))
@@ -278,6 +380,7 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
 
                     <!-- Footer (Compact Sticky) -->
                     <div style="background: #f8fafc; padding: 0.75rem 2rem; border-top: 1px solid #e2e8f0; flex-shrink: 0;">
@@ -318,12 +421,12 @@
                     </div>
                 </div>
             </div>
-        </div>
 
         <MaterialSelectionModal @bind-IsOpen="isSelectionModalOpen" 
                                 OnMaterialsSelected="OnMaterialsSelected"
                                 ExistingMaterialIds="newPo.Items.Where(i => i.MaterialId > 0).Select(i => i.MaterialId).ToList()" />
     }
+
 
     <!-- View Modal -->
     @if (isViewModalOpen && selectedPo != null)
@@ -344,19 +447,20 @@
                     {
                         <!-- Header Info Card -->
                         <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 20px; padding: 2rem; margin-bottom: 2.5rem; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
-                            <div>
-                                <div style="font-size: 0.7rem; color: #64748b; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem;">Nhà cung cấp đại diện</div>
-                                <div style="font-size: 1.5rem; font-weight: 900; color: #1e293b; line-height: 1.2;">
-                                    @{
-                                        var names = selectedPo.Items
-                                            .Select(i => materials.FirstOrDefault(m => m.Id == i.MaterialId)?.Supplier?.Name)
-                                            .Where(n => !string.IsNullOrEmpty(n))
-                                            .Distinct()
-                                            .ToList();
-                                        if (!names.Any()) names = new List<string?> { selectedPo.Supplier?.Name ?? "N/A" };
-                                        <span><i class="bi bi-building-fill" style="margin-right: 0.6rem; color: #2563eb;"></i>@string.Join(", ", names)</span>
-                                    }
-                                </div>
+                                    <div>
+                                        <div style="font-size: 0.7rem; color: #64748b; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem;">Nhà cung cấp đại diện</div>
+                                        <div style="font-size: 1.5rem; font-weight: 900; color: #1e293b; line-height: 1.2;">
+                                            @{
+                                                var supplierNames = selectedPo.Items
+                                                    .Select(i => materials.FirstOrDefault(m => m.Id == i.MaterialId)?.Supplier?.Name)
+                                                    .Where(n => !string.IsNullOrEmpty(n))
+                                                    .Distinct()
+                                                    .ToList();
+                                                if (!supplierNames.Any()) supplierNames = new List<string?> { selectedPo.Supplier?.Name ?? "N/A" };
+                                                var displayNames = string.Join(", ", supplierNames);
+                                            }
+                                            <i class="bi bi-building-fill" style="margin-right: 0.6rem; color: #2563eb;"></i> @displayNames
+                                        </div>
                                 <div style="font-size: 0.9rem; color: #64748b; margin-top: 0.75rem; font-weight: 500;">
                                     <i class="bi bi-clock-history" style="margin-right: 0.4rem;"></i> @selectedPo.Timestamp.ToString("dd/MM/yyyy HH:mm")
                                 </div>
@@ -374,6 +478,7 @@
                                     <tr style="font-size: 0.75rem; color: #64748b; text-transform: uppercase; font-weight: 800; letter-spacing: 0.05em;">
                                         <th style="padding: 1.25rem 1.5rem;">Nhà cung cấp</th>
                                         <th style="padding: 1.25rem 1.5rem;">Vật tư</th>
+                                        <th style="padding: 1.25rem 1.5rem; text-align: center;">ĐVT</th>
                                         <th style="padding: 1.25rem 1.5rem; text-align: center;">Số Lô</th>
                                         <th style="padding: 1.25rem 1.5rem; text-align: center;">Số lượng</th>
                                         <th style="padding: 1.25rem 1.5rem; text-align: right;">Đơn giá</th>
@@ -381,34 +486,56 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var item in selectedPo.Items)
+                                    @{
+                                        var groupedItems = selectedPo.Items
+                                            .GroupBy(i => materials.FirstOrDefault(m => m.Id == i.MaterialId)?.SupplierId ?? 0)
+                                            .ToList();
+                                    }
+                                    @foreach (var group in groupedItems)
                                     {
-                                        <tr style="border-bottom: 1px solid #f1f5f9;">
-                                            <td style="padding: 1.25rem 1.5rem; color: #64748b; font-size: 0.85rem;">
-                                                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                                                    <i class="bi bi-shop" style="font-size: 1rem; color: #cbd5e1;"></i>
-                                                    @(materials.FirstOrDefault(m => m.Id == item.MaterialId)?.Supplier?.Name ?? "N/A")
-                                                </div>
-                                            </td>
-                                            <td style="padding: 1.25rem 1.5rem;">
-                                                <div style="font-weight: 800; color: #1e293b; font-size: 1.05rem;">@item.Material?.Name</div>
-                                                <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 600;">ĐVT: @item.Material?.Unit</div>
-                                            </td>
-                                            <td style="padding: 1.25rem 1.5rem; text-align: center;">
-                                                <span style="background: #f1f5f9; color: #475569; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.75rem; font-weight: 700; border: 1px solid #e2e8f0;">
-                                                    @(string.IsNullOrEmpty(item.LotNumber) ? "Mặc định" : item.LotNumber)
-                                                </span>
-                                            </td>
-                                            <td style="padding: 1.25rem 1.5rem; text-align: center;">
-                                                <div style="font-size: 1.1rem; font-weight: 900; color: #1e293b;">@item.Qty.ToString("N0")</div>
-                                                <div style="font-size: 0.7rem; color: #94a3b8; font-weight: 700; text-transform: uppercase;">@item.Material?.Unit</div>
-                                            </td>
-                                            <td style="padding: 1.25rem 1.5rem; text-align: right; color: #64748b; font-weight: 600;">
-                                                @item.CostPrice.ToString("N0")
-                                            </td>
-                                            <td style="padding: 1.25rem 1.5rem; text-align: right;">
-                                                <div style="font-weight: 900; color: #2563eb; font-size: 1.1rem;">@item.Subtotal.ToString("N0")</div>
-                                            </td>
+                                        var supplierName = suppliers.FirstOrDefault(s => s.Id == group.Key)?.Name ?? "N/A";
+                                        decimal supplierSubtotal = 0;
+
+                                        @foreach (var oi in group)
+                                        {
+                                            var mat = materials.FirstOrDefault(x => x.Id == oi.MaterialId);
+                                            supplierSubtotal += oi.Subtotal;
+                                            <tr style="border-bottom: 1px solid #f1f5f9;">
+                                                <td style="padding: 1.25rem 1.5rem; color: #64748b; font-size: 0.85rem;">
+                                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                                        <i class="bi bi-shop" style="font-size: 1rem; color: #cbd5e1;"></i>
+                                                        @supplierName
+                                                    </div>
+                                                </td>
+                                                <td style="padding: 1.25rem 1.5rem;">
+                                                    <div style="font-weight: 800; color: #1e293b; font-size: 1.05rem;">@mat?.Name</div>
+                                                </td>
+                                                <td style="padding: 1.25rem 1.5rem; text-align: center;">
+                                                    <div style="font-size: 0.9rem; color: #64748b; font-weight: 600;">@mat?.Unit</div>
+                                                </td>
+                                                <td style="padding: 1.25rem 1.5rem; text-align: center;">
+                                                    @if (oi.LotNumber != "Mặc định" && !string.IsNullOrEmpty(oi.LotNumber))
+                                                    {
+                                                        <span style="background: #f1f5f9; color: #475569; padding: 0.4rem 0.8rem; border-radius: 8px; font-size: 0.75rem; font-weight: 700; border: 1px solid #e2e8f0;">
+                                                            @oi.LotNumber
+                                                        </span>
+                                                    }
+                                                </td>
+                                                <td style="padding: 1.25rem 1.5rem; text-align: center;">
+                                                    <div style="font-size: 1.1rem; font-weight: 900; color: #1e293b;">@oi.Qty.ToString("0.##")</div>
+                                                    <div style="font-size: 0.7rem; color: #94a3b8; font-weight: 700; text-transform: uppercase;">@mat?.Unit</div>
+                                                </td>
+                                                <td style="padding: 1.25rem 1.5rem; text-align: right; color: #64748b; font-weight: 600;">
+                                                    @oi.CostPrice.ToString("N0")
+                                                </td>
+                                                <td style="padding: 1.25rem 1.5rem; text-align: right;">
+                                                    <div style="font-weight: 900; color: #2563eb; font-size: 1.1rem;">@oi.Subtotal.ToString("N0")</div>
+                                                </td>
+                                            </tr>
+                                        }
+                                        <tr style="background: #f8fafc;">
+                                            <td colspan="5" style="padding: 0.75rem 1.5rem; text-align: right; font-weight: 700; color: #64748b; font-size: 0.85rem;">CỘNG @supplierName.ToUpper():</td>
+                                            <td style="padding: 0.75rem 1.5rem; text-align: right; font-weight: 900; color: #1e293b; font-size: 1rem;">@supplierSubtotal.ToString("N0")</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -430,3 +557,5 @@
             </div>
         </div>
     }
+
+</div>

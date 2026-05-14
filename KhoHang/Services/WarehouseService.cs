@@ -187,7 +187,8 @@ public class WarehouseService
                 Timestamp = DateTime.Now,
                 Type = "Điều chỉnh",
                 QtyChange = diff,
-                Note = $"Điều chỉnh Lô {lot.LotNumber}: {lot.StockQty - diff} -> {newQty}"
+                LotNumber = lot.LotNumber,
+                Note = $"Điều chỉnh số lượng: {lot.StockQty - diff} -> {newQty}"
             });
 
             await context.SaveChangesAsync();
@@ -493,7 +494,8 @@ public class WarehouseService
                         Type = deliveredItem.Qty < 0 ? "Trả hàng" : "Xuất",
                         QtyChange = -deliveredItem.Qty,
                         ReferenceId = delivery.Id.ToString(),
-                        Note = (deliveredItem.Qty < 0 ? "Khách trả hàng " : "Xuất ") + $"cho dự án: {delivery.Project?.CustomerName ?? "Ẩn danh"}. Lô: {deliveredItem.LotNumber ?? "N/A"}"
+                        LotNumber = deliveredItem.LotNumber,
+                        Note = (deliveredItem.Qty < 0 ? "Khách trả hàng " : "Xuất ") + $"cho dự án: {delivery.Project?.CustomerName ?? "Ẩn danh"}"
                     });
                 }
             }
@@ -607,7 +609,8 @@ public class WarehouseService
                 Timestamp = po.Timestamp,
                 Type = "Nhập",
                 QtyChange = item.Qty,
-                Note = $"Nhập phiếu #{po.Id:D5}. Lô: {lotNum}",
+                LotNumber = lotNum,
+                Note = $"Nhập phiếu #{po.Id:D5}",
                 ReferenceId = po.Id.ToString()
             });
         }
@@ -655,6 +658,7 @@ public class WarehouseService
         return await context.Materials
             .Where(m => m.StockQty <= m.MinStockLevel)
             .Include(m => m.Supplier)
+            .Include(m => m.Lots)
             .ToListAsync();
     }
 
@@ -704,7 +708,8 @@ public class WarehouseService
                         Timestamp = DateTime.Now,
                         Type = "Trả hàng",
                         QtyChange = item.Qty,
-                        Note = $"Khách trả hàng. Dự án: {cr.ProjectId}. Lô: {lotNum}",
+                        LotNumber = lotNum,
+                        Note = $"Khách trả hàng. Dự án: {cr.ProjectId}",
                         ReferenceId = "RET-" + cr.Id
                     });
                 }
@@ -763,7 +768,8 @@ public class WarehouseService
                     Timestamp = DateTime.Now,
                     Type = "Nhập",
                     QtyChange = lot.StockQty,
-                    Note = $"Khởi tạo lô mới: {lot.LotNumber}",
+                    LotNumber = lot.LotNumber,
+                    Note = "Khởi tạo lô mới",
                     ReferenceId = $"LOT-{lot.Id}"
                 });
             }

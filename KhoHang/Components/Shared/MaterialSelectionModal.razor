@@ -38,12 +38,24 @@
                     <div id="reader" style="width: 100%;"></div>
                 </div>
 
-                <div class="filter-tabs">
-                    <div class="filter-tab @(selectedCategoryId == null ? "active" : "")" @onclick="() => FilterByCategory(null)">Tất cả</div>
-                    @foreach (var cat in categories)
-                    {
-                        <div class="filter-tab @(selectedCategoryId == cat.Id ? "active" : "")" @onclick="() => FilterByCategory(cat.Id)">@cat.Name</div>
-                    }
+                <div style="display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1rem;">
+                    <div class="filter-tabs" style="margin-bottom: 0; flex: 1;">
+                        <div class="filter-tab @(selectedCategoryId == null ? "active" : "")" @onclick="() => FilterByCategory(null)">Tất cả</div>
+                        @foreach (var cat in categories)
+                        {
+                            <div class="filter-tab @(selectedCategoryId == cat.Id ? "active" : "")" @onclick="() => FilterByCategory(cat.Id)">@cat.Name</div>
+                        }
+                    </div>
+                    <div style="min-width: 200px;">
+                        <select class="form-select" style="border-radius: 8px; font-size: 0.85rem; padding: 0.4rem 1rem; border: 1px solid #e2e8f0; width: 100%;" 
+                                @onchange="@((ChangeEventArgs e) => { if(int.TryParse(e.Value?.ToString(), out var sid)) selectedSupplierId = sid > 0 ? sid : null; else selectedSupplierId = null; })">
+                            <option value="">-- Tất cả nơi nhập --</option>
+                            @foreach (var s in suppliers)
+                            {
+                                <option value="@s.Id">@s.Name</option>
+                            }
+                        </select>
+                    </div>
                 </div>
 
                 <div class="selection-grid">
@@ -61,7 +73,7 @@
                                     @if (!string.IsNullOrEmpty(m.ProductCode)) { <span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 700;">[@m.ProductCode]</span> } @m.Name
                                 </div>
                                 <div style="font-size: 0.75rem; color: var(--text-muted);">
-                                    @m.Unit • @(m.Lots.OrderBy(l => l.Id).FirstOrDefault()?.BasePrice.ToString("N0") ?? "0") đ
+                                    @m.Unit • @(m.Lots.OrderByDescending(l => l.Id).FirstOrDefault()?.CostPrice.ToString("N0") ?? "0") đ
                                     <span style="margin-left: 0.5rem; font-weight: 600; color: @(m.StockQty > 0 ? "var(--accent-primary)" : "var(--error)");">
                                         (Tồn: @m.StockQty)
                                     </span>
@@ -174,10 +186,9 @@
     .filter-tabs {
         display: flex;
         gap: 0.5rem;
-        overflow-x: auto;
+        flex-wrap: wrap;
         padding-bottom: 0.5rem;
         margin-bottom: 1rem;
-        scrollbar-width: none;
     }
     .filter-tab {
         padding: 0.4rem 1rem;
@@ -204,9 +215,11 @@
 
     private List<Material> allMaterials = new();
     private List<Category> categories = new();
+    private List<Supplier> suppliers = new();
     private List<int> currentSelectedIds = new();
     private string searchText = "";
     private int? selectedCategoryId;
+    private int? selectedSupplierId;
     private bool isScanning = false;
     private DotNetObjectReference<MaterialSelectionModal>? objRef;
 
@@ -216,10 +229,12 @@
     {
         allMaterials = await WarehouseService.GetMasterMaterialsAsync();
         categories = await WarehouseService.GetCategoriesAsync();
+        suppliers = await WarehouseService.GetSuppliersAsync();
     }
 
     private IEnumerable<Material> filteredMaterials => allMaterials
         .Where(m => (selectedCategoryId == null || m.CategoryId == selectedCategoryId) &&
+                    (selectedSupplierId == null || m.SupplierId == selectedSupplierId) &&
                     (string.IsNullOrWhiteSpace(searchText) || 
                      m.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
                      (m.ProductCode != null && m.ProductCode.Contains(searchText, StringComparison.OrdinalIgnoreCase))));

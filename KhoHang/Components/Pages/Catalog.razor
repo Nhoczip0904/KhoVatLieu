@@ -138,7 +138,7 @@
                                     Tồn kho 
                                     @if (editingMaterial.Lots != null && editingMaterial.Lots.Any()) { <span class="text-primary" style="font-size: 0.65rem;">(Tính từ Lô)</span> }
                                 </label>
-                                <input type="number" @bind="editingMaterial.StockQty" 
+                                <input type="number" step="any" @bind="editingMaterial.StockQty" 
                                        readonly="@(editingMaterial.Lots != null && editingMaterial.Lots.Any())"
                                        class="form-input-modern @(editingMaterial.Lots != null && editingMaterial.Lots.Any() ? "bg-light" : "")" 
                                        style="padding: 0.5rem 0.75rem;" />
@@ -147,11 +147,15 @@
                             {
                                 <div>
                                     <label class="form-label-small">Giá nhập khởi tạo</label>
-                                    <input type="number" @bind="editingCostPrice" class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
+                                    <input type="text" value="@editingCostPrice.ToString("N0")" 
+                                           @oninput="@((ChangeEventArgs e) => { var raw = e.Value?.ToString()?.Replace(",", ""); if(decimal.TryParse(raw, out var v)) editingCostPrice = v; })" 
+                                           onkeyup="formatCurrencyInput(this)" class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
                                 </div>
                                 <div>
                                     <label class="form-label-small">Giá bán khởi tạo</label>
-                                    <input type="number" @bind="editingBasePrice" class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
+                                    <input type="text" value="@editingBasePrice.ToString("N0")" 
+                                           @oninput="@((ChangeEventArgs e) => { var raw = e.Value?.ToString()?.Replace(",", ""); if(decimal.TryParse(raw, out var v)) editingBasePrice = v; })" 
+                                           onkeyup="formatCurrencyInput(this)" class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
                                 </div>
                             }
 
@@ -191,11 +195,15 @@
                                                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
                                                         <div>
                                                             <label style="font-size: 0.65rem; font-weight: 700; color: #64748b;">Giá nhập</label>
-                                                            <input type="number" @bind="lot.CostPrice" style="width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.3rem;" />
+                                                            <input type="text" value="@lot.CostPrice.ToString("N0")" 
+                                                                   @oninput="@((ChangeEventArgs e) => { var raw = e.Value?.ToString()?.Replace(",", ""); if(decimal.TryParse(raw, out var v)) lot.CostPrice = v; })" 
+                                                                   onkeyup="formatCurrencyInput(this)" style="width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.3rem;" />
                                                         </div>
                                                         <div>
                                                             <label style="font-size: 0.65rem; font-weight: 700; color: #64748b;">Giá bán</label>
-                                                            <input type="number" @bind="lot.BasePrice" style="width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.3rem;" />
+                                                            <input type="text" value="@lot.BasePrice.ToString("N0")" 
+                                                                   @oninput="@((ChangeEventArgs e) => { var raw = e.Value?.ToString()?.Replace(",", ""); if(decimal.TryParse(raw, out var v)) lot.BasePrice = v; })" 
+                                                                   onkeyup="formatCurrencyInput(this)" style="width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.3rem;" />
                                                         </div>
                                                     </div>
                                                 </div>
@@ -263,12 +271,17 @@
                                     <i class="bi bi-building"></i> <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@(m.Supplier?.Name ?? "Chưa rõ")</span>
                                 </div>
                                 <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed #e2e8f0; display: flex; flex-direction: column; align-items: center; gap: 0.4rem;">
+                                    @{
+                                        var costPrices = m.Lots.Select(l => l.CostPrice).Distinct().ToList();
+                                        var displayPrice = costPrices.Count > 1 ? "Tùy Lô" : (costPrices.Count == 1 ? costPrices[0].ToString("N0") : "0");
+                                    }
                                     <div style="display: flex; align-items: baseline; gap: 0.25rem;">
-                                        <span style="font-weight: 900; color: var(--accent-primary); font-size: 1.3rem;">@(m.Lots.OrderBy(l => l.Id).FirstOrDefault()?.BasePrice.ToString("N0") ?? "0")</span>
-                                        <span style="font-size: 0.75rem; font-weight: 700; color: #94a3b8;">đ / @m.Unit</span>
+                                        <span style="font-size: 0.7rem; color: #64748b; font-weight: 700;">Giá nhập:</span>
+                                        <span style="font-weight: 900; color: var(--accent-primary); font-size: @(displayPrice == "Tùy Lô" ? "1.1rem" : "1.3rem");">@displayPrice</span>
+                                        @if(displayPrice != "Tùy Lô") { <span style="font-size: 0.75rem; font-weight: 700; color: #94a3b8;">đ / @m.Unit</span> }
                                     </div>
                                     <div style="font-size: 0.75rem; font-weight: 700; color: @(m.StockQty <= 0 ? "var(--error)" : "#10b981");">
-                                        <i class="bi bi-archive"></i> Kho tổng: @m.StockQty.ToString("N0") @m.Unit
+                                        <i class="bi bi-archive"></i> Kho tổng: @m.StockQty.ToString("0.##") @m.Unit
                                         @if (m.Lots != null && m.Lots.Any()) { <span style="color: var(--accent-primary); font-size: 0.65rem; margin-left: 0.25rem;">(@m.Lots.Count lô)</span> }
                                     </div>
                                 </div>

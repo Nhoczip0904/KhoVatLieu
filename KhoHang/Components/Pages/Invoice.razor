@@ -155,7 +155,7 @@ else
                             <td style="text-align: center; font-size: 0.85rem; color: #64748b;">
                                 @(item.LotNumber != "Mặc định" ? item.LotNumber : "")
                             </td>
-                            <td style="text-align: center; color: @(item.Qty < 0 ? "var(--error)" : "inherit")">@Math.Abs(item.Qty)</td>
+                            <td style="text-align: center; color: @(item.Qty < 0 ? "var(--error)" : "inherit")">@Math.Abs(item.Qty).ToString("0.##")</td>
                             <td style="text-align: center;">@item.Unit</td>
                             <td style="text-align: right;">@item.Price.ToString("N0")</td>
                             <td style="text-align: right; font-weight: 700; color: @(item.Qty < 0 ? "var(--error)" : "inherit")">

@@ -109,9 +109,22 @@
                 <div style="display: flex; flex-direction: column; gap: 0.5rem;">
                     @foreach (var m in lowStockMaterials)
                     {
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0.85rem; background: #fef2f2; border-radius: 10px; border: 1px solid #fee2e2;">
-                            <span style="font-weight: 700; font-size: 0.9rem;">@m.Name</span>
-                            <span style="color: var(--error); font-weight: 800;">@m.StockQty.ToString("N0")</span>
+                        <div style="display: flex; flex-direction: column; padding: 0.65rem 0.85rem; background: #fef2f2; border-radius: 10px; border: 1px solid #fee2e2;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                                <span style="font-weight: 700; font-size: 0.9rem;">@m.Name</span>
+                                <span style="color: var(--error); font-weight: 800;">@m.StockQty.ToString("0.##") @m.Unit</span>
+                            </div>
+                            @if (m.Lots != null && m.Lots.Any())
+                            {
+                                <div style="font-size: 0.8rem; color: #b91c1c; display: flex; flex-wrap: wrap; gap: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed #fca5a5;">
+                                    @foreach (var lot in m.Lots)
+                                    {
+                                        <span style="background: rgba(255,255,255,0.7); padding: 0.25rem 0.65rem; border-radius: 6px; border: 1px solid rgba(185, 28, 28, 0.1); opacity: @(lot.StockQty == 0 ? "0.6" : "1");">
+                                            <span style="font-weight: 400; opacity: 0.8;">Lô:</span> <b style="font-weight: 800;">@(lot.LotNumber == "Mặc định" ? "Mặc định" : lot.LotNumber)</b>: <b style="font-weight: 900; color: @(lot.StockQty == 0 ? "#94a3b8" : "var(--error)");">@lot.StockQty.ToString("0.##")</b>
+                                        </span>
+                                    }
+                                </div>
+                            }
                         </div>
                     }
                     @if (!lowStockMaterials.Any())

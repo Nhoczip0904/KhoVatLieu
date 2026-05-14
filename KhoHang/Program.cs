@@ -46,7 +46,7 @@ using (var scope = app.Services.CreateScope())
     try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE MaterialLots ADD COLUMN BasePrice TEXT;"); } catch { }
     try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE PurchaseOrderItems ADD COLUMN BasePrice TEXT;"); } catch { }
     
-    var tables = new[] { "PurchaseOrderItems", "DeliveryItems" };
+    var tables = new[] { "PurchaseOrderItems", "DeliveryItems", "InventoryTransactions", "CustomerReturnItems" };
     foreach (var table in tables)
     {
         try { await context.Database.ExecuteSqlRawAsync($"ALTER TABLE {table} ADD COLUMN LotNumber TEXT;"); } catch { }

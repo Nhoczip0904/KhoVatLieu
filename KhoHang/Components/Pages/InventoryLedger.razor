@@ -29,6 +29,23 @@
         </ul>
     </div>
 }
+<!-- Category Filter Badges -->
+<div class="filter-tabs mb-4" style="display: flex; gap: 0.5rem; flex-wrap: wrap; background: white; padding: 1.25rem; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+    <div class="filter-tab @(selectedCategoryId == null ? "active" : "")" 
+         style="padding: 0.6rem 1.5rem; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; @(selectedCategoryId == null ? "background: var(--accent-primary); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);" : "background: #f1f5f9; color: #64748b;")"
+         @onclick="() => FilterByStockCategory(null)">
+        Tất cả nhóm
+    </div>
+    @foreach (var cat in categories)
+    {
+        <div class="filter-tab @(selectedCategoryId == cat.Id ? "active" : "")" 
+             style="padding: 0.6rem 1.5rem; border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s; @(selectedCategoryId == cat.Id ? "background: var(--accent-primary); color: white; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);" : "background: #f1f5f9; color: #64748b;")"
+             @onclick="() => FilterByStockCategory(cat.Id)">
+            @cat.Name
+        </div>
+    }
+</div>
+
 <!-- Filters -->
 <div class="glass-card mb-4" style="padding: 1.5rem;">
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; align-items: flex-end;">
@@ -70,6 +87,7 @@
                         <th>Ngày giờ</th>
                         <th>Loại phiếu</th>
                         <th>Vật tư</th>
+                        <th>Lô</th>
                         <th class="text-end">Số lượng thay đổi</th>
                         <th>Ghi chú</th>
                     </tr>
@@ -104,6 +122,14 @@
                                 }
                             </td>
                             <td><strong>@tran.Material?.Name</strong></td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(tran.LotNumber) && tran.LotNumber != "Mặc định")
+                                {
+                                    <span style="background: #f8fafc; border: 1px solid #e2e8f0; color: var(--accent-primary); padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 800; font-size: 0.75rem;">
+                                        @tran.LotNumber
+                                    </span>
+                                }
+                            </td>
                             <td class="text-end fw-bold @(tran.Type == "Xuất" ? "text-danger" : "text-success")">
                                 @(tran.Type == "Xuất" ? "-" : "+")@tran.QtyChange @tran.Material?.Unit
                             </td>
@@ -115,7 +141,7 @@
                     @if (!transactions.Any())
                     {
                         <tr>
-                            <td colspan="5" class="text-center py-4 text-muted">Chưa có giao dịch biến động kho nào.</td>
+                            <td colspan="6" class="text-center py-4 text-muted">Chưa có giao dịch biến động kho nào.</td>
                         </tr>
                     }
                 </tbody>
@@ -137,7 +163,8 @@
         </div>
         }
     </div>
-</div>
+    </div>
+
 
 <div class="card shadow-sm">
     <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
@@ -169,9 +196,9 @@
                             <td><span class="badge bg-light text-dark">@m.Category?.Name</span></td>
                             <td class="text-muted small">@m.Supplier?.Name</td>
                             <td class="text-end fw-bold @(m.StockQty <= m.MinStockLevel ? "text-danger" : "text-success")">
-                                @m.StockQty.ToString("N0") @m.Unit
+                                @m.StockQty.ToString("0.##") @m.Unit
                             </td>
-                            <td class="text-end text-muted">@m.MinStockLevel.ToString("N0")</td>
+                            <td class="text-end text-muted">@m.MinStockLevel.ToString("0.##")</td>
                         </tr>
                     }
                 </tbody>
@@ -201,11 +228,13 @@
     private List<Material> lowStockMaterials = new();
     private List<Material> allMaterials = new();
     private List<Material> filteredMaterials = new();
+    private List<Category> categories = new();
 
     private string filterType = "";
     private DateTime? fromDate = DateTime.Today.AddDays(-30);
     private DateTime? toDate = DateTime.Today;
     private string stockSearch = "";
+    private int? selectedCategoryId;
 
     // Phân trang Giao dịch
     private int currentPage = 1;
@@ -224,6 +253,7 @@
         allTransactions = await WarehouseService.GetInventoryTransactionsAsync();
         lowStockMaterials = await WarehouseService.GetLowStockMaterialsAsync();
         allMaterials = await WarehouseService.GetMasterMaterialsAsync();
+        categories = await WarehouseService.GetCategoriesAsync();
         ApplyFilters();
         ApplyStockFilters();
     }
@@ -236,7 +266,8 @@
         transactions = allTransactions
             .Where(t => (string.IsNullOrEmpty(filterType) || t.Type == filterType) &&
                         (start == null || t.Timestamp.Date >= start) &&
-                        (end == null || t.Timestamp.Date <= end))
+                        (end == null || t.Timestamp.Date <= end) &&
+                        (selectedCategoryId == null || t.Material?.CategoryId == selectedCategoryId))
             .ToList();
         currentPage = 1; // Reset về trang 1 khi lọc
     }
@@ -244,9 +275,17 @@
     private void ApplyStockFilters()
     {
         filteredMaterials = allMaterials
-            .Where(m => string.IsNullOrEmpty(stockSearch) || m.Name.Contains(stockSearch, StringComparison.OrdinalIgnoreCase))
+            .Where(m => (string.IsNullOrEmpty(stockSearch) || m.Name.Contains(stockSearch, StringComparison.OrdinalIgnoreCase)) &&
+                        (selectedCategoryId == null || m.CategoryId == selectedCategoryId))
             .ToList();
         currentStockPage = 1;
+    }
+
+    private void FilterByStockCategory(int? categoryId)
+    {
+        selectedCategoryId = categoryId;
+        ApplyFilters();
+        ApplyStockFilters();
     }
 }
 </div>

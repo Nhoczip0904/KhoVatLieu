@@ -129,3 +129,27 @@ window.downloadExcel = (htmlContent, fileName) => {
     link.click();
     document.body.removeChild(link);
 };
+
+window.formatCurrencyInput = (element) => {
+    // Lưu vị trí con trỏ
+    let cursorPosition = element.selectionStart;
+    let originalLength = element.value.length;
+
+    // Loại bỏ tất cả ký tự không phải số
+    let value = element.value.replace(/\D/g, "");
+    
+    if (value === "") {
+        element.value = "";
+        return;
+    }
+
+    // Định dạng số với dấu phẩy
+    let formattedValue = new Intl.NumberFormat('en-US').format(value);
+    
+    element.value = formattedValue;
+
+    // Điều chỉnh lại vị trí con trỏ
+    let newLength = element.value.length;
+    cursorPosition = cursorPosition + (newLength - originalLength);
+    element.setSelectionRange(cursorPosition, cursorPosition);
+};

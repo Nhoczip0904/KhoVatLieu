@@ -3,6 +3,7 @@
 @using KhoHang.Services
 @inject WarehouseService WarehouseService
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 @rendermode InteractiveServer
 
 @if (project == null)
@@ -71,7 +72,7 @@ else
         </div>
 
         <!-- Main content: left + right sidebar (Expanded) -->
-        <div class="grid-responsive-detail" style="display: grid; grid-template-columns: 1fr 450px; gap: 2rem;">
+        <div class="grid-responsive-detail" style="display: grid; grid-template-columns: 1fr 550px; gap: 2rem;">
             <div style="display: flex; flex-direction: column; gap: 2rem;">
                 <!-- Material Progress - 2 columns -->
                 <div class="glass-card">
@@ -88,7 +89,7 @@ else
                         @foreach (var m in project.Materials)
                         {
                             <div style="background: @(materialToEdit?.Id == m.Id ? "#fff" : "#f8fafc"); padding: 1rem; border-radius: 12px; border: 1px solid @(materialToEdit?.Id == m.Id ? "var(--accent-primary)" : "#e2e8f0"); display: flex; gap: 0.75rem; align-items: flex-start; position: relative; transition: all 0.2s; box-shadow: @(materialToEdit?.Id == m.Id ? "0 10px 20px rgba(67, 97, 238, 0.1)" : "none");">
-                                <img src="@(string.IsNullOrEmpty(m.ImageUrl) ? "favicon.png" : m.ImageUrl)" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover; border: 1px solid #e2e8f0; flex-shrink: 0;" />
+                                <img src="@(string.IsNullOrEmpty(m.ImageUrl) ? "favicon.png" : m.ImageUrl)" style="width: 32px; height: 32px; border-radius: 8px; object-fit: cover; border: 1px solid #e2e8f0; flex-shrink: 0;" />
                                 
                                 @if (materialToEdit?.Id == m.Id)
                                 {
@@ -97,11 +98,13 @@ else
                                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.75rem;">
                                             <div>
                                                 <label style="font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Giá chốt (@m.Unit)</label>
-                                                <input type="number" @bind="materialToEdit.CustomPrice" class="form-input-modern" style="padding: 0.35rem 0.5rem; font-size: 0.9rem;" />
+                                                <input type="text" value="@materialToEdit.CustomPrice.ToString("N0")" 
+                                                       @oninput="@((ChangeEventArgs e) => { var raw = e.Value?.ToString()?.Replace(",", ""); if(decimal.TryParse(raw, out var v)) materialToEdit.CustomPrice = v; })" 
+                                                       onkeyup="formatCurrencyInput(this)" class="form-input-modern" style="padding: 0.35rem 0.5rem; font-size: 0.9rem;" />
                                             </div>
                                             <div>
                                                 <label style="font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Tổng dự kiến</label>
-                                                <input type="number" @bind="materialToEdit.TotalQty" class="form-input-modern" style="padding: 0.35rem 0.5rem; font-size: 0.9rem;" />
+                                                <input type="number" step="any" @bind="materialToEdit.TotalQty" class="form-input-modern" style="padding: 0.35rem 0.5rem; font-size: 0.9rem;" />
                                             </div>
                                         </div>
                                         <div style="display: flex; gap: 0.5rem;">
@@ -119,14 +122,14 @@ else
                                     <div style="flex: 1; min-width: 0;">
                                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                                             <div style="font-weight: 700; padding-right: 2rem;">@m.Name</div>
-                                            <div style="font-size: 0.8rem; font-weight: 600; color: @(m.RemainingQty < 0 ? "var(--error)" : "var(--text-primary)");">@m.RemainingQty / @m.TotalQty @m.Unit</div>
+                                            <div style="font-size: 0.8rem; font-weight: 600; color: @(m.RemainingQty < 0 ? "var(--error)" : "var(--text-primary)");">@m.RemainingQty.ToString("0.##") / @m.TotalQty.ToString("0.##") @m.Unit</div>
                                         </div>
                                         @{ var pct = m.TotalQty > 0 ? Math.Min(100, (100 - (m.RemainingQty * 100 / m.TotalQty))) : 0; }
                                         <div style="height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; margin-bottom: 0.35rem;">
                                             <div style="height: 100%; background: @(m.RemainingQty < 0 ? "var(--error)" : "var(--accent-primary)"); width: @(Math.Max(0, pct))%"></div>
                                         </div>
                                         <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-secondary);">
-                                            <span>Đã giao: @(m.TotalQty - m.RemainingQty)</span>
+                                            <span>Đã giao: @((m.TotalQty - m.RemainingQty).ToString("0.##"))</span>
                                             <span>@m.CustomPrice.ToString("N0") đ/@m.Unit</span>
                                         </div>
 
@@ -319,7 +322,7 @@ else
                                             {
                                                 foreach (var lot in availableLots[item.MaterialId])
                                                 {
-                                                    <option value="@lot.LotNumber">Lô: @lot.LotNumber (Tồn: @lot.StockQty @item.Unit · Giá: @lot.BasePrice.ToString("N0"))</option>
+                                                    <option value="@lot.LotNumber">Lô: @lot.LotNumber (Tồn: @lot.StockQty @item.Unit | Nhập: @lot.CostPrice.ToString("N0") | @lot.Note)</option>
                                                 }
                                             }
                                         </select>
@@ -328,16 +331,25 @@ else
                                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
                                         <div>
                                             <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Số lượng</div>
-                                            <input type="number" @bind="item.Qty" 
-                                                   style="width: 100%; padding: 0.5rem; font-weight: 600; color: @(item.IsReturn ? "var(--error)" : "inherit")" />
+                                            <input type="number" step="any" @bind="item.Qty" @bind:event="oninput"
+                                                   style="width: 100%; padding: 0.5rem; font-weight: 600; color: @(item.IsReturn ? "var(--error)" : "inherit");
+                                                          border-color: @(!item.IsReturn && mat != null && (double)item.Qty > mat.RemainingQty + 0.0001 ? "var(--error)" : "var(--border-color)")" />
+                                            @if (!item.IsReturn && mat != null && (double)item.Qty > mat.RemainingQty + 0.0001)
+                                            {
+                                                <div style="color: var(--error); font-size: 0.6rem; font-weight: 700; margin-top: 0.25rem;">Vượt HM (@mat.RemainingQty.ToString("0.##"))</div>
+                                            }
                                         </div>
                                         <div>
                                             <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Đơn giá</div>
-                                            <input type="number" @bind="item.Price" style="width: 100%; padding: 0.5rem; font-weight: 600;" />
+                                            <input type="text" value="@item.Price.ToString("N0")" 
+                                                   @oninput="@((ChangeEventArgs e) => { var raw = e.Value?.ToString()?.Replace(",", ""); if(decimal.TryParse(raw, out var v)) item.Price = v; })" 
+                                                   onkeyup="formatCurrencyInput(this)" style="width: 100%; padding: 0.5rem; font-weight: 600;" />
                                         </div>
                                     </div>
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
-                                        <button class="btn-outline" style="padding: 0.2rem 0.5rem; font-size: 0.65rem;" @onclick="() => item.Qty = (decimal)(mat?.RemainingQty ?? 0)">MAX</button>
+                                        <button class="btn-outline" style="padding: 0.2rem 0.5rem; font-size: 0.65rem;" 
+                                                @onclick="() => item.Qty = (decimal)Math.Max(0, mat?.RemainingQty ?? 0)"
+                                                disabled="@(mat != null && mat.RemainingQty <= 0)">MAX</button>
                                         <div style="font-size: 0.85rem; font-weight: 700; color: @(item.IsReturn ? "var(--error)" : "var(--accent-primary)");">
                                             @(item.IsReturn ? "-" : "")@((item.Qty * item.Price).ToString("N0")) đ
                                         </div>
@@ -461,10 +473,12 @@ else
                                     <td style="font-weight: 600;">@pm.Name</td>
                                     <td>@pm.Unit</td>
                                     <td>
-                                        <input type="number" @bind="pm.CustomPrice" class="form-input-modern" style="padding: 0.4rem;" />
+                                        <input type="text" value="@pm.CustomPrice.ToString("N0")" 
+                                               @oninput="@((ChangeEventArgs e) => { var raw = e.Value?.ToString()?.Replace(",", ""); if(decimal.TryParse(raw, out var v)) pm.CustomPrice = v; })" 
+                                               onkeyup="formatCurrencyInput(this)" class="form-input-modern" style="padding: 0.4rem;" />
                                     </td>
                                     <td>
-                                        <input type="number" @bind="pm.TotalQty" class="form-input-modern" style="padding: 0.4rem;" />
+                                        <input type="number" step="any" @bind="pm.TotalQty" class="form-input-modern" style="padding: 0.4rem;" />
                                     </td>
                                     <td>
                                         <button class="btn-icon-small" style="color: var(--error);" @onclick="() => selectedMaterialsToConfig.Remove(pm)"><i class="bi bi-x-lg"></i></button>
@@ -514,19 +528,21 @@ else
                                                 {
                                                     foreach (var lot in availableLots[m.MaterialId])
                                                     {
-                                                        <option value="@lot.LotNumber">Lô: @lot.LotNumber (Tồn: @lot.StockQty)</option>
+                                                        <option value="@lot.LotNumber">Lô: @lot.LotNumber (Tồn: @lot.StockQty | Nhập: @lot.CostPrice.ToString("N0"))</option>
                                                     }
                                                 }
                                             </select>
                                         </td>
                                         <td>@m.Unit</td>
                                         <td>
-                                            <input type="number" @bind="returnItems[m.Id]" @bind:event="oninput" max="@delivered" min="0" class="form-input-modern" style="padding: 0.4rem; width: 100px;" />
+                                            <input type="number" step="any" @bind="returnItems[m.Id]" @bind:event="oninput" max="@delivered" min="0" class="form-input-modern" style="padding: 0.4rem; width: 100px;" />
                                             <small class="text-muted d-block">Tối đa: @delivered</small>
                                         </td>
                                         <td class="text-danger fw-bold text-end">
                                             <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.25rem;">
-                                                <input type="number" @bind="returnPrices[m.Id]" @bind:event="oninput" class="form-input-modern" style="padding: 0.4rem; width: 120px; text-align: right; color: var(--error); font-weight: 700;" />
+                                                <input type="text" value="@returnPrices[m.Id].ToString("N0")" 
+                                                       @oninput="@((ChangeEventArgs e) => { var raw = e.Value?.ToString()?.Replace(",", ""); if(decimal.TryParse(raw, out var v)) returnPrices[m.Id] = v; })" 
+                                                       onkeyup="formatCurrencyInput(this)" class="form-input-modern" style="padding: 0.4rem; width: 120px; text-align: right; color: var(--error); font-weight: 700;" />
                                                 <small class="text-muted" style="font-weight: 400;">
                                                     Tồng: @((((decimal)(returnItems.ContainsKey(m.Id) ? returnItems[m.Id] : 0)) * returnPrices[m.Id]).ToString("N0")) đ
                                                 </small>
@@ -568,7 +584,9 @@ else
                 <div style="display: flex; flex-direction: column; gap: 1.25rem;">
                     <div>
                         <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.5rem;">Số tiền (đ)</label>
-                        <input type="number" @bind="paymentAmount" class="form-input-modern" style="font-size: 1.1rem; font-weight: 700;" autofocus />
+                        <input type="text" value="@paymentAmount.ToString("N0")" 
+                               @oninput="@((ChangeEventArgs e) => { var raw = e.Value?.ToString()?.Replace(",", ""); if(decimal.TryParse(raw, out var v)) paymentAmount = v; })" 
+                               onkeyup="formatCurrencyInput(this)" class="form-input-modern" style="font-size: 1.1rem; font-weight: 700;" autofocus />
                     </div>
                     <div>
                         <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 0.5rem;">Hình thức</label>
@@ -598,10 +616,30 @@ else
             </div>
         </div>
     }
+
+    @if (showToast)
+    {
+        <div class="toast-container" style="position: fixed; top: 2rem; right: 2rem; z-index: 10000; min-width: 320px; max-width: 450px; animation: slideInRight 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+            <div style="background: #fff; border-left: 6px solid #f59e0b; padding: 1.25rem; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); display: flex; gap: 1rem; align-items: flex-start; position: relative;">
+                <div style="background: #fffbeb; color: #f59e0b; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <div style="flex: 1;">
+                    <h5 style="margin: 0 0 0.25rem 0; font-weight: 800; font-size: 0.95rem; color: #0f172a;">CẢNH BÁO GIỚI HẠN</h5>
+                    <p style="margin: 0; font-size: 0.85rem; color: #64748b; line-height: 1.5; font-weight: 500;">
+                        @((MarkupString)toastMessage.Replace("\n", "<br/>"))
+                    </p>
+                </div>
+                <button @onclick="() => showToast = false" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; padding: 0; font-size: 1.25rem; line-height: 1;">
+                    &times;
+                </button>
+            </div>
+        </div>
+    }
 }
 
 <style>
-    .grid-responsive-detail { display: grid; grid-template-columns: 1fr 450px; gap: 2rem; }
+    .grid-responsive-detail { display: grid; grid-template-columns: 1fr 550px; gap: 2rem; }
     
     @@media (max-width: 1200px) {
         .grid-responsive-detail { grid-template-columns: 1fr; }
@@ -624,6 +662,8 @@ else
     private Project? project;
     private List<Delivery> deliveries = new();
     private List<CustomerReturn> customerReturns = new();
+    private bool showToast = false;
+    private string toastMessage = "";
     // Delivery fields (Dynamic List)
     public class DraftItem
     {
@@ -687,8 +727,19 @@ else
         }
     }
 
-    private void AddExtraRow(ProjectMaterial m)
+    private async Task AddExtraRow(ProjectMaterial m)
     {
+        if (m.RemainingQty <= 0)
+        {
+            toastMessage = $"Vật tư <b>'{m.Name}'</b> đã giao đủ!\nCần nhập thêm dự trù vào 'Kho nhỏ'.";
+            showToast = true;
+            StateHasChanged();
+            await Task.Delay(5000);
+            showToast = false;
+            StateHasChanged();
+            return;
+        }
+
         var newItem = new DraftItem {
             ProjectMaterialId = m.Id,
             MaterialId = m.MaterialId,
@@ -706,7 +757,6 @@ else
             if (oldestLot != null)
             {
                 newItem.LotNumber = oldestLot.LotNumber;
-                if (oldestLot.BasePrice > 0) newItem.Price = oldestLot.BasePrice;
             }
         }
 
@@ -724,10 +774,6 @@ else
         if (!string.IsNullOrEmpty(lotNum))
         {
             var lot = availableLots[item.MaterialId].FirstOrDefault(l => l.LotNumber == lotNum);
-            if (lot != null)
-            {
-                item.Price = lot.BasePrice;
-            }
         }
     }
 
@@ -738,7 +784,7 @@ else
     private decimal balance => deliveredValue - totalPaid;
     private decimal invoiceBalance => deliveredValue - totalPaidOnInvoice;
 
-    private void PrepareDelivery()
+    private async Task PrepareDelivery()
     {
         if (project == null) return;
         
@@ -759,6 +805,64 @@ else
             }).ToList();
 
         if (!itemsToDeliver.Any()) return;
+        
+        // KIỂM TRA NHANH TRƯỚC KHI XEM HÓA ĐƠN (Group by material to prevent bypass with multiple rows)
+        var groupedDraft = itemsToDeliver.GroupBy(i => i.ProjectMaterialId);
+        foreach (var group in groupedDraft)
+        {
+            var totalQtyInSlip = group.Sum(i => i.Qty);
+            if (totalQtyInSlip <= 0) continue;
+
+            var mat = project.Materials.FirstOrDefault(m => m.Id == group.Key);
+            if (mat != null)
+            {
+                // 1. Kiểm tra hạn mức dự án (Kho nhỏ)
+                if ((double)totalQtyInSlip > mat.RemainingQty + 0.0001)
+                {
+                    toastMessage = $"⚠️ CẢNH BÁO: Vật tư <b>'{mat.Name}'</b> tổng xuất vượt hạn mức dự án!\nHạn mức còn lại: {mat.RemainingQty.ToString("0.##")}.\nTổng trong phiếu này: {totalQtyInSlip.ToString("0.##")}.";
+                    showToast = true;
+                    StateHasChanged();
+                    _ = Task.Delay(5000).ContinueWith(_ => { showToast = false; InvokeAsync(StateHasChanged); });
+                    return;
+                }
+
+                // 2. Kiểm tra tồn kho thực tế (Kho tổng)
+                var mainMat = await WarehouseService.GetMaterialByIdAsync(mat.MaterialId);
+                if (mainMat != null)
+                {
+                    var lotGroups = group.GroupBy(i => i.LotNumber);
+                    foreach (var lotGroup in lotGroups)
+                    {
+                        var lotQty = lotGroup.Sum(i => i.Qty);
+                        if (lotQty <= 0) continue;
+
+                        if (string.IsNullOrEmpty(lotGroup.Key))
+                        {
+                            if (mainMat.StockQty < lotQty)
+                            {
+                                toastMessage = $"❌ LỖI: Kho tổng không đủ <b>'{mat.Name}'</b>!\nTồn kho chung: {mainMat.StockQty.ToString("0.##")} | Yêu cầu: {lotQty.ToString("0.##")}.";
+                                showToast = true;
+                                StateHasChanged();
+                                _ = Task.Delay(5000).ContinueWith(_ => { showToast = false; InvokeAsync(StateHasChanged); });
+                                return;
+                            }
+                        }
+                        else
+                        {
+                            var lot = mainMat.Lots.FirstOrDefault(l => l.LotNumber == lotGroup.Key);
+                            if (lot == null || lot.StockQty < lotQty)
+                            {
+                                toastMessage = $"❌ LỖI: Lô <b>'{lotGroup.Key}'</b> của '{mat.Name}' không đủ hàng!\nTồn lô: {(lot?.StockQty ?? 0).ToString("0.##")} | Yêu cầu: {lotQty.ToString("0.##")}.";
+                                showToast = true;
+                                StateHasChanged();
+                                _ = Task.Delay(5000).ContinueWith(_ => { showToast = false; InvokeAsync(StateHasChanged); });
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         var itemsTotal = itemsToDeliver.Sum(x => x.Subtotal);
         previewDelivery = new Delivery
@@ -778,8 +882,74 @@ else
     {
         if (previewDelivery == null || isProcessing || project == null) return;
         isProcessing = true;
+        StateHasChanged();
+
         try 
         {
+            // KIỂM TRA LẠI MỘT LẦN CUỐI TỪ DB ĐỂ TRÁNH BYPASS (Hạn mức & Kho tổng)
+            var latestProject = await WarehouseService.GetProjectByIdAsync(project.Id);
+            if (latestProject != null)
+            {
+                var groupedConfirm = previewDelivery.Items.GroupBy(i => i.ProjectMaterialId);
+                foreach (var group in groupedConfirm)
+                {
+                    var totalQtyInSlip = group.Sum(i => i.Qty);
+                    if (totalQtyInSlip <= 0) continue;
+
+                    var latestMat = latestProject.Materials.FirstOrDefault(m => m.Id == group.Key);
+                    if (latestMat == null) continue;
+
+                    // 1. Kiểm tra hạn mức dự án
+                    if ((double)totalQtyInSlip > latestMat.RemainingQty + 0.0001)
+                    {
+                        toastMessage = $"❌ LỖI: Vật tư <b>'{latestMat.Name}'</b> vượt hạn mức dự án!\nCòn lại: {latestMat.RemainingQty.ToString("0.##")} | Phiếu này: {totalQtyInSlip.ToString("0.##")}.";
+                        showToast = true;
+                        StateHasChanged();
+                        showDeliveryReview = false;
+                        _ = Task.Delay(5000).ContinueWith(_ => { showToast = false; InvokeAsync(StateHasChanged); });
+                        return;
+                    }
+
+                    // 2. Kiểm tra tồn kho thực tế (Kho tổng)
+                    var mainMat = await WarehouseService.GetMaterialByIdAsync(latestMat.MaterialId);
+                    if (mainMat != null)
+                    {
+                        var lotGroups = group.GroupBy(i => i.LotNumber);
+                        foreach (var lotGroup in lotGroups)
+                        {
+                            var lotQty = lotGroup.Sum(i => i.Qty);
+                            if (lotQty <= 0) continue;
+
+                            if (string.IsNullOrEmpty(lotGroup.Key))
+                            {
+                                if (mainMat.StockQty < lotQty)
+                                {
+                                    toastMessage = $"❌ LỖI: Kho tổng không đủ <b>'{latestMat.Name}'</b>!";
+                                    showToast = true;
+                                    StateHasChanged();
+                                    showDeliveryReview = false;
+                                    _ = Task.Delay(5000).ContinueWith(_ => { showToast = false; InvokeAsync(StateHasChanged); });
+                                    return;
+                                }
+                            }
+                            else
+                            {
+                                var lot = mainMat.Lots.FirstOrDefault(l => l.LotNumber == lotGroup.Key);
+                                if (lot == null || lot.StockQty < lotQty)
+                                {
+                                    toastMessage = $"❌ LỖI: Lô <b>'{lotGroup.Key}'</b> không đủ hàng!";
+                                    showToast = true;
+                                    StateHasChanged();
+                                    showDeliveryReview = false;
+                                    _ = Task.Delay(5000).ContinueWith(_ => { showToast = false; InvokeAsync(StateHasChanged); });
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             // CẬP NHẬT SỐ LƯỢNG TRƯỚC KHI LƯU
             foreach (var item in previewDelivery.Items)
             {

@@ -195,6 +195,7 @@ public class InventoryTransaction
     public string Type { get; set; } = string.Empty; // "Nhập", "Xuất", "Điều chỉnh", "Trả hàng"
     public double QtyChange { get; set; }
     public string? ReferenceId { get; set; } // ID of PurchaseOrder, Delivery, etc.
+    public string? LotNumber { get; set; }
     public string? Note { get; set; }
 }
 
