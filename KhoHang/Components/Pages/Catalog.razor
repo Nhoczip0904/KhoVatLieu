@@ -246,7 +246,10 @@
                         </span>
                         
                         <!-- QR Button -->
-                        <button style="position: absolute; top: 1.5rem; left: 1.5rem; z-index: 10; background: white; border: 1px solid #e2e8f0; color: #64748b; padding: 0.35rem; border-radius: 8px; cursor: pointer; transition: all 0.2s;" 
+                        <button type="button" @onclick:stopPropagation="true" @onclick='() => Nav.NavigateTo($"/material/{m.Id}")' class="hover-scale" style="position: absolute; top: 1.5rem; left: 1.5rem; z-index: 10; background: rgba(255,255,255,0.9); border: 1px solid #e2e8f0; color: #1e293b; width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                            <i class="bi bi-info-circle" style="font-size: 1rem;"></i>
+                        </button>
+                        <button type="button" style="position: absolute; top: 1.5rem; left: 4.5rem; z-index: 10; background: rgba(255,255,255,0.9); border: 1px solid #e2e8f0; color: #4f46e5; width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" 
                                 @onclick:stopPropagation="true" @onclick="() => ShowQR(m)" class="hover-scale">
                             <i class="bi bi-qr-code" style="font-size: 1rem;"></i>
                         </button>
@@ -324,9 +327,14 @@
                                 <td style="text-align: center; font-weight: 600;">@m.Unit</td>
                                 <td style="text-align: right; font-weight: 800; color: var(--accent-primary);">@(m.Lots.OrderBy(l => l.Id).FirstOrDefault()?.BasePrice.ToString("N0") ?? "0") đ</td>
                                 <td style="text-align: center;">
-                                    <button class="btn-outline" style="padding: 0.25rem 0.4rem;" @onclick:stopPropagation="true" @onclick="() => ShowQR(m)">
-                                        <i class="bi bi-qr-code"></i>
-                                    </button>
+                                    <div style="display: flex; gap: 0.5rem; justify-content: center;">
+                                        <button class="btn-outline" style="padding: 0.25rem 0.4rem;" @onclick:stopPropagation="true" @onclick='() => Nav.NavigateTo($"/material/{m.Id}")' title="Xem chi tiết">
+                                            <i class="bi bi-info-circle"></i>
+                                        </button>
+                                        <button class="btn-outline" style="padding: 0.25rem 0.4rem;" @onclick:stopPropagation="true" @onclick="() => ShowQR(m)" title="Mã QR">
+                                            <i class="bi bi-qr-code"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         }

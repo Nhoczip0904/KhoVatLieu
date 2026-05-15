@@ -99,22 +99,44 @@
                 <div style="display: flex; flex-direction: column; gap: 1rem;">
                     @foreach (var sm in selectedMaterials)
                     {
-                        <div style="display: grid; grid-template-columns: 2.5fr 1fr 1fr auto; gap: 1.5rem; background: #f8fafc; padding: 1.25rem; border-radius: 16px; align-items: center; border: 1px solid #e2e8f0;">
-                            <div>
-                                <div style="font-weight: 700; color: #0f172a;">@sm.Name</div>
-                                <div style="font-size: 0.8rem; color: var(--text-secondary);">ĐVT: @sm.Unit</div>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem; background: #f8fafc; padding: 1.25rem; border-radius: 16px; border: 1px solid #e2e8f0;">
+                            <div style="display: grid; grid-template-columns: 2fr 1.5fr 1fr 1fr auto; gap: 1rem; align-items: center;">
+                                <div>
+                                    <div style="font-weight: 700; color: #0f172a;">@sm.Name</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-secondary);">ĐVT: @sm.Unit</div>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Lô dự kiến</label>
+                                    <select class="form-select-modern" style="padding: 0.4rem; font-size: 0.8rem;" 
+                                            @bind="sm.TargetLotNumber" @bind:after="() => CheckPromisedAvailability(sm)">
+                                        @if (availableLots.ContainsKey(sm.MaterialId))
+                                        {
+                                            foreach (var lot in availableLots[sm.MaterialId])
+                                            {
+                                                <option value="@lot.LotNumber">Lô: @lot.LotNumber (Tồn: @lot.StockQty)</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Giá bán dự án</label>
+                                    <input type="number" @bind="sm.CustomPrice" style="width: 100%; padding: 0.5rem;" />
+                                </div>
+                                <div>
+                                    <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Tổng SL</label>
+                                    <input type="number" @bind="sm.TotalQty" @bind:event="oninput" @onkeyup="() => CheckPromisedAvailability(sm)" style="width: 100%; padding: 0.5rem;" />
+                                </div>
+                                <button style="background: transparent; border: none; color: #ef4444; cursor: pointer; font-size: 1.25rem;" @onclick="() => RemoveMaterial(sm)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             </div>
-                            <div>
-                                <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Giá bán dự án</label>
-                                <input type="number" @bind="sm.CustomPrice" style="width: 100%; padding: 0.5rem;" />
-                            </div>
-                            <div>
-                                <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Tổng SL</label>
-                                <input type="number" @bind="sm.TotalQty" style="width: 100%; padding: 0.5rem;" />
-                            </div>
-                            <button style="background: transparent; border: none; color: #ef4444; cursor: pointer; font-size: 1.25rem;" @onclick="() => RemoveMaterial(sm)">
-                                <i class="bi bi-trash"></i>
-                            </button>
+
+                            @if (promisedWarnings.ContainsKey(sm.MaterialId) && promisedWarnings[sm.MaterialId] != null)
+                            {
+                                <div style="font-size: 0.7rem; color: #b91c1c; font-weight: 600; background: #fff1f2; padding: 0.5rem 0.75rem; border-radius: 8px; border: 1px solid #fecaca; line-height: 1.4;">
+                                    <i class="bi bi-exclamation-triangle-fill"></i> @promisedWarnings[sm.MaterialId]
+                                </div>
+                            }
                         </div>
                     }
                 </div>
@@ -190,6 +212,8 @@
     private bool isAdding = false;
     private Project newProject = new();
     private List<ProjectMaterial> selectedMaterials = new();
+    private Dictionary<int, List<MaterialLot>> availableLots = new();
+    private Dictionary<int, string?> promisedWarnings = new();
     private bool isSelectionModalOpen = false;
     
     private bool showCompleted = false;
@@ -248,12 +272,15 @@
         }
     }
 
-    private void OnMaterialsSelected(List<Material> materials)
+    private async Task OnMaterialsSelected(List<Material> materials)
     {
         foreach (var m in materials)
         {
             if (!selectedMaterials.Any(sm => sm.MaterialId == m.Id))
             {
+                var lots = await WarehouseService.GetMaterialLotsAsync(m.Id);
+                availableLots[m.Id] = lots;
+
                 selectedMaterials.Add(new ProjectMaterial 
                 { 
                     MaterialId = m.Id, 
@@ -262,7 +289,8 @@
                     CustomPrice = m.Lots.OrderBy(l => l.Id).FirstOrDefault()?.BasePrice ?? 0, 
                     TotalQty = 0,
                     RemainingQty = 0,
-                    ImageUrl = m.ImageUrl
+                    ImageUrl = m.ImageUrl,
+                    TargetLotNumber = lots.OrderBy(l => l.Id).FirstOrDefault()?.LotNumber ?? ""
                 });
             }
         }
@@ -278,7 +306,47 @@
         await WarehouseService.CreateProjectAsync(newProject);
         newProject = new();
         selectedMaterials = new();
+        promisedWarnings.Clear();
         isAdding = false;
         await LoadData();
+    }
+
+    private async Task CheckPromisedAvailability(ProjectMaterial sm)
+    {
+        var matId = sm.MaterialId;
+        var lotNum = sm.TargetLotNumber;
+        
+        // Lấy số lượng đã hứa ở các dự án khác
+        var promisedOther = await WarehouseService.GetTotalPromisedQtyAsync(matId, lotNum);
+        
+        // Tổng hứa = Đã hứa các dự án khác + Dự kiến mới của dự án này (sm.TotalQty)
+        var totalPromised = promisedOther + sm.TotalQty;
+        
+        // Lấy tồn kho thực tế
+        double actualStock = 0;
+        var mainMat = await WarehouseService.GetMaterialByIdAsync(matId);
+        if (mainMat != null)
+        {
+            if (string.IsNullOrEmpty(lotNum))
+            {
+                actualStock = mainMat.StockQty;
+            }
+            else
+            {
+                var lot = mainMat.Lots.FirstOrDefault(l => l.LotNumber == lotNum);
+                actualStock = lot?.StockQty ?? 0;
+            }
+        }
+        
+        if (totalPromised > actualStock + 0.0001)
+        {
+            var diff = totalPromised - actualStock;
+            promisedWarnings[matId] = $"⚠️ Kho {(string.IsNullOrEmpty(lotNum) ? "tổng" : $"lô '{lotNum}'")} chỉ còn {actualStock.ToString("0.##")}. Tổng yêu cầu các dự án ({totalPromised.ToString("0.##")}) sẽ vượt {diff.ToString("0.##")}!";
+        }
+        else
+        {
+            promisedWarnings[matId] = null;
+        }
+        StateHasChanged();
     }
 }

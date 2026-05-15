@@ -51,6 +51,7 @@ using (var scope = app.Services.CreateScope())
     {
         try { await context.Database.ExecuteSqlRawAsync($"ALTER TABLE {table} ADD COLUMN LotNumber TEXT;"); } catch { }
     }
+    try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE ProjectMaterials ADD COLUMN TargetLotNumber TEXT;"); } catch { }
     
     var service = scope.ServiceProvider.GetRequiredService<WarehouseService>();
     await service.SeedDataAsync();

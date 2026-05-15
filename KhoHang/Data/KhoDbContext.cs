@@ -29,7 +29,7 @@ public class KhoDbContext : DbContext
     {
         modelBuilder.Entity<Project>()
             .HasMany(p => p.Materials)
-            .WithOne()
+            .WithOne(pm => pm.Project)
             .HasForeignKey(pm => pm.ProjectId);
 
         modelBuilder.Entity<Material>()

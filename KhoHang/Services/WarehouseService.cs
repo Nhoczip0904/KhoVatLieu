@@ -797,7 +797,7 @@ public class WarehouseService
     {
         using var context = _dbFactory.CreateDbContext();
         return await context.MaterialLots
-            .Where(l => l.MaterialId == materialId && l.StockQty != 0)
+            .Where(l => l.MaterialId == materialId)
             .OrderBy(l => l.LotNumber)
             .ToListAsync();
     }
@@ -810,6 +810,41 @@ public class WarehouseService
                 .ThenInclude(i => i.ProjectMaterial)
             .Where(r => r.ProjectId == projectId)
             .OrderByDescending(r => r.Timestamp)
+            .ToListAsync();
+    }
+
+    public async Task<double> GetTotalPromisedQtyAsync(int materialId, string? lotNumber = null)
+    {
+        using var context = _dbFactory.CreateDbContext();
+        if (string.IsNullOrEmpty(lotNumber))
+        {
+            return await context.ProjectMaterials
+                .Where(m => m.MaterialId == materialId)
+                .SumAsync(m => m.RemainingQty);
+        }
+        else
+        {
+            return await context.ProjectMaterials
+                .Where(m => m.MaterialId == materialId && m.TargetLotNumber == lotNumber)
+                .SumAsync(m => m.RemainingQty);
+        }
+    }
+
+    public async Task<List<InventoryTransaction>> GetInventoryTransactionsByMaterialIdAsync(int materialId)
+    {
+        using var context = _dbFactory.CreateDbContext();
+        return await context.InventoryTransactions
+            .Where(t => t.MaterialId == materialId)
+            .OrderByDescending(t => t.Timestamp)
+            .ToListAsync();
+    }
+
+    public async Task<List<ProjectMaterial>> GetActiveProjectCommitmentsAsync(int materialId)
+    {
+        using var context = _dbFactory.CreateDbContext();
+        return await context.ProjectMaterials
+            .Include(pm => pm.Project)
+            .Where(pm => pm.MaterialId == materialId && pm.RemainingQty > 0 && (pm.Project != null && !pm.Project.IsCompleted))
             .ToListAsync();
     }
 }
