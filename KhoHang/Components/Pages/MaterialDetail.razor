@@ -105,48 +105,79 @@
                 <!-- Right Column: Projects & History -->
                 <div style="display: flex; flex-direction: column; gap: 2rem;">
                     
-                    <!-- Section: Projects needing this material -->
-                    <div class="glass-card" style="background: white;">
-                        <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-                            <i class="bi bi-briefcase text-primary"></i> Dự án đang sử dụng
-                        </h3>
+                    <!-- Section: Reconciliation Project & Batch -->
+                    <div class="glass-card" style="background: white; padding: 1.5rem; border-radius: 20px;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem;">
+                            <div style="width: 32px; height: 32px; border-radius: 8px; background: #eef2ff; color: #6366f1; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-briefcase"></i>
+                            </div>
+                            <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #1e293b;">Đối chiếu Dự án & Lô hàng</h3>
+                        </div>
+
                         @if (!commitments.Any())
                         {
-                            <div style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.9rem;">Không có dự án nào đang đăng ký vật tư này.</div>
+                            <div style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.9rem;">Không có dự án nào đăng ký vật tư này.</div>
                         }
                         else
                         {
                             <div class="table-responsive">
-                                <table class="table">
-                                    <thead>
+                                <table class="table" style="font-size: 0.85rem; vertical-align: middle;">
+                                    <thead style="background: #f8fafc;">
                                         <tr>
-                                            <th>Tên Dự án / Khách hàng</th>
-                                            <th>Lô dự kiến</th>
-                                            <th class="text-end">Đã giao / Tổng</th>
-                                            <th class="text-end">Còn lại</th>
+                                            <th style="border: none; padding: 1rem; border-radius: 8px 0 0 8px;">LÔ / DỰ ÁN</th>
+                                            <th style="border: none; padding: 1rem;" class="text-center">DỰ KIẾN (TỔNG)</th>
+                                            <th style="border: none; padding: 1rem;" class="text-center">ĐÃ GIAO</th>
+                                            <th style="border: none; padding: 1rem; border-radius: 0 8px 8px 0;" class="text-end">CÒN LẠI</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach (var pm in commitments)
+                                        @{
+                                            var activeLots = material.Lots.OrderBy(l => l.Id).ToList();
+                                        }
+                                        @foreach (var lot in activeLots)
                                         {
-                                            <tr>
-                                                <td>
-                                                    <div style="font-weight: 700; color: var(--accent-primary); cursor: pointer;" @onclick='() => Nav.NavigateTo($"/projects/{pm.ProjectId}")'>
-                                                        @pm.Project?.CustomerName
+                                            var lotCommitments = commitments.Where(c => c.TargetLotNumber == lot.LotNumber).ToList();
+                                            var totalLotPromised = lotCommitments.Sum(c => c.RemainingQty);
+                                            var isShortage = totalLotPromised > lot.StockQty + 0.0001;
+
+                                            <!-- Lot Header Summary -->
+                                            <tr style="background: @(isShortage ? "#fff1f2" : "#f0f9ff");">
+                                                <td style="padding: 0.75rem 1rem; border-top: 1px solid #e2e8f0;">
+                                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                                        <span style="font-weight: 900; color: #0369a1;">LÔ: @lot.LotNumber</span>
+                                                        <span style="font-size: 0.7rem; background: white; padding: 2px 6px; border-radius: 4px; border: 1px solid #bae6fd; color: #0369a1;">Tồn thực tế: @lot.StockQty.ToString("0.##")</span>
                                                     </div>
                                                 </td>
-                                                <td>
-                                                    <span style="font-weight: 600; color: @(string.IsNullOrEmpty(pm.TargetLotNumber) ? "#94a3b8" : "var(--accent-secondary)");">
-                                                        @(string.IsNullOrEmpty(pm.TargetLotNumber) ? "--" : pm.TargetLotNumber)
-                                                    </span>
+                                                <td class="text-center" style="padding: 0.75rem 1rem; border-top: 1px solid #e2e8f0; font-weight: 800; color: @(isShortage ? "#be123c" : "#0f172a")">
+                                                    @totalLotPromised.ToString("0.##")
                                                 </td>
-                                                <td class="text-end">
-                                                    <span style="font-weight: 600;">@((pm.TotalQty - pm.RemainingQty).ToString("0.##")) / @pm.TotalQty.ToString("0.##")</span>
-                                                </td>
-                                                <td class="text-end">
-                                                    <span style="font-weight: 800; color: var(--error);">@pm.RemainingQty.ToString("0.##")</span>
+                                                <td colspan="2" class="text-end" style="padding: 0.75rem 1rem; border-top: 1px solid #e2e8f0;">
+                                                    @if (isShortage)
+                                                    {
+                                                        <span style="color: #be123c; font-weight: 800; font-size: 0.7rem;"><i class="bi bi-exclamation-triangle-fill"></i> THIẾU: @((totalLotPromised - lot.StockQty).ToString("0.##"))</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span style="color: #059669; font-weight: 800; font-size: 0.7rem;"><i class="bi bi-check-circle-fill"></i> AN TOÀN</span>
+                                                    }
                                                 </td>
                                             </tr>
+
+                                            <!-- Projects tied to this lot -->
+                                            @foreach (var c in lotCommitments)
+                                            {
+                                                <tr>
+                                                    <td style="padding: 0.75rem 1rem; padding-left: 2rem;">
+                                                        <div style="font-weight: 600; color: #475569; cursor: pointer;" @onclick='() => Nav.NavigateTo($"/projects/{c.ProjectId}")'>
+                                                            @(!string.IsNullOrWhiteSpace(c.Project?.CustomerName) ? c.Project.CustomerName : $"Dự án #{c.ProjectId}")
+                                                        </div>
+                                                        <div style="font-size: 0.7rem; color: #94a3b8;">Dự án: @(!string.IsNullOrWhiteSpace(c.Project?.CustomerName) ? c.Project.CustomerName : "Chưa đặt tên")</div>
+                                                    </td>
+                                                    <td class="text-center" style="color: #64748b;">@c.TotalQty.ToString("0.##")</td>
+                                                    <td class="text-center" style="color: #64748b;">@((c.TotalQty - c.RemainingQty).ToString("0.##"))</td>
+                                                    <td class="text-end" style="font-weight: 700; color: var(--accent-primary);">@c.RemainingQty.ToString("0.##")</td>
+                                                </tr>
+                                            }
                                         }
                                     </tbody>
                                 </table>

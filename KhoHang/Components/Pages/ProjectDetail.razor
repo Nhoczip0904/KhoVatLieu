@@ -156,8 +156,21 @@ else
                                         </div>
                                         @if (!string.IsNullOrEmpty(m.TargetLotNumber))
                                         {
-                                            <div style="font-size: 0.7rem; font-weight: 800; color: var(--accent-primary); background: #eef2ff; padding: 4px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                                            <div style="font-size: 0.7rem; font-weight: 800; color: var(--accent-primary); background: #eef2ff; padding: 4px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; margin-bottom: 0.5rem;">
                                                 <i class="bi bi-pin-angle-fill" style="font-size: 0.65rem;"></i> Lô dự kiến: @m.TargetLotNumber
+                                            </div>
+                                        }
+
+                                        @if (overallWarnings.ContainsKey(m.Id))
+                                        {
+                                            <div style="font-size: 0.7rem; color: #b91c1c; font-weight: 700; background: #fff1f2; padding: 10px 12px; border-radius: 10px; border: 1px solid #fecaca; line-height: 1.4; margin-top: 0.25rem; margin-bottom: 0.75rem; display: flex; flex-direction: column; gap: 8px;">
+                                                <div style="display: flex; gap: 6px;">
+                                                    <i class="bi bi-exclamation-octagon-fill" style="margin-top: 2px;"></i> 
+                                                    <span>@overallWarnings[m.Id]</span>
+                                                </div>
+                                                <a href="/material/@m.MaterialId" target="_blank" style="align-self: flex-start; background: #be123c; color: white; padding: 4px 10px; border-radius: 6px; text-decoration: none; font-size: 0.65rem; display: flex; align-items: center; gap: 4px; transition: opacity 0.2s;">
+                                                    <i class="bi bi-box-arrow-up-right"></i> Xem chi tiết kho & đối chiếu lô
+                                                </a>
                                             </div>
                                         }
 
@@ -483,15 +496,15 @@ else
     @if (isConfiguringMaterials && selectedMaterialsToConfig.Any())
     {
         <div class="modal-overlay">
-            <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-content" style="max-width: 1100px;">
                 <h3 style="margin-bottom: 1.5rem;">Thiết lập vật liệu cho dự án</h3>
                 <div class="table-responsive" style="max-height: 400px; overflow-y: auto; margin-bottom: 1.5rem;">
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Vật liệu</th>
-                                <th style="width: 120px;">ĐVT</th>
-                                <th style="width: 150px;">Lô dự kiến</th>
+                                <th style="min-width: 200px;">Vật liệu</th>
+                                <th style="width: 100px;">ĐVT</th>
+                                <th style="width: 450px;">Lô dự kiến & Cảnh báo</th>
                                 <th style="width: 150px;">Giá chốt (đ)</th>
                                 <th style="width: 120px;">Số lượng</th>
                                 <th style="width: 50px;"></th>
@@ -504,15 +517,29 @@ else
                                     <td style="font-weight: 600;">@pm.Name</td>
                                     <td>@pm.Unit</td>
                                     <td>
-                                        <select class="form-select-modern" style="padding: 0.35rem; font-size: 0.8rem;" @bind="pm.TargetLotNumber">
-                                            @if (availableLots.ContainsKey(pm.MaterialId))
-                                            {
-                                                foreach (var lot in availableLots[pm.MaterialId])
+                                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                                            <select class="form-select-modern" style="padding: 0.35rem; font-size: 0.8rem;" 
+                                                    @bind="pm.TargetLotNumber" @bind:after="() => CheckConfigAvailability(pm)">
+                                                @if (availableLots.ContainsKey(pm.MaterialId))
                                                 {
-                                                    <option value="@lot.LotNumber">Lô: @lot.LotNumber (Tồn: @lot.StockQty)</option>
+                                                    foreach (var lot in availableLots[pm.MaterialId])
+                                                    {
+                                                        <option value="@lot.LotNumber">Lô: @lot.LotNumber (Tồn: @lot.StockQty)</option>
+                                                    }
                                                 }
+                                            </select>
+                                            @if (configWarnings.ContainsKey(pm.MaterialId))
+                                            {
+                                                <div style="margin-top: 4px; display: flex; align-items: flex-start; gap: 4px; background: #fff1f2; padding: 4px 8px; border-radius: 6px; border: 1px solid #fecaca;">
+                                                    <div style="flex: 1; font-size: 0.65rem; color: #b91c1c; font-weight: 700; line-height: 1.2;">
+                                                        <i class="bi bi-exclamation-triangle-fill"></i> @configWarnings[pm.MaterialId]
+                                                    </div>
+                                                    <a href="/material/@pm.MaterialId" target="_blank" style="color: #be123c; font-size: 0.8rem;" title="Xem chi tiết kho">
+                                                        <i class="bi bi-box-arrow-up-right"></i>
+                                                    </a>
+                                                </div>
                                             }
-                                        </select>
+                                        </div>
                                     </td>
                                     <td>
                                         <input type="text" value="@pm.CustomPrice.ToString("N0")" 
@@ -520,7 +547,7 @@ else
                                                onkeyup="formatCurrencyInput(this)" class="form-input-modern" style="padding: 0.4rem;" />
                                     </td>
                                     <td>
-                                        <input type="number" step="any" @bind="pm.TotalQty" class="form-input-modern" style="padding: 0.4rem;" />
+                                        <input type="number" step="any" @bind="pm.TotalQty" @bind:event="oninput" @bind:after="() => CheckConfigAvailability(pm)" class="form-input-modern" style="padding: 0.4rem;" />
                                     </td>
                                     <td>
                                         <button class="btn-icon-small" style="color: var(--error);" @onclick="() => selectedMaterialsToConfig.Remove(pm)"><i class="bi bi-x-lg"></i></button>
@@ -746,15 +773,18 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadData();
+        await LoadProjectData();
     }
 
-    private async Task LoadData()
+    private Dictionary<int, string> overallWarnings = new();
+
+    private async Task LoadProjectData()
     {
         project = await WarehouseService.GetProjectByIdAsync(Id);
         if (project != null)
         {
             deliveries = await WarehouseService.GetDeliveriesByProjectIdAsync(Id);
+            customerReturns = await WarehouseService.GetCustomerReturnsByProjectIdAsync(Id);
             
             if (draftItems == null) draftItems = new();
             
@@ -765,9 +795,38 @@ else
                 availableLots[m.MaterialId] = lots;
             }
 
-            customerReturns = await WarehouseService.GetCustomerReturnsByProjectIdAsync(Id);
+            await RefreshOverallWarnings();
         }
     }
+
+    private async Task RefreshOverallWarnings()
+    {
+        overallWarnings.Clear();
+        if (project == null) return;
+
+        foreach (var m in project.Materials)
+        {
+            if (m.RemainingQty <= 0) continue;
+
+            var mainMat = await WarehouseService.GetMaterialByIdAsync(m.MaterialId);
+            if (mainMat == null) continue;
+
+            if (!string.IsNullOrEmpty(m.TargetLotNumber))
+            {
+                var lot = mainMat.Lots.FirstOrDefault(l => l.LotNumber == m.TargetLotNumber);
+                var lotStock = lot?.StockQty ?? 0;
+                var totalPromised = await WarehouseService.GetTotalPromisedQtyAsync(m.MaterialId, m.TargetLotNumber);
+                
+                if (totalPromised > lotStock + 0.0001)
+                {
+                    overallWarnings[m.Id] = $"CẢNH BÁO: Lô '{m.TargetLotNumber}' không đủ hàng cho TẤT CẢ dự án (Tổng thiếu: {(totalPromised - lotStock).ToString("0.##")} {m.Unit})";
+                }
+            }
+        }
+    }
+
+    // Alias for compatibility with existing calls
+    private Task LoadData() => LoadProjectData();
 
     private async Task AddExtraRow(ProjectMaterial m)
     {
@@ -1185,5 +1244,30 @@ else
         var deliveryId = await WarehouseService.AddCustomerReturnAsync(cr);
         isReturnModalOpen = false;
         Nav.NavigateTo($"/invoice/{deliveryId}");
+    }
+    private Dictionary<int, string> configWarnings = new();
+
+    private async Task CheckConfigAvailability(ProjectMaterial pm)
+    {
+        var totalPromised = await WarehouseService.GetTotalPromisedQtyAsync(pm.MaterialId, pm.TargetLotNumber);
+        
+        var mainMat = await WarehouseService.GetMaterialByIdAsync(pm.MaterialId);
+        double actualStock = 0;
+        if (mainMat != null)
+        {
+            var lot = mainMat.Lots.FirstOrDefault(l => l.LotNumber == pm.TargetLotNumber);
+            actualStock = lot?.StockQty ?? 0;
+        }
+
+        var totalNeeded = totalPromised + pm.TotalQty;
+        if (totalNeeded > actualStock + 0.0001)
+        {
+            configWarnings[pm.MaterialId] = $"Với số lượng {pm.TotalQty.ToString("0.##")} này, Lô '{pm.TargetLotNumber}' sẽ thiếu {(totalNeeded - actualStock).ToString("0.##")} so với tổng nhu cầu các dự án.";
+        }
+        else
+        {
+            configWarnings.Remove(pm.MaterialId);
+        }
+        StateHasChanged();
     }
 }

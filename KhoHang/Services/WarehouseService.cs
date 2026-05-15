@@ -816,18 +816,16 @@ public class WarehouseService
     public async Task<double> GetTotalPromisedQtyAsync(int materialId, string? lotNumber = null)
     {
         using var context = _dbFactory.CreateDbContext();
-        if (string.IsNullOrEmpty(lotNumber))
+        var query = context.ProjectMaterials
+            .Include(pm => pm.Project)
+            .Where(pm => pm.MaterialId == materialId && pm.RemainingQty > 0 && (pm.Project != null && !pm.Project.IsCompleted));
+
+        if (!string.IsNullOrEmpty(lotNumber))
         {
-            return await context.ProjectMaterials
-                .Where(m => m.MaterialId == materialId)
-                .SumAsync(m => m.RemainingQty);
+            query = query.Where(m => m.TargetLotNumber == lotNumber);
         }
-        else
-        {
-            return await context.ProjectMaterials
-                .Where(m => m.MaterialId == materialId && m.TargetLotNumber == lotNumber)
-                .SumAsync(m => m.RemainingQty);
-        }
+
+        return await query.SumAsync(m => m.RemainingQty);
     }
 
     public async Task<List<InventoryTransaction>> GetInventoryTransactionsByMaterialIdAsync(int materialId)
@@ -843,6 +841,7 @@ public class WarehouseService
     {
         using var context = _dbFactory.CreateDbContext();
         return await context.ProjectMaterials
+            .AsNoTracking()
             .Include(pm => pm.Project)
             .Where(pm => pm.MaterialId == materialId && pm.RemainingQty > 0 && (pm.Project != null && !pm.Project.IsCompleted))
             .ToListAsync();
