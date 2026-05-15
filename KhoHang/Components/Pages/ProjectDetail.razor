@@ -114,17 +114,10 @@ else
                                         </div>
 
                                         <div style="margin-bottom: 0.75rem;">
-                                            <label style="font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Lô dự kiến</label>
-                                            <select class="form-select-modern" style="padding: 0.35rem; font-size: 0.85rem;" 
-                                                    @bind="materialToEdit.TargetLotNumber" @bind:after="CheckPromisedAvailability">
-                                                @if (availableLots.ContainsKey(materialToEdit.MaterialId))
-                                                {
-                                                    foreach (var lot in availableLots[materialToEdit.MaterialId])
-                                                    {
-                                                        <option value="@lot.LotNumber">Lô: @lot.LotNumber (Tồn: @lot.StockQty @m.Unit)</option>
-                                                    }
-                                                }
-                                            </select>
+                                            <div style="font-size: 0.7rem; font-weight: 800; color: var(--accent-primary); background: #eef2ff; padding: 6px 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
+                                                <i class="bi bi-pin-angle-fill"></i> Lô cố định: @materialToEdit.TargetLotNumber
+                                            </div>
+                                            <div style="font-size: 0.6rem; color: #94a3b8; margin-top: 4px;">(Không thể thay đổi lô sau khi đã tạo)</div>
                                         </div>
 
                                         <div style="display: flex; gap: 0.5rem;">
@@ -139,54 +132,88 @@ else
                                 }
                                 else
                                 {
-                                    <div style="flex: 1; min-width: 0;">
-                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                                            <div style="font-weight: 700; padding-right: 2rem; cursor: pointer; color: var(--accent-primary);" @onclick='() => Nav.NavigateTo($"/material/{m.MaterialId}")' title="Xem chi tiết vật tư">
-                                                @m.Name <i class="bi bi-box-arrow-up-right" style="font-size: 0.7rem; opacity: 0.6;"></i>
+                                    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.6rem;">
+                                        <!-- Title & Qty Section -->
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                            <div style="display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0;">
+                                                <div style="font-weight: 800; font-size: 1rem; color: #1e293b; cursor: pointer; transition: color 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" @onclick='() => Nav.NavigateTo($"/material/{m.MaterialId}")'>
+                                                    @m.Name
+                                                </div>
+                                                <i class="bi bi-box-arrow-up-right" style="font-size: 0.75rem; opacity: 0.4;"></i>
+                                                @if (!project.IsCompleted)
+                                                {
+                                                    <button class="btn-icon-small" style="color: #94a3b8; background: #f1f5f9; width: 22px; height: 22px; border-radius: 4px; flex-shrink: 0;" @onclick="() => StartEditingMaterial(m)">
+                                                        <i class="bi bi-pencil-fill" style="font-size: 0.65rem;"></i>
+                                                    </button>
+                                                }
                                             </div>
-                                            <div style="font-size: 0.8rem; font-weight: 600; color: @(m.RemainingQty < 0 ? "var(--error)" : "var(--text-primary)");">@m.RemainingQty.ToString("0.##") / @m.TotalQty.ToString("0.##") @m.Unit</div>
+                                            <div style="text-align: right; flex-shrink: 0; margin-left: 10px;">
+                                                <div style="font-weight: 800; font-size: 0.9rem; color: @(m.RemainingQty < 0 ? "#be123c" : "#0f172a");">
+                                                    @m.RemainingQty.ToString("0.##") <span style="font-size: 0.7rem; color: #64748b; font-weight: 600;">/ @m.TotalQty.ToString("0.##") @m.Unit</span>
+                                                </div>
+                                            </div>
                                         </div>
+
+                                        <!-- Progress Bar -->
                                         @{ var pct = m.TotalQty > 0 ? Math.Min(100, (100 - (m.RemainingQty * 100 / m.TotalQty))) : 0; }
-                                        <div style="height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; margin-bottom: 0.35rem;">
-                                            <div style="height: 100%; background: @(m.RemainingQty < 0 ? "var(--error)" : "var(--accent-primary)"); width: @(Math.Max(0, pct))%"></div>
+                                        <div style="height: 8px; background: #f1f5f9; border-radius: 10px; overflow: hidden; border: 1px solid #f1f5f9;">
+                                            <div style="height: 100%; background: linear-gradient(90deg, var(--accent-primary), #6366f1); width: @(Math.Max(0, pct))%; border-radius: 10px; transition: width 0.5s ease-out;"></div>
                                         </div>
-                                        <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.25rem;">
-                                            <span>Đã giao: @((m.TotalQty - m.RemainingQty).ToString("0.##"))</span>
-                                            <span>@m.CustomPrice.ToString("N0") đ/@m.Unit</span>
+
+                                        <!-- Meta Info: Price & Delivery -->
+                                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: #64748b;">
+                                            <div style="display: flex; align-items: center; gap: 4px;">
+                                                <i class="bi bi-truck" style="font-size: 0.8rem;"></i> Đã giao: <span style="font-weight: 700; color: #334155;">@((m.TotalQty - m.RemainingQty).ToString("0.##"))</span>
+                                            </div>
+                                            <div style="font-weight: 700; color: #059669; background: #ecfdf5; padding: 2px 8px; border-radius: 6px;">
+                                                @m.CustomPrice.ToString("N0") <span style="font-size: 0.65rem;">đ</span>
+                                            </div>
                                         </div>
+
+                                        <!-- Lot & Notes -->
                                         @if (!string.IsNullOrEmpty(m.TargetLotNumber))
                                         {
-                                            <div style="font-size: 0.7rem; font-weight: 800; color: var(--accent-primary); background: #eef2ff; padding: 4px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; margin-bottom: 0.5rem;">
-                                                <i class="bi bi-pin-angle-fill" style="font-size: 0.65rem;"></i> Lô dự kiến: @m.TargetLotNumber
+                                            var lotInfo = availableLots.ContainsKey(m.MaterialId) 
+                                                ? availableLots[m.MaterialId].FirstOrDefault(l => l.LotNumber == m.TargetLotNumber)
+                                                : null;
+
+                                            <div style="background: white; border: 1px solid #f1f5f9; border-radius: 10px; padding: 0.6rem; display: flex; flex-direction: column; gap: 4px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.02);">
+                                                <div style="display: flex; align-items: center; gap: 6px;">
+                                                    <span style="background: #e0e7ff; color: #4338ca; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                                        <i class="bi bi-pin-angle-fill"></i> Lô: @m.TargetLotNumber
+                                                    </span>
+                                                    @if (lotInfo != null)
+                                                    {
+                                                        <span style="font-size: 0.65rem; font-weight: 700; color: @(lotInfo.StockQty <= 0 ? "#be123c" : "#059669");">
+                                                            Tồn: @lotInfo.StockQty.ToString("0.##")
+                                                        </span>
+                                                    }
+                                                </div>
+                                                @if (!string.IsNullOrEmpty(lotInfo?.Note))
+                                                {
+                                                    <div style="font-size: 0.65rem; color: #64748b; font-style: italic; display: flex; align-items: center; gap: 4px;">
+                                                        <i class="bi bi-info-circle" style="font-size: 0.6rem; color: #94a3b8;"></i> @lotInfo.Note
+                                                    </div>
+                                                }
                                             </div>
                                         }
 
                                         @if (overallWarnings.ContainsKey(m.Id))
                                         {
-                                            <div style="font-size: 0.7rem; color: #b91c1c; font-weight: 700; background: #fff1f2; padding: 10px 12px; border-radius: 10px; border: 1px solid #fecaca; line-height: 1.4; margin-top: 0.25rem; margin-bottom: 0.75rem; display: flex; flex-direction: column; gap: 8px;">
-                                                <div style="display: flex; gap: 6px;">
-                                                    <i class="bi bi-exclamation-octagon-fill" style="margin-top: 2px;"></i> 
-                                                    <span>@overallWarnings[m.Id]</span>
-                                                </div>
-                                                <a href="/material/@m.MaterialId" target="_blank" style="align-self: flex-start; background: #be123c; color: white; padding: 4px 10px; border-radius: 6px; text-decoration: none; font-size: 0.65rem; display: flex; align-items: center; gap: 4px; transition: opacity 0.2s;">
-                                                    <i class="bi bi-box-arrow-up-right"></i> Xem chi tiết kho & đối chiếu lô
-                                                </a>
+                                            <div style="font-size: 0.7rem; color: #be123c; font-weight: 700; background: #fff1f2; padding: 8px 10px; border-radius: 8px; border: 1px dashed #fecaca; line-height: 1.3;">
+                                                <i class="bi bi-exclamation-octagon-fill"></i> @overallWarnings[m.Id]
                                             </div>
                                         }
 
+                                        <!-- Primary Action -->
                                         @if (!project.IsCompleted)
                                         {
-                                            <div style="margin-top: 0.75rem; display: flex; gap: 0.5rem;">
-                                                <button class="btn-primary" style="flex: 1; padding: 0.4rem; font-size: 0.75rem; background: var(--accent-primary); color: white; border: none; border-radius: 8px; font-weight: 700; box-shadow: 0 4px 10px rgba(67, 97, 238, 0.2);" 
+                                            <div style="margin-top: 0.4rem;">
+                                                <button class="btn-primary" style="width: 100%; padding: 0.6rem; font-size: 0.8rem; background: linear-gradient(135deg, #059669, #10b981); color: white; border: none; border-radius: 10px; font-weight: 800; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); transition: all 0.2s;" 
                                                         @onclick="() => AddExtraRow(m)">
-                                                    <i class="bi bi-plus-circle"></i> THÊM VÀO PHIẾU
+                                                    <i class="bi bi-plus-circle-fill"></i> THÊM VÀO PHIẾU
                                                 </button>
                                             </div>
-                                            
-                                            <button style="position: absolute; top: 0.5rem; right: 0.5rem; background: transparent; border: none; color: #94a3b8; cursor: pointer; padding: 2px;" 
-                                                    @onclick="() => StartEditingMaterial(m)">
-                                                <i class="bi bi-pencil-square"></i>
-                                            </button>
                                         }
                                     </div>
                                 }
@@ -310,99 +337,128 @@ else
                 <!-- Quick Delivery Form -->
                 @if (!project.IsCompleted)
                 {
-                    <div class="glass-card" style="border-top: 4px solid var(--accent-primary);">
-                        <h3 style="margin-bottom: 1.5rem;">Phiếu xuất kho dự thảo</h3>
-                        <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    <div class="card-modern" style="border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.05); background: white; border-radius: 20px; overflow: hidden;">
+                        <div style="background: linear-gradient(90deg, #f8fafc, white); padding: 1.5rem; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+                            <h2 style="font-size: 1.35rem; font-weight: 800; color: #1e293b; margin: 0; letter-spacing: -0.5px;">
+                                <i class="bi bi-file-earmark-text-fill" style="color: var(--accent-primary);"></i> Phiếu xuất dự thảo
+                            </h2>
+                            <button class="btn-icon-small" @onclick="() => draftItems.Clear()" style="color: #94a3b8;" title="Xóa toàn bộ">
+                                <i class="bi bi-trash3-fill"></i>
+                            </button>
+                        </div>
+
+                        <div style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; max-height: 70vh; overflow-y: auto;">
                             @if (!draftItems.Any())
                             {
-                                <div style="text-align: center; padding: 2rem; border: 2px dashed var(--border-color); border-radius: 16px; color: var(--text-muted);">
-                                    <i class="bi bi-cart-plus" style="font-size: 2rem; display: block; margin-bottom: 1rem;"></i>
-                                    <p style="font-size: 0.85rem;">Chưa có vật tư nào được chọn.<br/>Vui lòng bấm <b>"THÊM VÀO PHIẾU"</b> từ danh sách bên trái.</p>
+                                <div style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
+                                    <i class="bi bi-cart-x" style="font-size: 3rem; opacity: 0.2; display: block; margin-bottom: 1rem;"></i>
+                                    <div style="font-size: 0.9rem; font-weight: 600;">Chưa có vật tư nào được chọn</div>
+                                    <div style="font-size: 0.75rem;">Nhấn "Thêm vào phiếu" để bắt đầu</div>
                                 </div>
                             }
                             @foreach (var item in draftItems)
                             {
                                 var mat = project.Materials.FirstOrDefault(m => m.Id == item.ProjectMaterialId);
-                                <div style="padding-bottom: 1rem; border-bottom: 1px dashed var(--border-color); position: relative;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                                        <label style="font-size: 0.8rem; font-weight: 700;">@item.Name (@item.Unit)</label>
-                                        <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                            <!-- Toggle Switch -->
-                                            <div style="display: flex; background: #f1f5f9; padding: 2px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                                <div style="background: #f8fafc; border: 1px solid #eef2ff; border-radius: 16px; padding: 1.25rem; position: relative; transition: transform 0.2s;">
+                                    <!-- Item Header -->
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; gap: 1rem;">
+                                        <div>
+                                            <div style="font-size: 0.65rem; font-weight: 800; color: #6366f1; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px;">Vật tư xuất kho</div>
+                                            <div style="font-weight: 800; font-size: 1rem; color: #1e293b; line-height: 1.2;">@item.Name (@item.Unit)</div>
+                                        </div>
+                                        <div style="display: flex; gap: 0.4rem; align-items: center;">
+                                            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 2px; display: flex; gap: 2px; box-shadow: 0 2px 4px rgba(0,0,0,0.03);">
                                                 <button type="button" @onclick="() => item.IsReturn = false" 
-                                                        style="padding: 0.2rem 0.5rem; font-size: 0.65rem; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s;
-                                                               @(item.IsReturn ? "background: transparent; color: #64748b;" : "background: var(--accent-primary); color: white; font-weight: 700;")">
+                                                        style="padding: 0.35rem 0.75rem; font-size: 0.7rem; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+                                                               @(!item.IsReturn ? "background: #059669; color: white; font-weight: 800; box-shadow: 0 2px 6px rgba(5,150,105,0.2);" : "background: transparent; color: #64748b;")">
                                                     XUẤT
                                                 </button>
                                                 <button type="button" @onclick="() => item.IsReturn = true" 
-                                                        style="padding: 0.2rem 0.5rem; font-size: 0.65rem; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s;
-                                                               @(!item.IsReturn ? "background: transparent; color: #64748b;" : "background: var(--error); color: white; font-weight: 700;")">
+                                                        style="padding: 0.35rem 0.75rem; font-size: 0.7rem; border: none; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+                                                               @(item.IsReturn ? "background: #be123c; color: white; font-weight: 800; box-shadow: 0 2px 6px rgba(190,18,60,0.2);" : "background: transparent; color: #64748b;")">
                                                     TRẢ
                                                 </button>
                                             </div>
-
-                                            <button class="btn-outline" style="padding: 0.1rem 0.4rem; font-size: 0.65rem;" @onclick="() => { if(mat != null) AddExtraRow(mat); }" title="Thêm dòng cho vật tư này">
-                                                <i class="bi bi-plus-circle"></i> Lô khác
+                                            <button style="background: white; border: 1px solid #fee2e2; color: #be123c; width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;" 
+                                                    @onclick="() => RemoveDraftItem(item)" title="Xóa">
+                                                <i class="bi bi-x-lg"></i>
                                             </button>
-                                            @if (draftItems.Count(x => x.ProjectMaterialId == item.ProjectMaterialId) > 1)
-                                            {
-                                                <button style="background: transparent; border: none; color: var(--error); padding: 0;" @onclick="() => RemoveDraftItem(item)">
-                                                    <i class="bi bi-x-circle"></i>
-                                                </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Lot Info Card -->
+                                    <div style="background: white; border: 1px solid #eef2ff; border-radius: 12px; padding: 0.85rem; margin-bottom: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                            <div style="font-weight: 800; color: #4338ca; font-size: 0.95rem;">
+                                                <i class="bi bi-pin-angle-fill" style="font-size: 0.8rem; opacity: 0.5;"></i> @item.LotNumber
+                                            </div>
+                                            @{
+                                                var lotInfo = availableLots.ContainsKey(item.MaterialId) 
+                                                    ? availableLots[item.MaterialId].FirstOrDefault(l => l.LotNumber == item.LotNumber)
+                                                    : null;
                                             }
+                                            <div style="font-size: 0.7rem; font-weight: 700; color: @(lotInfo?.StockQty <= 0 ? "#be123c" : "#059669"); background: @(lotInfo?.StockQty <= 0 ? "#fff1f2" : "#f0fdf4"); padding: 2px 8px; border-radius: 6px;">
+                                                Tồn kho: @(lotInfo?.StockQty.ToString("0.##") ?? "0")
+                                            </div>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(lotInfo?.Note))
+                                        {
+                                            <div style="font-size: 0.65rem; color: #64748b; font-style: italic; border-top: 1px solid #f1f5f9; padding-top: 6px; margin-top: 6px;">
+                                                <i class="bi bi-info-circle"></i> @lotInfo.Note
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <!-- Inputs -->
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                        <div>
+                                            <label style="font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 4px; display: block;">Số lượng xuất</label>
+                                            <div style="position: relative;">
+                                                <input type="number" step="any" @bind="item.Qty" @bind:event="oninput"
+                                                       style="width: 100%; padding: 0.65rem; border-radius: 10px; border: 1px solid @(!item.IsReturn && mat != null && (double)item.Qty > mat.RemainingQty + 0.0001 ? "#fecaca" : "#e2e8f0"); font-weight: 700; font-size: 1rem; color: @(item.IsReturn ? "#be123c" : "#1e293b");" />
+                                                <button style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: #f1f5f9; border: none; font-size: 0.6rem; font-weight: 800; padding: 4px 8px; border-radius: 6px; color: #475569; cursor: pointer;" 
+                                                        @onclick="() => { if(mat != null) item.Qty = (decimal)mat.RemainingQty; }">MAX</button>
+                                            </div>
+                                            @if (!item.IsReturn && mat != null && (double)item.Qty > mat.RemainingQty + 0.0001)
+                                            {
+                                                <div style="color: #be123c; font-size: 0.6rem; font-weight: 800; margin-top: 4px;">
+                                                    <i class="bi bi-exclamation-triangle-fill"></i> Vượt hạn mức (@mat.RemainingQty.ToString("0.##"))
+                                                </div>
+                                            }
+                                        </div>
+                                        <div>
+                                            <label style="font-size: 0.65rem; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 4px; display: block;">Đơn giá</label>
+                                            <input type="text" value="@item.Price.ToString("N0")" 
+                                                   style="width: 100%; padding: 0.65rem; border-radius: 10px; border: 1px solid #e2e8f0; font-weight: 700; font-size: 1rem; background: #f8fafc; color: #475569;" readonly />
                                         </div>
                                     </div>
                                     
-                                    <div style="margin-bottom: 0.75rem;">
-                                        <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Chọn Lô (Tự cập nhật giá)</div>
-                                        <select class="form-select-modern" style="padding: 0.4rem; font-size: 0.85rem;" 
-                                                value="@item.LotNumber" 
-                                                @onchange="@((ChangeEventArgs e) => OnLotSelected(item, e.Value?.ToString() ?? ""))">
-                                            @if (availableLots.ContainsKey(item.MaterialId))
-                                            {
-                                                foreach (var lot in availableLots[item.MaterialId])
-                                                {
-                                                    <option value="@lot.LotNumber" style="@(lot.StockQty <= 0 ? "color: #94a3b8;" : "font-weight: 600;")">
-                                                        Lô: @lot.LotNumber @(lot.StockQty <= 0 ? "(Hết hàng)" : $"(Tồn: {lot.StockQty.ToString("0.##")} {item.Unit})") 
-                                                        | Giá: @lot.BasePrice.ToString("N0") @(string.IsNullOrEmpty(lot.Note) ? "" : $" | {lot.Note}")
-                                                    </option>
-                                                }
-                                            }
-                                        </select>
-                                    </div>
-
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
-                                        <div>
-                                            <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Số lượng</div>
-                                            <input type="number" step="any" @bind="item.Qty" @bind:event="oninput"
-                                                   style="width: 100%; padding: 0.5rem; font-weight: 600; color: @(item.IsReturn ? "var(--error)" : "inherit");
-                                                          border-color: @(!item.IsReturn && mat != null && (double)item.Qty > mat.RemainingQty + 0.0001 ? "var(--error)" : "var(--border-color)")" />
-                                            @if (!item.IsReturn && mat != null && (double)item.Qty > mat.RemainingQty + 0.0001)
-                                            {
-                                                <div style="color: var(--error); font-size: 0.6rem; font-weight: 700; margin-top: 0.25rem;">Vượt HM (@mat.RemainingQty.ToString("0.##"))</div>
-                                            }
-                                        </div>
-                                        <div>
-                                            <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Đơn giá</div>
-                                            <input type="text" value="@item.Price.ToString("N0")" 
-                                                   @oninput="@((ChangeEventArgs e) => { var raw = e.Value?.ToString()?.Replace(",", ""); if(decimal.TryParse(raw, out var v)) item.Price = v; })" 
-                                                   onkeyup="formatCurrencyInput(this)" style="width: 100%; padding: 0.5rem; font-weight: 600;" />
-                                        </div>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
-                                        <button class="btn-outline" style="padding: 0.2rem 0.5rem; font-size: 0.65rem;" 
-                                                @onclick="() => item.Qty = (decimal)Math.Max(0, mat?.RemainingQty ?? 0)"
-                                                disabled="@(mat != null && mat.RemainingQty <= 0)">MAX</button>
-                                        <div style="font-size: 0.85rem; font-weight: 700; color: @(item.IsReturn ? "var(--error)" : "var(--accent-primary)");">
-                                            @(item.IsReturn ? "-" : "")@((item.Qty * item.Price).ToString("N0")) đ
+                                    <!-- Item Total -->
+                                    <div style="display: flex; justify-content: flex-end; margin-top: 0.75rem;">
+                                        <div style="font-weight: 800; font-size: 1.1rem; color: #059669;">
+                                            @((item.Qty * item.Price).ToString("N0")) <span style="font-size: 0.7rem; vertical-align: top; margin-top: 4px; display: inline-block;">đ</span>
                                         </div>
                                     </div>
                                 </div>
                             }
-                            <button class="btn-primary" style="margin-top: 0.5rem; width: 100%;" @onclick="PrepareDelivery" disabled="@(isProcessing)">
-                                <i class="bi bi-eye"></i> Xem trước hóa đơn
-                            </button>
                         </div>
+
+                        <!-- Summary & Footer -->
+                        @if (draftItems.Any())
+                        {
+                            <div style="background: #f8fafc; padding: 1.5rem; border-top: 1px solid #f1f5f9;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                                    <div style="font-weight: 700; color: #64748b; font-size: 0.9rem;">TỔNG CỘNG PHIẾU</div>
+                                    <div style="font-weight: 900; font-size: 1.75rem; color: #1e293b; letter-spacing: -1px;">
+                                        @draftItems.Sum(x => x.Qty * x.Price).ToString("N0") <span style="font-size: 0.9rem; font-weight: 700; color: #94a3b8;">VNĐ</span>
+                                    </div>
+                                </div>
+                                <button class="btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem; background: linear-gradient(135deg, #059669, #047857); color: white; border: none; border-radius: 16px; font-weight: 800; box-shadow: 0 10px 20px rgba(5,150,105,0.25); display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.3s;" 
+                                        @onclick="PrepareDelivery" disabled="@isProcessing">
+                                    <i class="bi bi-check2-circle" style="font-size: 1.4rem;"></i> CHỐT PHIẾU & XUẤT KHO
+                                </button>
+                            </div>
+                        }
                     </div>
                 }
 
@@ -491,7 +547,7 @@ else
 
     <MaterialSelectionModal @bind-IsOpen="isSelectionModalOpen" 
                             OnMaterialsSelected="OnMaterialsSelected"
-                            ExistingMaterialIds="project.Materials.Select(m => m.MaterialId).ToList()" />
+                            ExistingMaterialIds="new List<int>()" />
 
     @if (isConfiguringMaterials && selectedMaterialsToConfig.Any())
     {
@@ -522,7 +578,13 @@ else
                                                     @bind="pm.TargetLotNumber" @bind:after="() => CheckConfigAvailability(pm)">
                                                 @if (availableLots.ContainsKey(pm.MaterialId))
                                                 {
-                                                    foreach (var lot in availableLots[pm.MaterialId])
+                                                    // Lấy danh sách các lô đã được dùng cho vật tư này trong dự án
+                                                    var usedLots = project.Materials
+                                                        .Where(existing => existing.MaterialId == pm.MaterialId)
+                                                        .Select(existing => existing.TargetLotNumber)
+                                                        .ToList();
+
+                                                    foreach (var lot in availableLots[pm.MaterialId].Where(l => !usedLots.Contains(l.LotNumber)))
                                                     {
                                                         <option value="@lot.LotNumber">Lô: @lot.LotNumber (Tồn: @lot.StockQty)</option>
                                                     }
@@ -550,7 +612,14 @@ else
                                         <input type="number" step="any" @bind="pm.TotalQty" @bind:event="oninput" @bind:after="() => CheckConfigAvailability(pm)" class="form-input-modern" style="padding: 0.4rem;" />
                                     </td>
                                     <td>
-                                        <button class="btn-icon-small" style="color: var(--error);" @onclick="() => selectedMaterialsToConfig.Remove(pm)"><i class="bi bi-x-lg"></i></button>
+                                        <div style="display: flex; gap: 8px; align-items: center; justify-content: center;">
+                                            <button class="btn-icon-small" style="color: var(--accent-primary);" @onclick="() => DuplicateConfigMaterial(pm)" title="Nhân bản dòng này">
+                                                <i class="bi bi-copy"></i>
+                                            </button>
+                                            <button class="btn-icon-small" style="color: var(--error);" @onclick="() => selectedMaterialsToConfig.Remove(pm)" title="Xóa">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             }
@@ -1065,6 +1134,37 @@ else
         }
 
         isConfiguringMaterials = true;
+    }
+
+    private void DuplicateConfigMaterial(ProjectMaterial pm)
+    {
+        var lots = availableLots.ContainsKey(pm.MaterialId) ? availableLots[pm.MaterialId] : new List<MaterialLot>();
+        
+        // Tìm các lô đã dùng cho vật tư này (bao gồm cả trong dự án cũ và trong list đang config)
+        var usedInProject = project.Materials
+            .Where(existing => existing.MaterialId == pm.MaterialId)
+            .Select(existing => existing.TargetLotNumber);
+            
+        var usedInConfig = selectedMaterialsToConfig
+            .Where(existing => existing.MaterialId == pm.MaterialId)
+            .Select(existing => existing.TargetLotNumber);
+            
+        var usedLots = usedInProject.Concat(usedInConfig).Distinct().ToList();
+        
+        var nextLot = lots.FirstOrDefault(l => !usedLots.Contains(l.LotNumber)) ?? lots.FirstOrDefault();
+
+        var index = selectedMaterialsToConfig.IndexOf(pm);
+        selectedMaterialsToConfig.Insert(index + 1, new ProjectMaterial
+        {
+            MaterialId = pm.MaterialId,
+            Name = pm.Name,
+            Unit = pm.Unit,
+            CustomPrice = pm.CustomPrice,
+            TotalQty = pm.TotalQty,
+            RemainingQty = pm.RemainingQty,
+            ImageUrl = pm.ImageUrl,
+            TargetLotNumber = nextLot?.LotNumber ?? ""
+        });
     }
 
     private async Task SaveConfiguredMaterials()

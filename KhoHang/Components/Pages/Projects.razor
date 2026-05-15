@@ -107,13 +107,17 @@
                                 </div>
                                 <div>
                                     <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Lô dự kiến</label>
-                                    <select class="form-select-modern" style="padding: 0.4rem; font-size: 0.8rem;" 
-                                            @bind="sm.TargetLotNumber" @bind:after="() => CheckPromisedAvailability(sm)">
+                                    <select @bind="sm.TargetLotNumber" class="form-select-modern" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
                                         @if (availableLots.ContainsKey(sm.MaterialId))
                                         {
-                                            foreach (var lot in availableLots[sm.MaterialId])
+                                            var usedLots = selectedMaterials
+                                                .Where(existing => existing != sm && existing.MaterialId == sm.MaterialId)
+                                                .Select(existing => existing.TargetLotNumber)
+                                                .ToList();
+
+                                            foreach (var lot in availableLots[sm.MaterialId].Where(l => !usedLots.Contains(l.LotNumber)))
                                             {
-                                                <option value="@lot.LotNumber">Lô: @lot.LotNumber (Tồn: @lot.StockQty)</option>
+                                                <option value="@lot.LotNumber">Lô: @lot.LotNumber (Tồn: @lot.StockQty @sm.Unit)</option>
                                             }
                                         }
                                     </select>
@@ -126,9 +130,14 @@
                                     <label style="font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase;">Tổng SL</label>
                                     <input type="number" @bind="sm.TotalQty" @bind:event="oninput" @onkeyup="() => CheckPromisedAvailability(sm)" style="width: 100%; padding: 0.5rem;" />
                                 </div>
-                                <button style="background: transparent; border: none; color: #ef4444; cursor: pointer; font-size: 1.25rem;" @onclick="() => RemoveMaterial(sm)">
-                                    <i class="bi bi-trash"></i>
-                                </button>
+                                <div style="display: flex; gap: 8px; align-items: center;">
+                                    <button class="btn-icon-small" style="color: var(--accent-primary);" @onclick="() => DuplicateMaterial(sm)" title="Nhân bản dòng này">
+                                        <i class="bi bi-copy"></i>
+                                    </button>
+                                    <button style="background: transparent; border: none; color: #ef4444; cursor: pointer; font-size: 1.25rem;" @onclick="() => RemoveMaterial(sm)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             @if (promisedWarnings.ContainsKey(sm.MaterialId) && promisedWarnings[sm.MaterialId] != null)
@@ -204,7 +213,7 @@
     }
 </style>
 
-<MaterialSelectionModal @bind-IsOpen="isSelectionModalOpen" OnMaterialsSelected="OnMaterialsSelected" />
+<MaterialSelectionModal @bind-IsOpen="isSelectionModalOpen" OnMaterialsSelected="OnMaterialsSelected" ExistingMaterialIds="new List<int>()" />
 
 @code {
     private List<Project> allProjects = new();
@@ -276,27 +285,58 @@
     {
         foreach (var m in materials)
         {
-            if (!selectedMaterials.Any(sm => sm.MaterialId == m.Id))
-            {
-                var lots = await WarehouseService.GetMaterialLotsAsync(m.Id);
-                availableLots[m.Id] = lots;
+            var lots = await WarehouseService.GetMaterialLotsAsync(m.Id);
+            availableLots[m.Id] = lots;
 
-                selectedMaterials.Add(new ProjectMaterial 
-                { 
-                    MaterialId = m.Id, 
-                    Name = m.Name, 
-                    Unit = m.Unit, 
-                    CustomPrice = m.Lots.OrderBy(l => l.Id).FirstOrDefault()?.BasePrice ?? 0, 
-                    TotalQty = 0,
-                    RemainingQty = 0,
-                    ImageUrl = m.ImageUrl,
-                    TargetLotNumber = lots.OrderBy(l => l.Id).FirstOrDefault()?.LotNumber ?? ""
-                });
-            }
+            // Tìm lô đầu tiên chưa được dùng cho vật tư này
+            var usedLots = selectedMaterials
+                .Where(existing => existing.MaterialId == m.Id)
+                .Select(existing => existing.TargetLotNumber)
+                .ToList();
+            
+            var firstAvailLot = lots.FirstOrDefault(l => !usedLots.Contains(l.LotNumber)) ?? lots.FirstOrDefault();
+
+            selectedMaterials.Add(new ProjectMaterial 
+            { 
+                MaterialId = m.Id, 
+                Name = m.Name, 
+                Unit = m.Unit, 
+                CustomPrice = firstAvailLot?.BasePrice ?? 0, 
+                TotalQty = 0,
+                RemainingQty = 0,
+                ImageUrl = m.ImageUrl,
+                TargetLotNumber = firstAvailLot?.LotNumber ?? ""
+            });
         }
     }
 
     private void RemoveMaterial(ProjectMaterial sm) => selectedMaterials.Remove(sm);
+
+    private void DuplicateMaterial(ProjectMaterial sm)
+    {
+        var lots = availableLots.ContainsKey(sm.MaterialId) ? availableLots[sm.MaterialId] : new List<MaterialLot>();
+        
+        // Tìm lô tiếp theo chưa dùng
+        var usedLots = selectedMaterials
+            .Where(existing => existing.MaterialId == sm.MaterialId)
+            .Select(existing => existing.TargetLotNumber)
+            .ToList();
+        
+        var nextLot = lots.FirstOrDefault(l => !usedLots.Contains(l.LotNumber)) ?? lots.FirstOrDefault();
+
+        var index = selectedMaterials.IndexOf(sm);
+        selectedMaterials.Insert(index + 1, new ProjectMaterial
+        {
+            MaterialId = sm.MaterialId,
+            Name = sm.Name,
+            Unit = sm.Unit,
+            CustomPrice = sm.CustomPrice,
+            TotalQty = sm.TotalQty,
+            RemainingQty = sm.RemainingQty,
+            ImageUrl = sm.ImageUrl,
+            TargetLotNumber = nextLot?.LotNumber ?? ""
+        });
+    }
 
     private async Task SaveProject()
     {
