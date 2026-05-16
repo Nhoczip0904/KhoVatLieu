@@ -1,0 +1,188 @@
+@page "/categories"
+@using KhoHang.Models
+@using KhoHang.Services
+@inject WarehouseService WarehouseService
+@inject NavigationManager Nav
+@rendermode InteractiveServer
+
+<div class="fade-in">
+    <div class="header-stack" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; gap: 1rem;">
+        <div>
+            <h1 class="responsive-title" style="font-size: 2.2rem; font-weight: 800; font-family: 'Outfit'; margin: 0; color: #0f172a;">Quản lý Nhóm Vật tư</h1>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 350px 1fr; gap: 2rem;">
+        <!-- Category Form -->
+        <div class="glass-card" style="padding: 1.5rem; border-radius: 20px; border: 1px solid #e2e8f0; background: white;">
+            <h3 style="margin-top: 0; margin-bottom: 1.5rem; font-size: 1.1rem; color: #1e293b; font-weight: 800;">
+                @(editingCategory?.Id > 0 ? "Chỉnh sửa nhóm" : "Thêm nhóm mới")
+            </h3>
+            <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <div>
+                    <label class="form-label-small">Tên nhóm vật liệu</label>
+                    <input type="text" @bind="editingCategoryName" placeholder="VD: Gạch xây dựng..." class="form-input-modern" />
+                </div>
+                <div style="display: flex; gap: 0.75rem;">
+                    @if (editingCategory?.Id > 0)
+                    {
+                        <button class="btn-cancel" style="flex: 1;" @onclick="ResetCategoryForm">Hủy</button>
+                        <button class="btn-save" style="flex: 1;" @onclick="SaveCategory">Cập nhật</button>
+                    }
+                    else
+                    {
+                        <button class="btn-save" style="width: 100%;" @onclick="SaveCategory">Lưu nhóm</button>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Category Table -->
+        <div class="glass-card" style="padding: 1rem; border-radius: 20px; border: 1px solid #e2e8f0; background: white;">
+            <!-- Modern Category List -->
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                @if (categories == null || !categories.Any())
+                {
+                    <div style="text-align: center; padding: 3rem; color: #94a3b8;">
+                        <i class="bi bi-tag" style="font-size: 3rem; opacity: 0.3;"></i>
+                        <p style="margin-top: 1rem;">Chưa có nhóm vật tư nào.</p>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var c in pagedCategories) {
+                        <div class="category-row-card @(editingCategory?.Id == c.Id ? "active" : "")" @onclick="() => SelectCategory(c)">
+                            <div style="display: flex; align-items: center; gap: 1rem; flex: 1;">
+                                <div class="category-icon"><i class="bi bi-tag-fill"></i></div>
+                                <div style="font-weight: 700; color: #1e293b;">@c.Name</div>
+                            </div>
+                            <button class="row-action-btn delete" @onclick:stopPropagation="true" @onclick="() => DeleteCategory(c.Id)" title="Xóa nhóm">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    }
+                }
+            </div>
+            
+            <!-- Pagination for Categories -->
+            @if (totalCategoryPages > 1)
+            {
+                <div style="text-align: center; width: 100%; padding: 1rem 0; border-top: 1px solid #f1f5f9; margin-top: 1rem;">
+                    <div class="pagination-container" style="display: inline-flex; justify-content: center; align-items: center; gap: 1rem; margin: 0; padding: 0;">
+                        <button class="btn-page nav-btn" disabled="@(currentCategoryPage == 1)" @onclick="() => currentCategoryPage--">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                        <div class="page-info">Trang @currentCategoryPage / @totalCategoryPages</div>
+                        <button class="btn-page nav-btn" disabled="@(currentCategoryPage >= totalCategoryPages)" @onclick="() => currentCategoryPage++">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-label-small { display: block; font-size: 0.75rem; font-weight: 700; color: #1e293b; margin-bottom: 0.4rem; text-transform: uppercase; }
+    .form-input-modern { 
+        width: 100%; padding: 0.65rem 1rem; border-radius: 12px; border: 1px solid #e2e8f0; 
+        font-size: 0.95rem; color: #1e293b; transition: all 0.2s; background: #f8fafc;
+    }
+    .form-input-modern:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); background: white; }
+    
+    .btn-cancel { 
+        padding: 0.65rem 1rem; border-radius: 12px; border: 1px solid #e2e8f0; 
+        background: white; color: #64748b; font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-save { 
+        padding: 0.65rem 1rem; border-radius: 12px; border: none; 
+        background: #3b82f6; color: white; font-weight: 700; cursor: pointer; transition: all 0.2s;
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.2);
+    }
+    .btn-save:hover { background: #2563eb; transform: translateY(-1px); }
+
+    .category-row-card {
+        background: white;
+        border: 1px solid #f1f5f9;
+        border-radius: 12px;
+        padding: 0.75rem 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .category-row-card:hover { background: #f8fafc; transform: translateX(5px); border-color: #3b82f6; }
+    .category-row-card.active { background: #eff6ff; border-color: #3b82f6; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1); }
+    .category-icon { width: 32px; height: 32px; background: #f1f5f9; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 0.9rem; }
+    .category-row-card.active .category-icon { background: #3b82f6; color: white; }
+
+    .row-action-btn {
+        width: 32px; height: 32px; border-radius: 8px; border: 1px solid #f1f5f9;
+        background: white; color: #94a3b8; display: flex; align-items: center; justify-content: center;
+        transition: all 0.2s; cursor: pointer;
+    }
+    .row-action-btn.delete:hover { background: #ef4444; color: white; border-color: transparent; }
+
+    .pagination-container { display: flex; align-items: center; gap: 1rem; }
+    .nav-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; cursor: pointer; }
+    .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .page-info { font-weight: 700; font-size: 0.85rem; color: #64748b; }
+</style>
+
+@code {
+    private List<Category> categories = new();
+    private Category? editingCategory;
+    private string editingCategoryName = "";
+    private int currentCategoryPage = 1;
+    private int categoryPageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        categories = await WarehouseService.GetCategoriesAsync();
+    }
+
+    private int totalCategoryPages => Math.Max(1, (int)Math.Ceiling(categories.Count / (double)categoryPageSize));
+    private IEnumerable<Category> pagedCategories => categories.Skip((currentCategoryPage - 1) * categoryPageSize).Take(categoryPageSize);
+
+    private void SelectCategory(Category c)
+    {
+        editingCategory = c;
+        editingCategoryName = c.Name;
+    }
+
+    private void ResetCategoryForm()
+    {
+        editingCategory = null;
+        editingCategoryName = "";
+    }
+
+    private async Task SaveCategory()
+    {
+        if (string.IsNullOrWhiteSpace(editingCategoryName)) return;
+        
+        if (editingCategory?.Id > 0)
+        {
+            editingCategory.Name = editingCategoryName.Trim();
+            await WarehouseService.UpdateCategoryAsync(editingCategory);
+        }
+        else
+        {
+            await WarehouseService.AddCategoryAsync(new Category { Name = editingCategoryName.Trim() });
+        }
+        ResetCategoryForm();
+        await LoadData();
+    }
+
+    private async Task DeleteCategory(int id) 
+    { 
+        await WarehouseService.DeleteCategoryAsync(id); 
+        await LoadData(); 
+    }
+}

@@ -5,6 +5,24 @@
 @inject NavigationManager Nav
 @rendermode InteractiveServer
 
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+    
+    .custom-lot-scroll::-webkit-scrollbar { width: 4px; }
+    .custom-lot-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-lot-scroll::-webkit-scrollbar-thumb { background: #dcfce7; border-radius: 10px; }
+    .custom-lot-scroll::-webkit-scrollbar-thumb:hover { background: #bbf7d0; }
+
+    .lot-item-hover:hover {
+        transform: translateY(-1px);
+        border-color: #10b981 !important;
+        box-shadow: 0 8px 20px rgba(16, 185, 129, 0.06) !important;
+    }
+</style>
+
 <div class="custom-scrollbar" style="height: 100vh; overflow-y: auto; background: #f1f5f9; padding: 2rem;">
     @if (isLoading)
     {
@@ -42,77 +60,118 @@
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 350px 1fr; gap: 2rem;">
-                <!-- Left Column: Info & Lots -->
-                <div style="display: flex; flex-direction: column; gap: 2rem;">
-                    <!-- Product Card -->
-                    <div class="glass-card" style="padding: 0; overflow: hidden; background: white;">
-                        <div style="width: 100%; height: 250px; background: #f8fafc; display: flex; justify-content: center; align-items: center;">
-                            @if (!string.IsNullOrEmpty(material.ImageUrl))
-                            {
-                                <img src="@material.ImageUrl" style="width: 100%; height: 100%; object-fit: cover;" />
-                            }
-                            else
-                            {
-                                <i class="bi bi-box-seam" style="font-size: 4rem; color: #cbd5e1;"></i>
-                            }
-                        </div>
-                        <div style="padding: 1.5rem;">
-                            <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; margin-bottom: 0.75rem;">Thông tin chi tiết</div>
-                            <div style="display: flex; flex-direction: column; gap: 1rem;">
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span style="color: var(--text-secondary);">Nhà cung cấp</span>
-                                    <span style="font-weight: 700;">@(material.Supplier?.Name ?? "N/A")</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span style="color: var(--text-secondary);">Mã sản phẩm</span>
-                                    <span style="font-weight: 700;">@(material.ProductCode ?? "---")</span>
-                                </div>
-                                <div style="display: flex; justify-content: space-between;">
-                                    <span style="color: var(--text-secondary);">Giá nhập gần nhất</span>
-                                    <span style="font-weight: 700;">@(material.Lots.OrderByDescending(l => l.Id).FirstOrDefault()?.CostPrice.ToString("N0") ?? "0") đ</span>
-                                </div>
+            <!-- Section 1 & 2: Mint Compact Dashboard -->
+            <div style="display: grid; grid-template-columns: 360px 1fr; gap: 1.25rem; align-items: stretch; margin-bottom: 1.5rem;">
+                
+                <!-- Column Left: Compact Product Profile -->
+                <div class="glass-card" style="background: white; padding: 1.5rem; border-radius: 24px; display: flex; flex-direction: column; gap: 1.25rem; border: 1px solid #e2e8f0; box-shadow: 0 10px 30px rgba(0,0,0,0.03);">
+                    <!-- Compact Image Container -->
+                    <div style="width: 100%; height: 280px; background: #f0fdf4; border-radius: 20px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid #dcfce7;">
+                        @if (!string.IsNullOrEmpty(material.ImageUrl))
+                        {
+                            <img src="@material.ImageUrl" style="width: 100%; height: 100%; object-fit: cover;" />
+                        }
+                        else
+                        {
+                            <div style="opacity: 0.3;">
+                                <i class="bi bi-box-seam" style="font-size: 5rem; color: #10b981;"></i>
                             </div>
+                        }
+                        
+                        <!-- Mint Stock Badge -->
+                        <div style="position: absolute; bottom: 1rem; right: 1rem; background: #059669; color: white; padding: 0.4rem 1rem; border-radius: 12px; font-weight: 900; font-size: 1.1rem; box-shadow: 0 8px 20px rgba(5, 150, 105, 0.3); display: flex; align-items: baseline; gap: 3px;">
+                            @material.StockQty.ToString("0.##") <span style="font-size: 0.7rem; font-weight: 700; opacity: 0.8;">@material.Unit</span>
                         </div>
                     </div>
 
-                    <!-- Lots List -->
-                    <div class="glass-card" style="background: white;">
-                        <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-                            <i class="bi bi-layers text-primary"></i> Danh sách các Lô
-                        </h3>
+                    <!-- Material Details (Compact) -->
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 0.25rem;">
+                            <div style="width: 10px; height: 10px; border-radius: 50%; background: #10b981;"></div>
+                            <span style="font-size: 0.7rem; font-weight: 800; color: #059669; text-transform: uppercase; letter-spacing: 1px;">Vật tư hệ thống</span>
+                        </div>
+                        <h1 style="font-size: 1.8rem; font-weight: 900; color: #064e3b; margin: 0 0 1rem 0; letter-spacing: -1px; line-height: 1.1;">@material.Name</h1>
+                        
                         <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                            @foreach (var lot in material.Lots.OrderBy(l => l.LotNumber))
-                            {
-                                <div style="padding: 1rem; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
-                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-                                        <div style="font-weight: 800; color: #1e293b;">Lô: @lot.LotNumber</div>
-                                        <div style="font-size: 1.1rem; font-weight: 900; color: @(lot.StockQty > 0 ? "var(--accent-primary)" : "#94a3b8");">@lot.StockQty.ToString("0.##")</div>
-                                    </div>
-                                    <div style="font-size: 0.75rem; color: var(--text-secondary);">
-                                        <div><i class="bi bi-calendar-event"></i> HSD: @(lot.ProductionDate?.ToString("dd/MM/yyyy") ?? "---")</div>
-                                        @if (!string.IsNullOrEmpty(lot.Note))
-                                        {
-                                            <div style="margin-top: 0.25rem; font-style: italic; color: #64748b;">"@lot.Note"</div>
-                                        }
-                                    </div>
+                            <div style="background: #f8fafc; padding: 0.85rem; border-radius: 14px; border: 1px solid #f1f5f9;">
+                                <div style="font-size: 0.6rem; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Nhà cung cấp</div>
+                                <div style="font-weight: 700; color: #334155; font-size: 0.95rem;">@(material.Supplier?.Name ?? "---")</div>
+                            </div>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                <div style="background: #f8fafc; padding: 0.85rem; border-radius: 14px; border: 1px solid #f1f5f9;">
+                                    <div style="font-size: 0.6rem; font-weight: 800; color: #94a3b8; text-transform: uppercase;">SKU</div>
+                                    <div style="font-weight: 700; color: #334155; font-size: 0.9rem;">@(string.IsNullOrEmpty(material.ProductCode) ? "---" : material.ProductCode)</div>
                                 </div>
-                            }
+                                <div style="background: #f8fafc; padding: 0.85rem; border-radius: 14px; border: 1px solid #f1f5f9;">
+                                    <div style="font-size: 0.6rem; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Nhóm</div>
+                                    <div style="font-weight: 700; color: #334155; font-size: 0.9rem;">@(material.Category?.Name ?? "---")</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Right Column: Projects & History -->
-                <div style="display: flex; flex-direction: column; gap: 2rem;">
+                <!-- Column Right: Compact Mint Lot Feed -->
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 0 0.25rem;">
+                        <h3 style="margin: 0; font-size: 1.1rem; font-weight: 900; color: #064e3b; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="bi bi-layers-half" style="color: #10b981;"></i>
+                            Danh sách Lô hàng <span style="font-size: 0.8rem; font-weight: 700; color: #059669; background: #dcfce7; padding: 2px 8px; border-radius: 99px;">@material.Lots.Count</span>
+                        </h3>
+                        <div style="font-size: 0.65rem; font-weight: 700; color: #94a3b8; text-transform: uppercase;">Cuộn để xem <i class="bi bi-chevron-down"></i></div>
+                    </div>
                     
-                    <!-- Section: Reconciliation Project & Batch -->
-                    <div class="glass-card" style="background: white; padding: 1.5rem; border-radius: 20px;">
-                        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem;">
-                            <div style="width: 32px; height: 32px; border-radius: 8px; background: #eef2ff; color: #6366f1; display: flex; align-items: center; justify-content: center;">
-                                <i class="bi bi-briefcase"></i>
+                    <div class="custom-lot-scroll" style="max-height: 520px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.6rem; padding-right: 0.4rem;">
+                        @foreach (var lot in material.Lots.OrderByDescending(l => l.Id))
+                        {
+                            <div class="glass-card lot-item-hover" style="background: white; padding: 1rem; border-radius: 16px; border: 1px solid #f1f5f9; display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: center;">
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 0.5rem;">
+                                        <div style="width: 6px; height: 6px; border-radius: 50%; background: @(lot.StockQty > 0 ? "#10b981" : "#cbd5e1");"></div>
+                                        <span style="font-weight: 800; color: #1e293b; font-size: 0.95rem;">Lô: @lot.LotNumber</span>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                        <div style="background: #f8fafc; padding: 6px 10px; border-radius: 10px; border: 1px solid #f1f5f9;">
+                                            <div style="font-size: 0.55rem; font-weight: 800; color: #94a3b8; text-transform: uppercase;">Giá nhập</div>
+                                            <div style="font-weight: 700; color: #475569; font-size: 0.9rem;">@lot.CostPrice.ToString("N0") <span style="font-size: 0.6rem;">đ</span></div>
+                                        </div>
+                                        <div style="background: #f0fdf4; padding: 6px 10px; border-radius: 10px; border: 1px solid #dcfce7;">
+                                            <div style="font-size: 0.55rem; font-weight: 800; color: #059669; text-transform: uppercase;">Giá bán</div>
+                                            <div style="font-weight: 700; color: #059669; font-size: 0.9rem;">@lot.BasePrice.ToString("N0") <span style="font-size: 0.6rem;">đ</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style="text-align: right;">
+                                    <div style="font-size: 0.6rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; margin-bottom: 2px;">Tồn kho</div>
+                                    <div style="font-weight: 900; color: #064e3b; font-size: 1.4rem; letter-spacing: -0.5px;">
+                                        @lot.StockQty.ToString("0.##") <span style="font-size: 0.7rem; font-weight: 700; color: #64748b;">@material.Unit</span>
+                                    </div>
+                                </div>
+
+                                @if (!string.IsNullOrEmpty(lot.Note))
+                                {
+                                    <div style="grid-column: span 2; font-size: 0.7rem; color: #64748b; font-style: italic; background: #f8fafc; padding: 6px 10px; border-radius: 8px; border: 1px solid #f1f5f9; display: flex; align-items: center; gap: 6px;">
+                                        <i class="bi bi-info-circle" style="color: #cbd5e1;"></i> @lot.Note
+                                    </div>
+                                }
                             </div>
-                            <h3 style="margin: 0; font-size: 1.1rem; font-weight: 800; color: #1e293b;">Đối chiếu Dự án & Lô hàng</h3>
-                        </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Reconciliation Table (Full Width) -->
+            <div class="glass-card" style="background: white; padding: 2rem; border-radius: 24px; border: 1px solid #f1f5f9; box-shadow: 0 10px 40px rgba(0,0,0,0.03);">
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div style="width: 44px; height: 44px; border-radius: 14px; background: #f0fdf4; color: #10b981; display: flex; align-items: center; justify-content: center; font-size: 1.3rem;">
+                        <i class="bi bi-calculator-fill"></i>
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.4rem; font-weight: 950; color: #064e3b; letter-spacing: -0.5px;">Đối chiếu Dự án & Lô hàng</h3>
+                        <p style="margin: 0; font-size: 0.8rem; color: #94a3b8; font-weight: 600;">Phân bổ vật tư cam kết theo từng dự án</p>
+                    </div>
+                </div>
 
                         @if (!commitments.Any())
                         {
@@ -140,42 +199,67 @@
                                             var totalLotPromised = lotCommitments.Sum(c => c.RemainingQty);
                                             var isShortage = totalLotPromised > lot.StockQty + 0.0001;
 
-                                            <!-- Lot Header Summary -->
-                                            <tr style="background: @(isShortage ? "#fff1f2" : "#f0f9ff");">
-                                                <td style="padding: 0.75rem 1rem; border-top: 1px solid #e2e8f0;">
-                                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                                        <span style="font-weight: 900; color: #0369a1;">LÔ: @lot.LotNumber</span>
-                                                        <span style="font-size: 0.7rem; background: white; padding: 2px 6px; border-radius: 4px; border: 1px solid #bae6fd; color: #0369a1;">Tồn thực tế: @lot.StockQty.ToString("0.##")</span>
+                                            <!-- Lot Header Summary (Intuitive Formula Layout) -->
+                                            <tr style="background: @(isShortage ? "#fff1f2" : "#f8fafc"); border-top: 2px solid @(isShortage ? "#fecaca" : "#e2e8f0");">
+                                                <td style="padding: 1.25rem 1rem;">
+                                                    <div style="display: flex; align-items: center; gap: 12px;">
+                                                        <div style="width: 40px; height: 40px; border-radius: 10px; background: white; border: 1px solid @(isShortage ? "#fecaca" : "#cbd5e1"); color: @(isShortage ? "#be123c" : "#0369a1"); display: flex; align-items: center; justify-content: center; font-size: 1.2rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                                                            <i class="bi bi-box-seam-fill"></i>
+                                                        </div>
+                                                        <div>
+                                                            <div style="font-weight: 900; color: @(isShortage ? "#be123c" : "#0369a1"); font-size: 1.1rem; letter-spacing: -0.5px;">LÔ: @lot.LotNumber</div>
+                                                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 2px;">
+                                                                <span style="font-size: 0.7rem; color: #64748b; font-weight: 700; text-transform: uppercase;">TỔNG TỒN: @lot.StockQty.ToString("0.##")</span>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </td>
-                                                <td class="text-center" style="padding: 0.75rem 1rem; border-top: 1px solid #e2e8f0; font-weight: 800; color: @(isShortage ? "#be123c" : "#0f172a")">
-                                                    @totalLotPromised.ToString("0.##")
+                                                
+                                                <td class="text-center" style="padding: 1.25rem 1rem;">
+                                                    <div style="display: flex; flex-direction: column; align-items: center; gap: 2px;">
+                                                        <div style="font-size: 0.65rem; font-weight: 800; color: #94a3b8; text-transform: uppercase;">- DỰ ÁN ĐẶT -</div>
+                                                        <div style="font-weight: 900; font-size: 1.2rem; color: #1e293b;">@totalLotPromised.ToString("0.##")</div>
+                                                    </div>
                                                 </td>
-                                                <td colspan="2" class="text-end" style="padding: 0.75rem 1rem; border-top: 1px solid #e2e8f0;">
-                                                    @if (isShortage)
-                                                    {
-                                                        <span style="color: #be123c; font-weight: 800; font-size: 0.7rem;"><i class="bi bi-exclamation-triangle-fill"></i> THIẾU: @((totalLotPromised - lot.StockQty).ToString("0.##"))</span>
+
+                                                <td colspan="2" class="text-end" style="padding: 1.25rem 1rem;">
+                                                    @{
+                                                        var netStock = lot.StockQty - totalLotPromised;
+                                                        var statusColor = netStock <= 0.0001 ? "#be123c" : (netStock < lot.StockQty * 0.1 ? "#ca8a04" : "#059669");
+                                                        var statusBg = netStock <= 0.0001 ? "#fff1f2" : (netStock < lot.StockQty * 0.1 ? "#fefce8" : "#f0fdf4");
+                                                        var statusIcon = netStock <= 0.0001 ? "bi-exclamation-octagon-fill" : (netStock < lot.StockQty * 0.1 ? "bi-exclamation-triangle-fill" : "bi-check-circle-fill");
+                                                        var usagePct = lot.StockQty > 0 ? Math.Min(100, (totalLotPromised * 100 / lot.StockQty)) : 0;
                                                     }
-                                                    else
-                                                    {
-                                                        <span style="color: #059669; font-weight: 800; font-size: 0.7rem;"><i class="bi bi-check-circle-fill"></i> AN TOÀN</span>
-                                                    }
+                                                    <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                                                        <div style="display: inline-flex; align-items: center; gap: 8px; background: @statusBg; color: @statusColor; padding: 6px 14px; border-radius: 12px; font-size: 0.9rem; font-weight: 900; border: 1px solid @statusColor; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                                                            <i class="bi @statusIcon"></i>
+                                                            <span>= CÒN DƯ: @netStock.ToString("0.##")</span>
+                                                        </div>
+                                                        
+                                                        <!-- Lot Usage Bar -->
+                                                        <div style="width: 150px; height: 6px; background: #e2e8f0; border-radius: 10px; overflow: hidden; position: relative;">
+                                                            <div style="position: absolute; left: 0; top: 0; height: 100%; width: @(usagePct)%; background: @(isShortage ? "#be123c" : "#6366f1"); border-radius: 10px; transition: width 0.4s;"></div>
+                                                        </div>
+                                                        <div style="font-size: 0.6rem; font-weight: 700; color: #94a3b8;">Sử dụng: @usagePct.ToString("0")%</div>
+                                                    </div>
                                                 </td>
                                             </tr>
 
-                                            <!-- Projects tied to this lot -->
+                                            <!-- Projects tied to this lot (Detail Rows) -->
                                             @foreach (var c in lotCommitments)
                                             {
-                                                <tr>
-                                                    <td style="padding: 0.75rem 1rem; padding-left: 2rem;">
-                                                        <div style="font-weight: 600; color: #475569; cursor: pointer;" @onclick='() => Nav.NavigateTo($"/projects/{c.ProjectId}")'>
-                                                            @(!string.IsNullOrWhiteSpace(c.Project?.CustomerName) ? c.Project.CustomerName : $"Dự án #{c.ProjectId}")
+                                                <tr style="border-left: 4px solid #f1f5f9;">
+                                                    <td style="padding: 0.85rem 1rem; padding-left: 2.5rem;">
+                                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                                            <i class="bi bi-file-earmark-text" style="color: #94a3b8;"></i>
+                                                            <div style="font-weight: 700; color: #334155; cursor: pointer; transition: color 0.2s;" @onclick='() => Nav.NavigateTo($"/projects/{c.ProjectId}")' onmouseover="this.style.color='#6366f1'" onmouseout="this.style.color='#334155'">
+                                                                @(!string.IsNullOrWhiteSpace(c.Project?.CustomerName) ? c.Project.CustomerName : $"Dự án #{c.ProjectId}")
+                                                            </div>
                                                         </div>
-                                                        <div style="font-size: 0.7rem; color: #94a3b8;">Dự án: @(!string.IsNullOrWhiteSpace(c.Project?.CustomerName) ? c.Project.CustomerName : "Chưa đặt tên")</div>
                                                     </td>
-                                                    <td class="text-center" style="color: #64748b;">@c.TotalQty.ToString("0.##")</td>
-                                                    <td class="text-center" style="color: #64748b;">@((c.TotalQty - c.RemainingQty).ToString("0.##"))</td>
-                                                    <td class="text-end" style="font-weight: 700; color: var(--accent-primary);">@c.RemainingQty.ToString("0.##")</td>
+                                                    <td class="text-center" style="color: #64748b; font-weight: 600;">@c.TotalQty.ToString("0.##")</td>
+                                                    <td class="text-center" style="color: #64748b; font-weight: 600;">@((c.TotalQty - c.RemainingQty).ToString("0.##"))</td>
+                                                    <td class="text-end" style="font-weight: 800; color: #4338ca; font-size: 0.95rem;">@c.RemainingQty.ToString("0.##")</td>
                                                 </tr>
                                             }
                                         }
@@ -260,8 +344,6 @@
                     </div>
 
                 </div>
-            </div>
-        </div>
     }
 </div>
 

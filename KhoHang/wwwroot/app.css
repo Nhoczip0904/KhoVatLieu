@@ -558,9 +558,29 @@ label {
 
 /* ================= PRINT ================= */
 @media print {
-    .no-print { display: none !important; }
-    body { background: white !important; margin: 0; padding: 0; }
-    .main-content { margin-left: 0 !important; padding: 0 !important; }
-    .sidebar { display: none !important; }
-    .page { display: block !important; }
+    /* Hide all system navigation and interface elements */
+    .no-print, .sidebar, .sidebar-backdrop, .top-header, nav, header, footer, .sidebar-open .sidebar-backdrop { 
+        display: none !important; 
+    }
+    
+    /* Reset layout for full-page printing */
+    body, html { 
+        background: white !important; 
+        margin: 0 !important; 
+        padding: 0 !important; 
+        width: 100%;
+    }
+    
+    .page { 
+        display: block !important; 
+        margin: 0 !important; 
+        padding: 0 !important;
+    }
+
+    .main-content { 
+        margin-left: 0 !important; 
+        padding: 0 !important; 
+        width: 100% !important;
+        display: block !important;
+    }
 }

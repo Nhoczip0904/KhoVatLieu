@@ -8,10 +8,9 @@
 <PageTitle>Quản lý Dự án & Khách hàng</PageTitle>
 
 <div class="fade-in">
-    <div class="header-stack" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; gap: 1rem;">
+    <div class="header-stack" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; gap: 1rem;">
         <div>
-            <h1 class="responsive-title" style="font-size: 2.5rem; font-weight: 800; font-family: 'Outfit'; margin: 0; color: #0f172a;">Dự án & Xuất kho</h1>
-            <p style="color: var(--text-secondary); margin-top: 0.5rem;">Quản lý xuất kho và theo dõi tiến độ từng công trình.</p>
+            <h1 class="responsive-title" style="font-size: 2.2rem; font-weight: 800; font-family: 'Outfit'; margin: 0; color: #0f172a;">Dự án & Xuất kho</h1>
         </div>
         <button class="btn-primary" @onclick="() => isAdding = true">
             <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">Dự án mới</span><span class="d-sm-none">Thêm</span>
@@ -213,7 +212,10 @@
     }
 </style>
 
-<MaterialSelectionModal @bind-IsOpen="isSelectionModalOpen" OnMaterialsSelected="OnMaterialsSelected" ExistingMaterialIds="new List<int>()" />
+<MaterialSelectionModal @bind-IsOpen="isSelectionModalOpen" 
+                        OnMaterialsSelected="OnMaterialsSelected" 
+                        ExistingMaterialIds="new List<int>()"
+                        AllowZeroStock="false" />
 
 @code {
     private List<Project> allProjects = new();

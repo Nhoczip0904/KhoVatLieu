@@ -19,12 +19,13 @@ namespace KhoHang.Components.Pages
         protected bool isSelectionModalOpen = false;
         protected PurchaseOrder newPo = new();
         protected PurchaseOrder? selectedPo;
-        protected int viewMode = 0; // 0: Theo Phiếu, 1: Theo Vật Tư
-        protected string materialSearchText = "";
+        protected int? selectedMaterialId;
+        protected string selectedMaterialName = "";
+        protected bool showMaterialModal = false;
         protected int? selectedCategoryId;
         protected List<Category> categories = new();
 
-        protected void OnMaterialsSelected(List<Material> selected)
+        protected void OnPoMaterialsSelected(List<Material> selected)
         {
             foreach (var m in selected)
             {
@@ -70,6 +71,25 @@ namespace KhoHang.Components.Pages
             currentPage = 1;
         }
 
+        protected void ClearMaterialFilter()
+        {
+            selectedMaterialId = null;
+            selectedMaterialName = "";
+            currentPage = 1;
+        }
+
+        protected void OnFilterMaterialSelected(List<Material> selected)
+        {
+            if (selected != null && selected.Any())
+            {
+                var m = selected.First();
+                selectedMaterialId = m.Id;
+                selectedMaterialName = m.Name;
+                showMaterialModal = false;
+                currentPage = 1;
+            }
+        }
+
         // Phân trang
         protected int currentPage = 1;
         protected int pageSize = 10;
@@ -79,7 +99,8 @@ namespace KhoHang.Components.Pages
             .Where(p => {
                 bool matchesSearch = string.IsNullOrWhiteSpace(searchText) || 
                                      p.Id.ToString("D5").Contains(searchText) || 
-                                     (p.Supplier?.Name?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false);
+                                     (p.Supplier?.Name?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                                     p.Items.Any(i => materials.FirstOrDefault(m => m.Id == i.MaterialId)?.Name?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false);
                 
                 bool matchesDate = (!startDate.HasValue || p.Timestamp.Date >= startDate.Value.Date) &&
                                    (!endDate.HasValue || p.Timestamp.Date <= endDate.Value.Date);
@@ -93,31 +114,16 @@ namespace KhoHang.Components.Pages
                 bool matchesCategory = !selectedCategoryId.HasValue ||
                                         p.Items.Any(i => materials.FirstOrDefault(m => m.Id == i.MaterialId)?.CategoryId == selectedCategoryId);
 
-                return matchesSearch && matchesDate && matchesSupplier && matchesCategory;
+                bool matchesMaterial = !selectedMaterialId.HasValue ||
+                                       p.Items.Any(i => i.MaterialId == selectedMaterialId);
+
+                return matchesSearch && matchesDate && matchesSupplier && matchesCategory && matchesMaterial;
             })
             .OrderByDescending(p => p.Timestamp);
-
-        protected IEnumerable<object> AllFilteredItems => AllFilteredPOs
-            .SelectMany(po => po.Items.Select(i => new { Item = i, PO = po }))
-            .Where(x => {
-                bool matchesMaterialSearch = string.IsNullOrWhiteSpace(materialSearchText) || 
-                            (materials.FirstOrDefault(m => m.Id == x.Item.MaterialId)?.Name?.Contains(materialSearchText, StringComparison.OrdinalIgnoreCase) ?? false);
-                
-                bool matchesCategory = !selectedCategoryId.HasValue ||
-                            materials.FirstOrDefault(m => m.Id == x.Item.MaterialId)?.CategoryId == selectedCategoryId;
-                
-                return matchesMaterialSearch && matchesCategory;
-            })
-            .OrderByDescending(x => x.PO.Timestamp);
 
         protected IEnumerable<PurchaseOrder> PagedPOs => AllFilteredPOs
             .Skip((currentPage - 1) * pageSize)
             .Take(pageSize);
-
-        protected IEnumerable<dynamic> PagedItems => AllFilteredItems
-            .Skip((currentPage - 1) * pageSize)
-            .Take(pageSize)
-            .Cast<dynamic>();
 
         protected override async Task OnInitializedAsync()
         {

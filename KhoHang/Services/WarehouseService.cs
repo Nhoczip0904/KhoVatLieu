@@ -337,7 +337,7 @@ public class WarehouseService
         }
     }
 
-    public async Task<(decimal Revenue, int Deliveries, int ActiveProjects, List<Delivery> RecentDeliveries, List<Payment> RecentPayments)> GetDashboardStatsAsync()
+    public async Task<(decimal Revenue, decimal Collected, int Deliveries, int ActiveProjects, List<Delivery> RecentDeliveries, List<Payment> RecentPayments)> GetDashboardStatsAsync()
     {
         using var context = _dbFactory.CreateDbContext();
         
@@ -345,6 +345,9 @@ public class WarehouseService
         var revenue = deliveries.Sum(d => d.TotalAmount);
         var deliveryCount = deliveries.Count;
         var activeProjectsCount = await context.Projects.CountAsync(p => !p.IsCompleted);
+        
+        var payments = await context.Payments.ToListAsync();
+        var collected = payments.Sum(p => p.Amount);
         
         var recentDeliveries = await context.Deliveries
             .Include(d => d.Project)
@@ -358,7 +361,7 @@ public class WarehouseService
             .Take(50)
             .ToListAsync();
 
-        return (revenue, deliveryCount, activeProjectsCount, recentDeliveries, recentPayments);
+        return (revenue, collected, deliveryCount, activeProjectsCount, recentDeliveries, recentPayments);
     }
 
     public async Task<List<Project>> GetProjectsAsync(bool? isCompleted = null)
@@ -436,6 +439,13 @@ public class WarehouseService
     {
         using var context = _dbFactory.CreateDbContext();
         context.Projects.Add(project);
+        await context.SaveChangesAsync();
+    }
+
+    public async Task UpdateProjectAsync(Project project)
+    {
+        using var context = _dbFactory.CreateDbContext();
+        context.Projects.Update(project);
         await context.SaveChangesAsync();
     }
 

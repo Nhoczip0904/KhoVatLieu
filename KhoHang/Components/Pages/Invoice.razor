@@ -44,51 +44,33 @@ else
         </div>
 
         <div class="invoice-paper glass-card">
-            <div class="invoice-header">
-                <div class="brand">
-                    <div class="brand-logo"><i class="bi bi-stack"></i></div>
-                    <div class="brand-info">
-                        <h2>KHO VẬT LIỆU XÂY DỰNG</h2>
-                        <p>Chuyên cung cấp Cát, Đá, Gạch, Xi măng, Sắt thép</p>
-                        <p>Địa chỉ: Khu Công Nghệ Cao, Quận 9, TP. Thủ Đức</p>
-                        <p>Hotline: 0988.xxx.xxx</p>
-                    </div>
-                </div>
-                <div class="invoice-meta">
+            <div class="invoice-header" style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000; padding-bottom: 0.5rem; margin-bottom: 1rem;">
+                <!-- Left: Invoice Title & ID -->
+                <div class="invoice-meta-left">
                     @{
                         bool hasExport = delivery.Items.Any(i => i.Qty > 0);
                         bool hasReturn = delivery.Items.Any(i => i.Qty < 0);
                     }
-                    <h1>
-                        @if (hasExport && hasReturn) { @("PHIẾU GIAO & TRẢ HÀNG") }
-                        else if (hasReturn) { @("PHIẾU TRẢ HÀNG") }
-                        else { @("PHIẾU XUẤT KHO") }
+                    <h1 style="margin: 0; font-size: 1.5rem; font-weight: 950; color: #000; text-transform: uppercase; line-height: 1;">
+                        @if (hasExport && hasReturn) { @("HÓA ĐƠN GIAO & TRẢ HÀNG") }
+                        else if (hasReturn) { @("HÓA ĐƠN TRẢ HÀNG") }
+                        else { @("HÓA ĐƠN XUẤT KHO") }
                     </h1>
-                    <p>Mã đơn: <strong>#@delivery.Id</strong></p>
-                    <p>Ngày lập: @delivery.Timestamp.ToString("dd/MM/yyyy HH:mm")</p>
-                </div>
-            </div>
-
-            <hr class="divider" />
-
-            <div class="customer-section">
-                <div class="info-block">
-                    <label>KHÁCH HÀNG</label>
-                    <h3>@(string.IsNullOrEmpty(delivery.Project?.CustomerName) ? delivery.Project?.Customer?.Name : delivery.Project?.CustomerName)</h3>
-                    <p><i class="bi bi-telephone"></i> @(string.IsNullOrEmpty(delivery.Project?.Phone) ? delivery.Project?.Customer?.Phone : delivery.Project?.Phone)</p>
-                    <p><i class="bi bi-geo-alt"></i> @(string.IsNullOrEmpty(delivery.Project?.Address) ? delivery.Project?.Customer?.Address : delivery.Project?.Address)</p>
-                </div>
-                <div class="info-block">
-                    <label>TRẠNG THÁI</label>
-                    <div class="status-badge" style="@(hasExport && hasReturn ? "background: #f1f5f9; color: #475569;" : hasReturn ? "background: #fef2f2; color: #991b1b;" : "")">
-                        @if (hasExport && hasReturn) { @("Giao & Trả hàng") }
-                        else if (hasReturn) { @("Đã trả hàng") }
-                        else { @("Đã xuất kho") }
+                    <div style="margin: 0.2rem 0 0 0; font-size: 0.85rem; color: #475569; font-weight: 700;">
+                        #@delivery.Id | @delivery.Timestamp.ToString("dd/MM/yyyy HH:mm")
                     </div>
-                    @if (!string.IsNullOrEmpty(delivery.Note))
-                    {
-                        <p style="margin-top: 0.5rem; font-style: italic;">Ghi chú: @delivery.Note</p>
-                    }
+                </div>
+
+                <!-- Right: Customer Info -->
+                <div class="invoice-meta-right" style="text-align: right;">
+                    <div style="font-size: 1.1rem; font-weight: 900; color: #0f172a; line-height: 1;">
+                        @(string.IsNullOrEmpty(delivery.Project?.CustomerName) ? delivery.Project?.Customer?.Name : delivery.Project?.CustomerName)
+                    </div>
+                    <div style="font-size: 0.8rem; font-weight: 700; color: #334155; margin-top: 4px;">
+                        <i class="bi bi-telephone"></i> @(string.IsNullOrEmpty(delivery.Project?.Phone) ? delivery.Project?.Customer?.Phone : delivery.Project?.Phone)
+                        <span style="margin: 0 4px;">|</span>
+                        <i class="bi bi-geo-alt"></i> @(string.IsNullOrEmpty(delivery.Project?.Address) ? delivery.Project?.Customer?.Address : delivery.Project?.Address)
+                    </div>
                 </div>
             </div>
 
@@ -199,16 +181,6 @@ else
                         </span>
                     </div>
 
-                    <div style="margin: 1rem 0; border-top: 2px solid #000;"></div>
-
-                    <div class="total-row">
-                        <span style="color: @(delivery.PreviousBalance < 0 ? "#166534" : "inherit")">
-                            @(delivery.PreviousBalance < 0 ? "Tiền cọc trước đơn này:" : "Nợ cũ trước đơn này:")
-                        </span>
-                        <span style="color: @(delivery.PreviousBalance < 0 ? "#166534" : "inherit")">
-                            @(delivery.PreviousBalance < 0 ? "-" : "")@Math.Abs(delivery.PreviousBalance).ToString("N0") đ
-                        </span>
-                    </div>
                     <div class="total-row final">
                         <span style="color: @(delivery.GrandTotal > 0 ? "#b91c1c" : "#166534");">
                             @(delivery.GrandTotal > 0 ? "TỔNG NỢ CÒN LẠI:" : "KHÁCH HÀNG CÒN DƯ:")
@@ -250,8 +222,8 @@ else
         .invoice-paper {
             background: white !important;
             color: black !important;
-            padding: 3rem !important;
-            min-height: 29.7cm;
+            padding: 1.5rem !important; /* Tightened from 5rem */
+            min-height: auto;
         }
 
         .invoice-header {
@@ -333,7 +305,7 @@ else
         }
 
         .invoice-table td {
-            padding: 1.25rem 1rem;
+            padding: 0.35rem 1rem !important; /* Extremely tight */
             border-bottom: 1px solid #f1f5f9;
             color: #1e293b;
             font-size: 0.95rem;
@@ -341,39 +313,50 @@ else
 
         .summary-section {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            margin-bottom: 4rem;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 2rem;
+            margin-bottom: 1rem;
+            page-break-inside: avoid;
         }
 
-        .notes p { font-weight: 700; color: #475569; }
-        .notes ul { padding-left: 1.25rem; color: #64748b; font-size: 0.875rem; }
-        .notes li { margin-bottom: 0.5rem; }
+        .notes p { font-weight: 700; color: #475569; margin-top: 0; }
+        .notes ul { padding-left: 1.25rem; color: #64748b; font-size: 0.85rem; }
+        .notes li { margin-bottom: 0.4rem; }
 
         .totals {
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
+            gap: 0.6rem;
         }
 
         .total-row {
             display: flex;
             justify-content: space-between;
-            font-size: 0.95rem;
+            align-items: center;
+            font-size: 0.9rem;
             color: #475569;
+            gap: 1rem;
+        }
+
+        .total-row span:last-child {
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
         }
 
         .total-row.highlight {
             font-weight: 800;
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             color: #0f172a;
-            margin: 0.5rem 0;
+            margin: 0.25rem 0;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e2e8f0;
         }
 
         .total-row.final {
             font-weight: 900;
-            font-size: 1.25rem;
+            font-size: 1.2rem;
             color: #1e3a8a;
+            padding-top: 0.5rem;
         }
 
         .signature-section {
@@ -381,21 +364,68 @@ else
             grid-template-columns: repeat(3, 1fr);
             gap: 2rem;
             text-align: center;
-            margin-top: auto;
-            padding-top: 4rem;
+            margin-top: 1.5rem;
+            padding-top: 0.5rem; /* Reduced from 2rem */
+            page-break-inside: avoid;
         }
 
         .sig-block p { margin: 0; font-weight: 700; color: #475569; }
-        .sig-space { height: 80px; }
+        .sig-space { height: 60px; } /* Reduced from 80px */
 
         @@media print {
-            .no-print { display: none !important; }
-            body { background: white !important; margin: 0; padding: 0; }
-            .invoice-container { max-width: 100%; margin: 0; padding: 0; }
-            .invoice-paper { box-shadow: none !important; border: none !important; border-radius: 0 !important; width: 100% !important; padding: 0 !important; }
-            .main-content { margin-left: 0 !important; padding: 0 !important; }
-            .sidebar { display: none !important; }
-            .page { display: block !important; }
+            /* Hide ALL system UI elements */
+            .sidebar, .top-header, .top-row, .no-print, nav, .navbar, header, footer, .sidebar-wrapper, .btn-hamburger, .sidebar-backdrop { 
+                display: none !important; 
+            }
+            
+            /* Force background colors (like the red HPT logo) to print */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+            }
+
+            /* Reset body and main containers */
+            body, html { 
+                background: white !important; 
+                margin: 0 !important; 
+                padding: 0 !important; 
+                width: 100%;
+            }
+
+            .main, main, .content, .main-content {
+                margin: 0 !important;
+                padding: 0 !important;
+                display: block !important;
+                overflow: visible !important;
+            }
+
+            .page {
+                display: block !important;
+            }
+
+            .invoice-container { 
+                max-width: 100% !important; 
+                margin: 0 !important; 
+                padding: 0 !important; 
+                width: 100% !important;
+            }
+
+            .invoice-paper { 
+                box-shadow: none !important; 
+                border: none !important; 
+                border-radius: 0 !important; 
+                width: 100% !important; 
+                padding: 1.5rem !important; 
+                padding-bottom: 1.5rem !important; /* Reduced from 5rem */
+                min-height: auto !important;
+            }
+
+            /* Force Portrait A4 */
+            @@page { 
+                size: A4 portrait; 
+                margin: 0;
+            }
         }
     </style>
 }

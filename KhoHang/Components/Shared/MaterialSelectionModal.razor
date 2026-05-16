@@ -6,7 +6,7 @@
 @if (IsOpen)
 {
     <div class="modal-overlay" @onclick="Close">
-        <div class="modal-content" @onclick:stopPropagation="true">
+        <div class="modal-content" style="max-width: 1250px;" @onclick:stopPropagation="true">
             <div class="modal-header">
                 <h2 style="margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
                     <i class="bi bi-box-seam" style="color: var(--accent-primary);"></i>
@@ -17,17 +17,17 @@
                 </button>
             </div>
 
-            <div class="modal-body">
-                <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                    <div class="search-container" style="flex: 1; margin-bottom: 0;">
-                        <i class="bi bi-search"></i>
-                        <input type="text" placeholder="Tìm kiếm tên sản phẩm..." @bind="searchText" @bind:event="oninput" />
+            <div class="modal-body" style="padding: 1.5rem 2.5rem;">
+                <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
+                    <div class="search-container" style="flex: 1; margin-bottom: 0; height: 50px;">
+                        <i class="bi bi-search" style="font-size: 1.2rem;"></i>
+                        <input type="text" placeholder="Tìm kiếm tên hoặc mã sản phẩm..." @bind="searchText" @bind:event="oninput" style="font-size: 1.1rem;" />
                     </div>
-                    <button class="btn-primary" style="padding: 0 1.25rem; border-radius: 12px; display: flex; align-items: center; gap: 0.5rem;" @onclick="ToggleScanner">
+                    <button class="btn-primary" style="padding: 0 1.5rem; border-radius: 12px; display: flex; align-items: center; gap: 0.5rem;" @onclick="ToggleScanner">
                         <i class="bi bi-camera"></i>
                         <span>Quét Trực Tiếp</span>
                     </button>
-                    <label class="btn-outline" style="padding: 0.75rem 1.25rem; border-radius: 12px; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0; background: white;">
+                    <label class="btn-outline" style="padding: 0.75rem 1.5rem; border-radius: 12px; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0; background: white;">
                         <i class="bi bi-image"></i>
                         <span>Chọn Ảnh QR</span>
                         <InputFile OnChange="HandleQrFile" style="display: none;" accept="image/*" capture="environment" />
@@ -38,51 +38,82 @@
                     <div id="reader" style="width: 100%;"></div>
                 </div>
 
-                <div style="display: flex; gap: 0.75rem; align-items: center; margin-bottom: 1rem;">
-                    <div class="filter-tabs" style="margin-bottom: 0; flex: 1;">
-                        <div class="filter-tab @(selectedCategoryId == null ? "active" : "")" @onclick="() => FilterByCategory(null)">Tất cả</div>
-                        @foreach (var cat in categories)
-                        {
-                            <div class="filter-tab @(selectedCategoryId == cat.Id ? "active" : "")" @onclick="() => FilterByCategory(cat.Id)">@cat.Name</div>
-                        }
+                <div style="background: white; border: 1px solid #e2e8f0; border-radius: 20px; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 4px 20px rgba(0,0,0,0.03); display: flex; flex-direction: column; gap: 1rem;">
+                    <!-- Category Row -->
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="flex: 1; display: flex; align-items: center; gap: 1rem; overflow: hidden;">
+                            <div class="filter-tabs custom-scrollbar" style="margin: 0; flex: 1; overflow-x: auto; padding-bottom: 8px; display: flex; flex-wrap: nowrap; gap: 0.5rem; -webkit-overflow-scrolling: touch; max-width: 100%;">
+                                <div class="filter-tab @(selectedCategoryId == null ? "active" : "")" @onclick="() => FilterByCategory(null)" style="flex-shrink: 0; padding: 0.5rem 1.25rem;">Tất cả</div>
+                                @foreach (var cat in categories.Take(15))
+                                {
+                                    <div class="filter-tab @(selectedCategoryId == cat.Id ? "active" : "")" @onclick="() => FilterByCategory(cat.Id)" style="flex-shrink: 0; padding: 0.5rem 1.25rem;">@cat.Name</div>
+                                }
+                            </div>
+                            <div style="width: 1px; height: 30px; background: #e2e8f0; flex-shrink: 0;"></div>
+                            <div style="width: 220px; flex-shrink: 0;">
+                                <select class="form-select-modern" style="padding: 0.45rem 1rem; font-size: 0.85rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; width: 100%;" 
+                                        @onchange="@((ChangeEventArgs e) => { if(int.TryParse(e.Value?.ToString(), out var cid)) selectedCategoryId = cid > 0 ? cid : null; else selectedCategoryId = null; })">
+                                    <option value="">-- Danh mục khác --</option>
+                                    @foreach (var cat in categories)
+                                    {
+                                        <option value="@cat.Id" selected="@(selectedCategoryId == cat.Id)">@cat.Name</option>
+                                    }
+                                </select>
+                            </div>
+                        </div>
                     </div>
-                    <div style="min-width: 200px;">
-                        <select class="form-select" style="border-radius: 8px; font-size: 0.85rem; padding: 0.4rem 1rem; border: 1px solid #e2e8f0; width: 100%;" 
-                                @onchange="@((ChangeEventArgs e) => { if(int.TryParse(e.Value?.ToString(), out var sid)) selectedSupplierId = sid > 0 ? sid : null; else selectedSupplierId = null; })">
-                            <option value="">-- Tất cả nơi nhập --</option>
-                            @foreach (var s in suppliers)
-                            {
-                                <option value="@s.Id">@s.Name</option>
-                            }
-                        </select>
+
+                    <!-- Supplier & Info Row -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #f1f5f9; padding-top: 0.75rem; gap: 2rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem; flex: 1;">
+                            <label style="font-size: 0.7rem; font-weight: 800; color: #94a3b8; text-transform: uppercase; white-space: nowrap; letter-spacing: 0.5px;">Nguồn nhập:</label>
+                            <select class="form-select-modern" style="max-width: 350px; padding: 0.4rem 1rem; font-size: 0.85rem; background: white; border: 1px solid #e2e8f0; border-radius: 12px;" 
+                                    @onchange="@((ChangeEventArgs e) => { if(int.TryParse(e.Value?.ToString(), out var sid)) selectedSupplierId = sid > 0 ? sid : null; else selectedSupplierId = null; })">
+                                <option value="">-- Tất cả nguồn nhập --</option>
+                                @foreach (var s in suppliers)
+                                {
+                                    <option value="@s.Id">@s.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div style="background: #f0fdf4; color: #166534; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 800; border: 1px solid #dcfce7; display: flex; align-items: center; gap: 6px;">
+                            <i class="bi bi-check-circle-fill"></i> Sẵn có: @filteredMaterials.Count()
+                        </div>
                     </div>
                 </div>
 
-                <div class="selection-grid">
+                <div class="selection-grid custom-scrollbar" style="height: 360px;">
                     @foreach (var m in filteredMaterials)
                     {
                         var isSelected = currentSelectedIds.Contains(m.Id);
-                        var isDisabled = ExistingMaterialIds.Contains(m.Id);
+                        var isAdded = ExistingMaterialIds.Contains(m.Id);
+                        var isZeroStock = m.StockQty <= 0;
+                        var isBlocked = isZeroStock && !AllowZeroStock;
+                        var isDisabled = isAdded || isBlocked;
 
                         <div class="selection-card @(isSelected ? "selected" : "") @(isDisabled ? "disabled" : "")" 
-                             style="@(isDisabled ? "opacity: 0.5; cursor: not-allowed; border-style: dashed;" : "")"
+                             style="@(isDisabled ? "opacity: 0.4; cursor: not-allowed; filter: grayscale(0.8);" : "")"
                              @onclick="() => ToggleSelection(m.Id)">
                             <img src="@(string.IsNullOrEmpty(m.ImageUrl) ? "favicon.png" : m.ImageUrl)" class="material-img" />
-                            <div style="flex: 1;">
-                                <div style="font-weight: 600; font-size: 1rem; color: var(--text-primary);">
-                                    @if (!string.IsNullOrEmpty(m.ProductCode)) { <span style="color: var(--text-muted); font-size: 0.8rem; font-weight: 700;">[@m.ProductCode]</span> } @m.Name
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="font-weight: 800; font-size: 1rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    @if (!string.IsNullOrEmpty(m.ProductCode)) { <span style="color: #6366f1; font-size: 0.75rem; font-weight: 900; background: #eef2ff; padding: 1px 5px; border-radius: 4px; margin-right: 4px;">@m.ProductCode</span> } @m.Name
                                 </div>
-                                <div style="font-size: 0.75rem; color: var(--text-muted);">
-                                    @m.Unit • @(m.Lots.OrderByDescending(l => l.Id).FirstOrDefault()?.CostPrice.ToString("N0") ?? "0") đ
-                                    <span style="margin-left: 0.5rem; font-weight: 600; color: @(m.StockQty > 0 ? "var(--accent-primary)" : "var(--error)");">
-                                        (Tồn: @m.StockQty)
+                                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; display: flex; justify-content: space-between;">
+                                    <span>@m.Unit • <b style="color: #1e293b;">@(m.Lots.OrderByDescending(l => l.Id).FirstOrDefault()?.CostPrice.ToString("N0") ?? "0") đ</b></span>
+                                    <span style="font-weight: 800; color: @(m.StockQty > 0 ? "var(--accent-primary)" : (isBlocked ? "#ef4444" : "#94a3b8"));">
+                                        @(isZeroStock ? (isBlocked ? "HẾT HÀNG" : "Kho: 0") : $"Kho: {m.StockQty}")
                                     </span>
                                 </div>
                             </div>
                             <div class="icon-check">
-                                @if (isDisabled)
+                                @if (isAdded)
                                 {
-                                    <i class="bi bi-lock-fill" style="color: var(--text-muted);"></i>
+                                    <i class="bi bi-check-all" style="color: #6366f1; font-size: 1.2rem;"></i>
+                                }
+                                else if (isBlocked)
+                                {
+                                    <i class="bi bi-slash-circle" style="color: #ef4444;"></i>
                                 }
                                 else
                                 {
@@ -95,19 +126,30 @@
 
                 @if (!filteredMaterials.Any())
                 {
-                    <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
-                        <i class="bi bi-inbox" style="font-size: 3rem; display: block; margin-bottom: 1rem; opacity: 0.3;"></i>
-                        Không tìm thấy sản phẩm nào phù hợp.
+                    <div style="text-align: center; padding: 4rem; color: var(--text-muted);">
+                        <i class="bi bi-inbox" style="font-size: 4rem; display: block; margin-bottom: 1.5rem; opacity: 0.2;"></i>
+                        <div style="font-size: 1.1rem; font-weight: 600;">Không tìm thấy sản phẩm nào phù hợp</div>
+                        <div style="font-size: 0.9rem; opacity: 0.7;">Hãy thử thay đổi từ khóa hoặc bộ lọc</div>
                     </div>
                 }
             </div>
 
             <div class="modal-footer">
                 <div style="margin-right: auto; color: var(--text-secondary); font-size: 0.875rem;">
-                    Đã chọn: <strong>@currentSelectedIds.Count</strong> sản phẩm
+                    @if (!SingleSelection)
+                    {
+                        <span>Đã chọn: <strong>@currentSelectedIds.Count</strong> sản phẩm</span>
+                    }
+                    else
+                    {
+                        <span style="font-weight: 700; color: var(--accent-primary);"><i class="bi bi-info-circle"></i> Click vào vật tư để chọn nhanh</span>
+                    }
                 </div>
                 <button style="background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); padding: 0.6rem 1.5rem; border-radius: 10px; font-weight: 600;" @onclick="Close">Hủy</button>
-                <button class="btn-primary" style="padding: 0.6rem 2rem; border-radius: 10px;" @onclick="ConfirmSelection">Xác nhận thêm</button>
+                @if (!SingleSelection)
+                {
+                    <button class="btn-primary" style="padding: 0.6rem 2rem; border-radius: 10px;" @onclick="ConfirmSelection">Xác nhận thêm</button>
+                }
             </div>
         </div>
     </div>
@@ -115,95 +157,123 @@
 
 <style>
     .selection-grid {
-        display: flex;
-        flex-direction: column;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-auto-rows: 85px;
         gap: 0.75rem;
-        max-height: 500px;
+        height: 340px;
+        align-content: start;
         overflow-y: auto;
-        padding-right: 0.5rem;
-        margin-top: 1rem;
+        padding: 0.75rem;
+        margin-top: 0.5rem;
+        background: #fdfdfe;
+        border-radius: 16px;
+        border: 1px solid #f1f5f9;
+    }
+
+    /* Hide scrollbar for Chrome, Safari and Opera */
+    .custom-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Hide scrollbar for IE, Edge and Firefox */
+    .custom-scrollbar {
+        -ms-overflow-style: none;  /* IE and Edge */
+        scrollbar-width: none;  /* Firefox */
     }
 
     .selection-card {
         display: flex;
         align-items: center;
-        gap: 1.25rem;
-        padding: 1rem;
-        background: #f8fafc;
+        gap: 1rem;
+        padding: 0.75rem 1rem;
+        background: white;
         border: 1px solid #e2e8f0;
-        border-radius: 14px;
+        border-radius: 18px;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         position: relative;
+        height: 85px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     }
 
     .selection-card:hover:not(.disabled) {
-        background: white;
-        border-color: var(--accent-primary);
-        transform: translateX(5px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        border-color: #6366f1;
+        transform: translateY(-3px);
+        box-shadow: 0 12px 20px -5px rgba(99, 102, 241, 0.15);
     }
 
     .selection-card.selected {
-        background: #eff6ff;
-        border-color: var(--accent-primary);
-        box-shadow: 0 0 0 1px var(--accent-primary);
+        background: #f5f7ff;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
     }
 
     .selection-card.disabled {
-        opacity: 0.6;
-        background: #f1f5f9;
+        opacity: 0.4;
+        background: #f8fafc;
+        border-style: dashed;
         cursor: not-allowed;
     }
 
     .material-img {
-        width: 56px;
-        height: 56px;
+        width: 60px;
+        height: 60px;
         object-fit: cover;
-        border-radius: 10px;
-        background: white;
-        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        background: #f8fafc;
+        border: 1px solid #f1f5f9;
+        flex-shrink: 0;
     }
 
     .icon-check {
-        width: 28px;
-        height: 28px;
+        width: 24px;
+        height: 24px;
         border-radius: 50%;
-        border: 2px solid #cbd5e1;
+        border: 2px solid #e2e8f0;
         display: flex;
         align-items: center;
         justify-content: center;
         color: transparent;
         transition: all 0.2s;
+        flex-shrink: 0;
     }
 
     .selected .icon-check {
-        background: var(--accent-primary);
-        border-color: var(--accent-primary);
+        background: #6366f1;
+        border-color: #6366f1;
         color: white;
+        transform: scale(1.1);
     }
 
     .filter-tabs {
         display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-        padding-bottom: 0.5rem;
-        margin-bottom: 1rem;
+        gap: 0.6rem;
+        flex-wrap: nowrap;
+        padding: 0.25rem 0;
     }
     .filter-tab {
-        padding: 0.4rem 1rem;
-        background: #f1f5f9;
-        border-radius: 8px;
+        padding: 0.5rem 1.25rem;
+        background: #f8fafc;
+        border-radius: 12px;
         font-size: 0.85rem;
-        font-weight: 600;
+        font-weight: 700;
         color: #64748b;
         cursor: pointer;
         white-space: nowrap;
         transition: all 0.2s;
+        border: 1px solid #e2e8f0;
+    }
+    .filter-tab:hover {
+        background: white;
+        border-color: #cbd5e1;
+        color: #1e293b;
     }
     .filter-tab.active {
-        background: var(--accent-primary);
+        background: #10b981;
         color: white;
+        border-color: #10b981;
+        box-shadow: 0 8px 20px -5px rgba(16, 185, 129, 0.4);
     }
 </style>
 
@@ -212,6 +282,8 @@
     [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
     [Parameter] public List<int> ExistingMaterialIds { get; set; } = new();
     [Parameter] public EventCallback<List<Material>> OnMaterialsSelected { get; set; }
+    [Parameter] public bool AllowZeroStock { get; set; } = true;
+    [Parameter] public bool SingleSelection { get; set; } = false;
 
     private List<Material> allMaterials = new();
     private List<Category> categories = new();
@@ -244,9 +316,21 @@
         selectedCategoryId = catId;
     }
 
-    private void ToggleSelection(int materialId)
+    private async Task ToggleSelection(int materialId)
     {
-        if (ExistingMaterialIds.Contains(materialId)) return;
+        var material = allMaterials.FirstOrDefault(m => m.Id == materialId);
+        var isAdded = ExistingMaterialIds.Contains(materialId);
+        var isBlocked = material != null && material.StockQty <= 0 && !AllowZeroStock;
+        
+        if (isAdded || isBlocked) return;
+
+        if (SingleSelection)
+        {
+            currentSelectedIds.Clear();
+            currentSelectedIds.Add(materialId);
+            await ConfirmSelection();
+            return;
+        }
 
         if (currentSelectedIds.Contains(materialId))
             currentSelectedIds.Remove(materialId);
