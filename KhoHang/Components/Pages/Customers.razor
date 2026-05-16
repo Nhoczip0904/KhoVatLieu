@@ -54,8 +54,8 @@
                 <tr>
                     <th>Khách hàng</th>
                     <th>Liên hệ</th>
-                    <th>Địa chỉ</th>
-                    <th>Ghi chú</th>
+                    <th class="mobile-hide">Địa chỉ</th>
+                    <th class="mobile-hide">Ghi chú</th>
                     <th style="text-align: right;">Thao tác</th>
                 </tr>
             </thead>
@@ -67,8 +67,8 @@
                             <div style="font-weight: 700; color: var(--text-primary);">@c.Name</div>
                         </td>
                         <td style="padding: 1rem;">@c.Phone</td>
-                        <td style="padding: 1rem; font-size: 0.875rem; color: var(--text-secondary);">@c.Address</td>
-                        <td style="padding: 1rem; font-size: 0.875rem; color: var(--text-muted);">@c.Note</td>
+                        <td style="padding: 1rem; font-size: 0.875rem; color: var(--text-secondary);" class="mobile-hide">@c.Address</td>
+                        <td style="padding: 1rem; font-size: 0.875rem; color: var(--text-muted);" class="mobile-hide">@c.Note</td>
                         <td style="padding: 1rem; text-align: right;" @onclick:stopPropagation="true">
                             <button style="background: transparent; border: none; color: var(--error); cursor: pointer;" @onclick="() => DeleteCustomer(c.Id)"><i class="bi bi-trash"></i></button>
                         </td>

@@ -18,18 +18,18 @@
             </div>
 
             <div class="modal-body" style="padding: 1.5rem 2.5rem;">
-                <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
-                    <div class="search-container" style="flex: 1; margin-bottom: 0; height: 50px;">
-                        <i class="bi bi-search" style="font-size: 1.2rem;"></i>
-                        <input type="text" placeholder="Tìm kiếm tên hoặc mã sản phẩm..." @bind="searchText" @bind:event="oninput" style="font-size: 1.1rem;" />
+                <div class="msm-search-row" style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                    <div class="search-container" style="flex: 1; margin-bottom: 0; height: 44px; min-width: 200px;">
+                        <i class="bi bi-search" style="font-size: 1rem;"></i>
+                        <input type="text" placeholder="Tìm kiếm tên hoặc mã sản phẩm..." @bind="searchText" @bind:event="oninput" style="font-size: 0.9rem;" />
                     </div>
-                    <button class="btn-primary" style="padding: 0 1.5rem; border-radius: 12px; display: flex; align-items: center; gap: 0.5rem;" @onclick="ToggleScanner">
+                    <button class="btn-primary" style="padding: 0 1rem; border-radius: 10px; display: flex; align-items: center; gap: 0.4rem; white-space: nowrap;" @onclick="ToggleScanner">
                         <i class="bi bi-camera"></i>
-                        <span>Quét Trực Tiếp</span>
+                        <span class="msm-btn-text">Quét</span>
                     </button>
-                    <label class="btn-outline" style="padding: 0.75rem 1.5rem; border-radius: 12px; display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin: 0; background: white;">
+                    <label class="btn-outline" style="padding: 0.5rem 1rem; border-radius: 10px; display: flex; align-items: center; gap: 0.4rem; cursor: pointer; margin: 0; background: white; white-space: nowrap;">
                         <i class="bi bi-image"></i>
-                        <span>Chọn Ảnh QR</span>
+                        <span class="msm-btn-text">Chọn Ảnh QR</span>
                         <InputFile OnChange="HandleQrFile" style="display: none;" accept="image/*" capture="environment" />
                     </label>
                 </div>
@@ -42,15 +42,15 @@
                     <!-- Category Row -->
                     <div style="display: flex; align-items: center; gap: 1rem;">
                         <div style="flex: 1; display: flex; align-items: center; gap: 1rem; overflow: hidden;">
-                            <div class="filter-tabs custom-scrollbar" style="margin: 0; flex: 1; overflow-x: auto; padding-bottom: 8px; display: flex; flex-wrap: nowrap; gap: 0.5rem; -webkit-overflow-scrolling: touch; max-width: 100%;">
+                            <div class="msm-category-tabs filter-tabs custom-scrollbar" style="margin: 0; flex: 1; overflow-x: auto; padding-bottom: 8px; display: flex; flex-wrap: nowrap; gap: 0.5rem; -webkit-overflow-scrolling: touch; max-width: 100%;">
                                 <div class="filter-tab @(selectedCategoryId == null ? "active" : "")" @onclick="() => FilterByCategory(null)" style="flex-shrink: 0; padding: 0.5rem 1.25rem;">Tất cả</div>
                                 @foreach (var cat in categories.Take(15))
                                 {
                                     <div class="filter-tab @(selectedCategoryId == cat.Id ? "active" : "")" @onclick="() => FilterByCategory(cat.Id)" style="flex-shrink: 0; padding: 0.5rem 1.25rem;">@cat.Name</div>
                                 }
                             </div>
-                            <div style="width: 1px; height: 30px; background: #e2e8f0; flex-shrink: 0;"></div>
-                            <div style="width: 220px; flex-shrink: 0;">
+                            <div class="msm-divider" style="width: 1px; height: 30px; background: #e2e8f0; flex-shrink: 0;"></div>
+                            <div class="msm-category-select" style="width: 220px; flex-shrink: 0;">
                                 <select class="form-select-modern" style="padding: 0.45rem 1rem; font-size: 0.85rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; width: 100%;" 
                                         @onchange="@((ChangeEventArgs e) => { if(int.TryParse(e.Value?.ToString(), out var cid)) selectedCategoryId = cid > 0 ? cid : null; else selectedCategoryId = null; })">
                                     <option value="">-- Danh mục khác --</option>
@@ -76,7 +76,7 @@
                                 }
                             </select>
                         </div>
-                        <div style="background: #f0fdf4; color: #166534; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 800; border: 1px solid #dcfce7; display: flex; align-items: center; gap: 6px;">
+                        <div class="msm-badge" style="background: #f0fdf4; color: #166534; padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 800; border: 1px solid #dcfce7; display: flex; align-items: center; gap: 6px; flex-shrink: 0;">
                             <i class="bi bi-check-circle-fill"></i> Sẵn có: @filteredMaterials.Count()
                         </div>
                     </div>
@@ -274,6 +274,22 @@
         color: white;
         border-color: #10b981;
         box-shadow: 0 8px 20px -5px rgba(16, 185, 129, 0.4);
+    }
+
+    @@media (max-width: 576px) {
+        .msm-btn-text { display: none; }
+        .modal-body { padding: 0.75rem !important; }
+        .modal-header h2 { font-size: 1rem !important; }
+        .msm-search-row { gap: 0.4rem !important; }
+        .msm-search-row .search-container { height: 38px !important; min-width: 0 !important; }
+        .msm-search-row .search-container input { font-size: 0.8rem !important; }
+        .filter-tab { padding: 0.3rem 0.7rem !important; font-size: 0.72rem !important; }
+        .msm-category-tabs { display: none !important; }
+        .msm-divider { display: none !important; }
+        .msm-category-select { width: 100% !important; }
+        .msm-badge { display: none !important; }
+        .selection-grid { height: auto !important; max-height: 50vh !important; grid-template-columns: 1fr !important; }
+        .modal-footer { position: sticky; bottom: 0; background: white; z-index: 20; border-top: 1px solid #e2e8f0; padding: 0.75rem !important; }
     }
 </style>
 

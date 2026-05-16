@@ -626,12 +626,12 @@ else
                     </div>
 
                     <!-- Scrollable Body (Contains Items + Summary + Actions) -->
-                    <div style="padding: 2rem; overflow-y: auto; flex: 1;">
+                    <div style="padding: 1rem; overflow-y: auto; flex: 1;">
                         <!-- Order Items -->
                         <div style="background: #f8fafc; border-radius: 16px; padding: 1.5rem; border: 1px solid #e2e8f0; margin-bottom: 1.5rem;">
                             <h4 style="margin-top: 0; margin-bottom: 1.25rem; color: var(--text-secondary); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Chi tiết đơn hàng</h4>
                             
-                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="delivery-items-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                                 @foreach (var item in previewDelivery.Items)
                                 {
                                     <div style="background: white; border: 1px solid #f1f5f9; padding: 1rem; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
@@ -654,9 +654,9 @@ else
                             </div>
 
                             <hr style="border: none; border-top: 2px solid white; margin: 1.25rem 0;" />
-                            <div style="display: flex; justify-content: space-between; font-size: 1.15rem; align-items: center;">
+                            <div style="display: flex; justify-content: space-between; font-size: 1rem; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                                 <span style="font-weight: 700; color: var(--text-secondary);">Tổng tiền hàng (@previewDelivery.Items.Count món):</span>
-                                <span style="font-weight: 950; color: var(--accent-primary); font-size: 1.4rem;">@previewDelivery.TotalAmount.ToString("N0") đ</span>
+                                <span style="font-weight: 950; color: var(--accent-primary); font-size: 1.2rem;">@previewDelivery.TotalAmount.ToString("N0") đ</span>
                             </div>
                         </div>
 
@@ -666,14 +666,14 @@ else
                                 <span style="color: var(--text-secondary); font-weight: 600;">Dư nợ cũ khách hàng:</span>
                                 <span style="font-weight: 700; color: @(previewDelivery.PreviousBalance > 0 ? "var(--error)" : "var(--success)");">@previewDelivery.PreviousBalance.ToString("N0") đ</span>
                             </div>
-                            <div style="display: flex; justify-content: space-between; padding: 1rem; background: @(previewDelivery.GrandTotal > 0 ? "rgba(239, 68, 68, 0.05)" : "rgba(34, 197, 94, 0.05)"); border-radius: 12px; border: 1px solid @(previewDelivery.GrandTotal > 0 ? "rgba(239, 68, 68, 0.1)" : "rgba(34, 197, 94, 0.1)");">
-                                <span style="font-weight: 800; font-size: 1.1rem; color: #1e293b;">@(previewDelivery.GrandTotal > 0 ? "TỔNG NỢ SAU XUẤT:" : "SỐ DƯ HIỆN TẠI:")</span>
-                                <span style="font-weight: 900; font-size: 1.25rem; color: @(previewDelivery.GrandTotal > 0 ? "var(--error)" : "var(--success)");">@Math.Abs(previewDelivery.GrandTotal).ToString("N0") đ</span>
+                            <div style="display: flex; justify-content: space-between; padding: 0.75rem; background: @(previewDelivery.GrandTotal > 0 ? "rgba(239, 68, 68, 0.05)" : "rgba(34, 197, 94, 0.05)"); border-radius: 12px; border: 1px solid @(previewDelivery.GrandTotal > 0 ? "rgba(239, 68, 68, 0.1)" : "rgba(34, 197, 94, 0.1)"); flex-wrap: wrap; gap: 0.5rem; align-items: center;">
+                                <span style="font-weight: 800; font-size: 0.95rem; color: #1e293b;">@(previewDelivery.GrandTotal > 0 ? "TỔNG NỢ SAU XUẤT:" : "SỐ DƯ HIỆN TẠI:")</span>
+                                <span style="font-weight: 900; font-size: 1.1rem; color: @(previewDelivery.GrandTotal > 0 ? "var(--error)" : "var(--success)");">@Math.Abs(previewDelivery.GrandTotal).ToString("N0") đ</span>
                             </div>
                         </div>
 
                         <!-- Actions -->
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding-bottom: 1rem;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; padding-bottom: 0.5rem;">
                             <button class="btn-outline" style="padding: 1rem; border-radius: 14px; font-weight: 700;" @onclick="() => showDeliveryReview = false">
                                 <i class="bi bi-pencil-square"></i> Chỉnh sửa tiếp
                             </button>
@@ -982,6 +982,14 @@ else
     
     @@media (max-width: 1200px) {
         .grid-responsive-detail { grid-template-columns: 1fr; }
+    }
+
+    @@media (max-width: 576px) {
+        .responsive-title { font-size: 1.2rem !important; }
+        .header-stack { flex-direction: column; align-items: stretch !important; gap: 0.5rem !important; }
+        .grid-responsive-2 { grid-template-columns: 1fr !important; }
+        .grid-responsive-detail { grid-template-columns: 1fr !important; gap: 0.75rem !important; }
+        .delivery-items-grid { grid-template-columns: 1fr !important; }
     }
 
     @@media (max-width: 768px) {

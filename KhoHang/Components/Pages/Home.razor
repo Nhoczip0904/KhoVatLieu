@@ -167,7 +167,7 @@
                         <tr>
                             <th>Thời gian</th>
                             <th>Dự án / Khách</th>
-                            <th>Ghi chú</th>
+                            <th class="mobile-hide">Ghi chú</th>
                             <th style="text-align: right;">Số tiền</th>
                         </tr>
                     </thead>
@@ -180,7 +180,7 @@
                                     <div style="font-weight: 700;">@p.Project?.CustomerName</div>
                                     <div style="font-size: 0.75rem; color: var(--text-muted);">@p.Method</div>
                                 </td>
-                                <td style="font-size: 0.8rem; color: #64748b;">@p.Note</td>
+                                <td class="mobile-hide" style="font-size: 0.8rem; color: #64748b;">@p.Note</td>
                                 <td style="text-align: right; font-weight: 800; color: var(--success);">@p.Amount.ToString("N0")</td>
                             </tr>
                         }
@@ -221,6 +221,14 @@
         background: white;
         color: var(--accent-primary);
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    @@media (max-width: 576px) {
+        .responsive-title { font-size: 1.3rem !important; }
+        .header-stack { flex-direction: column; align-items: flex-start !important; }
+        .filter-pills { gap: 0.15rem; padding: 0.15rem; border-radius: 8px; }
+        .filter-pill { padding: 0.25rem 0.5rem; font-size: 0.65rem; }
+        .glass-card h3 { font-size: 0.9rem !important; }
+        .scrollable-table { max-height: 280px !important; }
     }
     @@media (max-width: 768px) {
         .responsive-title { font-size: 1.75rem !important; }

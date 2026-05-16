@@ -12,7 +12,7 @@
         </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: 350px 1fr; gap: 2rem;">
+    <div class="categories-grid" style="display: grid; grid-template-columns: 350px 1fr; gap: 2rem;">
         <!-- Category Form -->
         <div class="glass-card" style="padding: 1.5rem; border-radius: 20px; border: 1px solid #e2e8f0; background: white;">
             <h3 style="margin-top: 0; margin-bottom: 1.5rem; font-size: 1.1rem; color: #1e293b; font-weight: 800;">
@@ -129,6 +129,11 @@
     .nav-btn { width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; cursor: pointer; }
     .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .page-info { font-weight: 700; font-size: 0.85rem; color: #64748b; }
+
+    @@media (max-width: 576px) {
+        .categories-grid { grid-template-columns: 1fr !important; }
+        .category-row-card { padding: 0.6rem 1rem; }
+    }
 </style>
 
 @code {

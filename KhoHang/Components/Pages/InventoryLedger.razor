@@ -102,9 +102,9 @@
                         <th>Ngày giờ</th>
                         <th>Loại phiếu</th>
                         <th>Vật tư</th>
-                        <th>Lô</th>
+                        <th class="mobile-hide">Lô</th>
                         <th class="text-end">Số lượng thay đổi</th>
-                        <th>Ghi chú</th>
+                        <th class="mobile-hide">Ghi chú</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -137,7 +137,7 @@
                                 }
                             </td>
                             <td><strong>@tran.Material?.Name</strong></td>
-                            <td>
+                            <td class="mobile-hide">
                                 @if (!string.IsNullOrEmpty(tran.LotNumber) && tran.LotNumber != "Mặc định")
                                 {
                                     <span style="background: #f8fafc; border: 1px solid #e2e8f0; color: var(--accent-primary); padding: 0.2rem 0.5rem; border-radius: 6px; font-weight: 800; font-size: 0.75rem;">
@@ -148,7 +148,7 @@
                             <td class="text-end fw-bold @(tran.Type == "Xuất" ? "text-danger" : "text-success")">
                                 @(tran.Type == "Xuất" ? "-" : "+")@tran.QtyChange @tran.Material?.Unit
                             </td>
-                            <td style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.4;">
+                            <td class="mobile-hide" style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.4;">
                                 @tran.Note
                             </td>
                         </tr>
