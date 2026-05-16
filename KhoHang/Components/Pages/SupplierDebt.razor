@@ -147,8 +147,10 @@
         
         supplierDebts = suppliers.Select(s => 
         {
-            var totalPurchased = allPOs.Where(po => po.SupplierId == s.Id).Sum(po => po.TotalAmount);
-            var totalPaid = payments.Where(p => p.SupplierId == s.Id).Sum(p => p.Amount);
+            var supplierPayments = payments.Where(p => p.SupplierId == s.Id).ToList();
+            var totalPurchased = supplierPayments.Where(p => p.Amount < 0).Sum(p => Math.Abs(p.Amount));
+            var totalPaid = supplierPayments.Where(p => p.Amount > 0).Sum(p => p.Amount);
+            
             return new SupplierDebtModel
             {
                 Supplier = s,

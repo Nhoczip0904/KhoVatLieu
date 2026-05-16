@@ -20,6 +20,14 @@ public class Supplier
     public string? Note { get; set; }
 }
 
+public class MaterialSupplier
+{
+    public int MaterialId { get; set; }
+    public Material? Material { get; set; }
+    public int SupplierId { get; set; }
+    public Supplier? Supplier { get; set; }
+}
+
 public class Material
 {
     public int Id { get; set; }
@@ -35,9 +43,7 @@ public class Material
     public int? CategoryId { get; set; }
     public Category? Category { get; set; }
 
-    public int? SupplierId { get; set; }
-    public Supplier? Supplier { get; set; }
-
+    public List<MaterialSupplier> MaterialSuppliers { get; set; } = new();
     public List<MaterialLot> Lots { get; set; } = new();
 }
 
@@ -52,6 +58,7 @@ public class MaterialLot
     public double StockQty { get; set; }
     public decimal CostPrice { get; set; }
     public decimal BasePrice { get; set; }
+    
     public DateTime? ProductionDate { get; set; }
     public string? Note { get; set; } // For color variations, etc.
 }
@@ -173,6 +180,8 @@ public class PurchaseOrderItem
     public decimal Subtotal { get; set; }
 
     public string? LotNumber { get; set; } // Specified during import
+    public int? SupplierId { get; set; } // Supplier for this specific item
+    public Supplier? Supplier { get; set; }
     public decimal? BasePrice { get; set; } // Proposed selling price for this lot
 }
 

@@ -13,7 +13,36 @@ namespace KhoHang.Components.Pages
         protected List<PurchaseOrder> purchaseOrders = new();
         protected List<Supplier> suppliers = new();
         protected List<Material> materials = new();
-        protected string searchText = "";
+        private string _searchText = "";
+        protected string searchText {
+            get => _searchText;
+            set {
+                if (_searchText != value) {
+                    _searchText = value;
+                    currentPage = 1;
+                }
+            }
+        }
+        private DateTime? _startDate;
+        protected DateTime? startDate {
+            get => _startDate;
+            set {
+                if (_startDate != value) {
+                    _startDate = value;
+                    currentPage = 1;
+                }
+            }
+        }
+        private DateTime? _endDate;
+        protected DateTime? endDate {
+            get => _endDate;
+            set {
+                if (_endDate != value) {
+                    _endDate = value;
+                    currentPage = 1;
+                }
+            }
+        }
         protected bool isCreateModalOpen = false;
         protected bool isViewModalOpen = false;
         protected bool isSelectionModalOpen = false;
@@ -35,6 +64,7 @@ namespace KhoHang.Components.Pages
                     { 
                         MaterialId = m.Id, 
                         Material = m,
+                        SupplierId = m.MaterialSuppliers?.FirstOrDefault()?.SupplierId, // Mặc định theo NCC đầu tiên trong danh mục
                         Qty = 1,
                         CostPrice = m.Lots.OrderBy(l => l.Id).FirstOrDefault()?.CostPrice ?? 0,
                         BasePrice = m.Lots.OrderBy(l => l.Id).FirstOrDefault()?.BasePrice ?? 0,
@@ -47,8 +77,6 @@ namespace KhoHang.Components.Pages
 
         protected List<int> selectedSupplierIds = new();
         protected bool showSupplierDropdown = false;
-        protected DateTime? startDate;
-        protected DateTime? endDate;
 
         protected void ToggleSupplierDropdown() => showSupplierDropdown = !showSupplierDropdown;
         
@@ -108,7 +136,7 @@ namespace KhoHang.Components.Pages
                 bool matchesSupplier = !selectedSupplierIds.Any() || 
                                        p.Items.Any(i => {
                                            var m = materials.FirstOrDefault(mat => mat.Id == i.MaterialId);
-                                           return m != null && selectedSupplierIds.Contains((int)m.SupplierId);
+                                           return m != null && m.MaterialSuppliers != null && m.MaterialSuppliers.Any(ms => selectedSupplierIds.Contains(ms.SupplierId));
                                        });
 
                 bool matchesCategory = !selectedCategoryId.HasValue ||
@@ -167,6 +195,7 @@ namespace KhoHang.Components.Pages
             {
                 MaterialId = item.MaterialId,
                 Material = item.Material,
+                SupplierId = item.SupplierId,
                 Qty = item.Qty,
                 CostPrice = item.CostPrice,
                 BasePrice = item.BasePrice,
@@ -218,12 +247,13 @@ namespace KhoHang.Components.Pages
                 // Tạo duy nhất 1 phiếu nhập cho tất cả món hàng
                 var poForSupplier = new PurchaseOrder
                 {
-                    // Lấy SupplierId của món đầu tiên làm đại diện (Service sẽ tự bóc tách nợ sau)
-                    SupplierId = materials.FirstOrDefault(m => m.Id == newPo.Items.First().MaterialId)?.SupplierId ?? 0,
+                    // Lấy SupplierId của món đầu tiên làm đại diện
+                    SupplierId = newPo.Items.First().SupplierId ?? 0,
                     Timestamp = newPo.Timestamp,
                     Note = newPo.Note,
                     Items = newPo.Items.Select(i => new PurchaseOrderItem {
                         MaterialId = i.MaterialId,
+                        SupplierId = i.SupplierId, // Phải gán NCC cho từng món để tách công nợ
                         Qty = i.Qty,
                         CostPrice = i.CostPrice,
                         BasePrice = i.BasePrice,
@@ -270,11 +300,10 @@ namespace KhoHang.Components.Pages
             sb.Append($"<tr><td colspan='7' class='title' style='font-size: 1.2rem; font-weight: bold; text-align: center; background-color: #f1f5f9;'>PHIẾU NHẬP HÀNG CHI TIẾT</td></tr>");
             
             var allSupplierNames = po.Items
-                .Select(i => materials.FirstOrDefault(m => m.Id == i.MaterialId)?.Supplier?.Name)
+                .Select(i => i.SupplierId != null ? suppliers.FirstOrDefault(s => s.Id == i.SupplierId)?.Name : po.Supplier?.Name)
                 .Where(n => !string.IsNullOrEmpty(n))
                 .Distinct()
                 .ToList();
-            if (!allSupplierNames.Any()) allSupplierNames = new List<string?> { po.Supplier?.Name ?? "N/A" };
             var supplierText = string.Join(", ", allSupplierNames);
 
             sb.Append($"<tr><td colspan='2' class='label' style='font-weight: bold;'>Mã phiếu:</td><td colspan='5'>#{po.Id:D5}</td></tr>");
@@ -295,7 +324,7 @@ namespace KhoHang.Components.Pages
             sb.Append("</tr>");
 
             var groupedItems = po.Items
-                .GroupBy(i => materials.FirstOrDefault(m => m.Id == i.MaterialId)?.SupplierId ?? 0)
+                .GroupBy(i => i.SupplierId ?? po.SupplierId)
                 .ToList();
 
             foreach (var group in groupedItems)
@@ -332,74 +361,115 @@ namespace KhoHang.Components.Pages
         protected async Task ExportToExcel()
         {
             var sb = new System.Text.StringBuilder();
-            sb.Append("<table border='1'>");
-            sb.Append("<tr><td colspan='9' class='title'>BÁO CÁO NHẬP HÀNG THEO NHÀ CUNG CẤP</td></tr>");
+            sb.Append("<style>");
+            sb.Append("table { border-collapse: collapse; width: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }");
+            sb.Append("th, td { border: 1px solid #e2e8f0; padding: 10px; font-size: 0.9rem; }");
+            sb.Append(".title { font-size: 1.5rem; font-weight: 800; text-align: center; color: #1e293b; background-color: #f8fafc; border: none !important; }");
+            sb.Append(".label { font-size: 0.85rem; color: #64748b; text-align: center; border: none !important; }");
+            sb.Append(".center { text-align: center; }");
+            sb.Append(".number { text-align: right; }");
+            sb.Append(".footer { font-weight: 800; background-color: #f1f5f9; }");
+            sb.Append("</style>");
+            sb.Append("<table>");
+            sb.Append("<tr><td colspan='9' class='title'>BÁO CÁO CHI TIẾT NHẬP HÀNG</td></tr>");
             sb.Append($"<tr><td colspan='9' class='label'>Ngày xuất báo cáo: {DateTime.Now:dd/MM/yyyy HH:mm}</td></tr>");
-            sb.Append("<tr><td colspan='9'></td></tr>");
+            sb.Append("<tr><td colspan='9' style='border:none; height:15px;'></td></tr>");
 
-            // Gom tất cả các món hàng từ các phiếu đã lọc
+            // Gom tất cả các món hàng từ các phiếu đã lọc, và lọc lại từng item theo tiêu chí
             var allFilteredItems = AllFilteredPOs
                 .SelectMany(po => po.Items.Select(i => new { Item = i, PO = po }))
-                .ToList();
-
-            // Nhóm theo nhà cung cấp
-            var groupedBySupplier = allFilteredItems
-                .GroupBy(x => materials.FirstOrDefault(m => m.Id == x.Item.MaterialId)?.SupplierId ?? 0)
-                .OrderBy(g => suppliers.FirstOrDefault(s => s.Id == g.Key)?.Name ?? "Z")
-                .ToList();
-
-            decimal grandTotal = 0;
-
-            foreach (var group in groupedBySupplier)
-            {
-                var supplier = suppliers.FirstOrDefault(s => s.Id == group.Key);
-                var supplierName = supplier?.Name ?? "N/A";
-                decimal supplierTotal = 0;
-
-                sb.Append("<tr><td colspan='9' style='font-weight:bold; font-size:1.1rem; padding: 5px; background-color:#10b981; color:white;'>");
-                sb.Append($"NHÀ CUNG CẤP: {supplierName.ToUpper()}");
-                sb.Append("</td></tr>");
-
-                sb.Append("<tr>");
-                string bulkHeaderStyle = "background-color: #f1f5f9; font-weight: bold;";
-                sb.Append($"<th style='{bulkHeaderStyle}'>STT</th>");
-                sb.Append($"<th style='{bulkHeaderStyle}'>Mã Phiếu</th>");
-                sb.Append($"<th style='{bulkHeaderStyle}'>Ngày Nhập</th>");
-                sb.Append($"<th style='{bulkHeaderStyle}'>Vật tư</th>");
-                sb.Append($"<th style='{bulkHeaderStyle}'>ĐVT</th>");
-                sb.Append($"<th style='{bulkHeaderStyle}'>Số Lô</th>");
-                sb.Append($"<th style='{bulkHeaderStyle}'>SL</th>");
-                sb.Append($"<th style='{bulkHeaderStyle}'>Đơn giá</th>");
-                sb.Append($"<th style='{bulkHeaderStyle}'>Thành tiền</th>");
-                sb.Append("</tr>");
-                
-                int i = 1;
-                foreach(var x in group.OrderBy(x => x.PO.Timestamp))
-                {
+                .Where(x => {
                     var item = x.Item;
                     var po = x.PO;
                     var mat = materials.FirstOrDefault(m => m.Id == item.MaterialId);
                     
-                    decimal rowSubtotal = (decimal)item.Qty * item.CostPrice;
-                    supplierTotal += rowSubtotal;
-                    grandTotal += rowSubtotal;
+                    // Lọc theo search text (tên vật tư)
+                    bool matchesSearch = string.IsNullOrWhiteSpace(searchText) || 
+                                         (mat?.Name?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                                         po.Id.ToString("D5").Contains(searchText) ||
+                                         (po.Supplier?.Name?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false);
+
+                    // Lọc theo NCC (nếu item có NCC riêng thì dùng, ko thì dùng của PO)
+                    var sId = item.SupplierId ?? po.SupplierId;
+                    bool matchesSupplier = !selectedSupplierIds.Any() || selectedSupplierIds.Contains(sId);
+
+                    // Lọc theo Nhóm
+                    bool matchesCategory = !selectedCategoryId.HasValue || mat?.CategoryId == selectedCategoryId;
+
+                    // Lọc theo Vật tư cụ thể
+                    bool matchesMaterial = !selectedMaterialId.HasValue || item.MaterialId == selectedMaterialId;
+
+                    return matchesSearch && matchesSupplier && matchesCategory && matchesMaterial;
+                })
+                .ToList();
+
+            // Nhóm theo Phiếu nhập (Outer Group)
+            var groupedByPO = allFilteredItems
+                .GroupBy(x => x.PO.Id)
+                .OrderBy(g => g.First().PO.Timestamp)
+                .ToList();
+
+            decimal grandTotal = 0;
+
+            foreach (var poGroup in groupedByPO)
+            {
+                var po = poGroup.First().PO;
+                sb.Append("<tr><td colspan='9' style='font-weight:bold; font-size:1.1rem; padding: 10px; background-color:#1e293b; color:white;'>");
+                sb.Append($"PHIẾU NHẬP HÀNG #{po.Id:D5} - NGÀY: {po.Timestamp:dd/MM/yyyy HH:mm}");
+                if (!string.IsNullOrEmpty(po.Note)) sb.Append($" - Ghi chú: {po.Note}");
+                sb.Append("</td></tr>");
+
+                // Nhóm theo Nhà cung cấp bên trong từng phiếu (Inner Group)
+                var itemsGroupedBySupplier = poGroup.GroupBy(x => x.Item.SupplierId ?? po.SupplierId).ToList();
+
+                foreach (var sGroup in itemsGroupedBySupplier)
+                {
+                    var supplierId = sGroup.Key;
+                    var supplierName = suppliers.FirstOrDefault(s => s.Id == supplierId)?.Name ?? "N/A";
+                    decimal supplierSubtotal = 0;
+
+                    sb.Append("<tr><td colspan='9' style='font-weight:bold; background-color:#f1f5f9; color:#1e293b; padding: 5px;'>");
+                    sb.Append($"NCC: {supplierName.ToUpper()}");
+                    sb.Append("</td></tr>");
 
                     sb.Append("<tr>");
-                    sb.Append($"<td class='center'>{i}</td>");
-                    sb.Append($"<td class='center'>#{po.Id:D5}</td>");
-                    sb.Append($"<td class='center'>{po.Timestamp:dd/MM/yyyy}</td>");
-                    sb.Append($"<td>{mat?.Name ?? "N/A"}</td>");
-                    sb.Append($"<td class='center'>{mat?.Unit ?? "N/A"}</td>");
-                    sb.Append($"<td>{(item.LotNumber == "Mặc định" ? "" : item.LotNumber)}</td>");
-                    sb.Append($"<td class='center'>{item.Qty}</td>");
-                    sb.Append($"<td class='number'>{item.CostPrice:N0}</td>");
-                    sb.Append($"<td class='number'>{rowSubtotal:N0}</td>");
+                    string bulkHeaderStyle = "background-color: #f8fafc; font-weight: bold; font-size: 0.8rem;";
+                    sb.Append($"<th style='{bulkHeaderStyle}'>STT</th>");
+                    sb.Append($"<th style='{bulkHeaderStyle}'>Mã Phiếu</th>");
+                    sb.Append($"<th style='{bulkHeaderStyle}'>Ngày Nhập</th>");
+                    sb.Append($"<th style='{bulkHeaderStyle}'>Vật tư</th>");
+                    sb.Append($"<th style='{bulkHeaderStyle}'>ĐVT</th>");
+                    sb.Append($"<th style='{bulkHeaderStyle}'>Số Lô</th>");
+                    sb.Append($"<th style='{bulkHeaderStyle}'>SL</th>");
+                    sb.Append($"<th style='{bulkHeaderStyle}'>Đơn giá</th>");
+                    sb.Append($"<th style='{bulkHeaderStyle}'>Thành tiền</th>");
                     sb.Append("</tr>");
-                    i++;
-                }
 
-                sb.Append($"<tr><td colspan='7' style='border:none; background-color:#f1f5f9;'></td><td class='footer' style='background-color:#f1f5f9; font-weight:bold;'>TỔNG {supplierName.ToUpper()}:</td><td class='footer' style='text-align:right; background-color:#f1f5f9; font-weight:bold;'>{supplierTotal:N0} đ</td></tr>");
-                sb.Append("<tr><td colspan='9' style='border:none; height:20px;'></td></tr>");
+                    int i = 1;
+                    foreach (var x in sGroup)
+                    {
+                        var item = x.Item;
+                        var mat = materials.FirstOrDefault(m => m.Id == item.MaterialId);
+                        decimal rowSubtotal = (decimal)item.Qty * item.CostPrice;
+                        supplierSubtotal += rowSubtotal;
+                        grandTotal += rowSubtotal;
+
+                        sb.Append("<tr>");
+                        sb.Append($"<td class='center'>{i}</td>");
+                        sb.Append($"<td class='center'>#{po.Id:D5}</td>");
+                        sb.Append($"<td class='center'>{po.Timestamp:dd/MM/yyyy}</td>");
+                        sb.Append($"<td>{mat?.Name ?? "N/A"}</td>");
+                        sb.Append($"<td class='center'>{mat?.Unit ?? "N/A"}</td>");
+                        sb.Append($"<td>{(item.LotNumber == "Mặc định" ? "" : item.LotNumber)}</td>");
+                        sb.Append($"<td class='center'>{item.Qty:0.##}</td>");
+                        sb.Append($"<td class='number'>{item.CostPrice:N0}</td>");
+                        sb.Append($"<td class='number'>{rowSubtotal:N0}</td>");
+                        sb.Append("</tr>");
+                        i++;
+                    }
+                    sb.Append($"<tr><td colspan='7' style='border:none;'></td><td class='footer' style='text-align:right;'>CỘNG {supplierName}:</td><td class='footer' style='text-align:right;'>{supplierSubtotal:N0}</td></tr>");
+                }
+                sb.Append("<tr><td colspan='9' style='border:none; height:10px;'></td></tr>");
             }
 
             sb.Append($"<tr><td colspan='7' style='border:none; background-color:#064e3b;'></td><td class='footer' style='color:white; background-color:#064e3b; font-weight:bold;'>TỔNG CỘNG TẤT CẢ:</td><td class='footer' style='text-align:right; color:white; background-color:#064e3b; font-weight:bold;'>{grandTotal:N0} đ</td></tr>");
@@ -421,6 +491,30 @@ namespace KhoHang.Components.Pages
         item.CostPrice = lot.CostPrice;
         item.BasePrice = lot.BasePrice;
         CalculateTotal();
+    }
+
+    protected async Task SelectAndLinkSupplierAsync(PurchaseOrderItem item, Material material, int supplierId)
+    {
+        item.SupplierId = supplierId;
+        
+        if (material != null)
+        {
+            // Kiểm tra xem đã có link chưa
+            bool alreadyLinked = material.MaterialSuppliers?.Any(ms => ms.SupplierId == supplierId) ?? false;
+            
+            if (!alreadyLinked)
+            {
+                await WarehouseSvc.LinkMaterialToSupplierAsync(material.Id, supplierId);
+                // Refresh danh sách material để UI cập nhật các nút bấm NCC
+                materials = await WarehouseSvc.GetMasterMaterialsAsync();
+                
+                // Cập nhật tham chiếu material trong item hiện tại
+                item.Material = materials.FirstOrDefault(m => m.Id == item.MaterialId);
+            }
+        }
+        
+        CalculateTotal();
+        StateHasChanged();
     }
     }
 }

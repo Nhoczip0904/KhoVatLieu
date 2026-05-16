@@ -235,7 +235,16 @@
     private bool isSelectionModalOpen = false;
     
     private bool showCompleted = false;
-    private string searchText = "";
+    private string _searchText = "";
+    private string searchText {
+        get => _searchText;
+        set {
+            if (_searchText != value) {
+                _searchText = value;
+                currentPage = 1;
+            }
+        }
+    }
     private int currentPage = 1;
     private int pageSize = 6;
 

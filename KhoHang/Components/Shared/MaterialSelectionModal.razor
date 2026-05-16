@@ -322,7 +322,7 @@
 
     private IEnumerable<Material> filteredMaterials => allMaterials
         .Where(m => (selectedCategoryId == null || m.CategoryId == selectedCategoryId) &&
-                    (selectedSupplierId == null || m.SupplierId == selectedSupplierId) &&
+                    (selectedSupplierId == null || (m.MaterialSuppliers != null && m.MaterialSuppliers.Any(ms => ms.SupplierId == selectedSupplierId))) &&
                     (string.IsNullOrWhiteSpace(searchText) || 
                      m.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) ||
                      (m.ProductCode != null && m.ProductCode.Contains(searchText, StringComparison.OrdinalIgnoreCase))));

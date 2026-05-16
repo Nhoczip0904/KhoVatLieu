@@ -24,9 +24,22 @@ public class KhoDbContext : DbContext
     public DbSet<CustomerReturn> CustomerReturns => Set<CustomerReturn>();
     public DbSet<CustomerReturnItem> CustomerReturnItems => Set<CustomerReturnItem>();
     public DbSet<MaterialLot> MaterialLots => Set<MaterialLot>();
+    public DbSet<MaterialSupplier> MaterialSuppliers => Set<MaterialSupplier>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<MaterialSupplier>()
+            .HasKey(ms => new { ms.MaterialId, ms.SupplierId });
+
+        modelBuilder.Entity<MaterialSupplier>()
+            .HasOne(ms => ms.Material)
+            .WithMany(m => m.MaterialSuppliers)
+            .HasForeignKey(ms => ms.MaterialId);
+
+        modelBuilder.Entity<MaterialSupplier>()
+            .HasOne(ms => ms.Supplier)
+            .WithMany()
+            .HasForeignKey(ms => ms.SupplierId);
         modelBuilder.Entity<Project>()
             .HasMany(p => p.Materials)
             .WithOne(pm => pm.Project)

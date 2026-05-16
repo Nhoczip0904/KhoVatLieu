@@ -75,85 +75,114 @@
                 @if (isFormOpen)
                 {
                     <div class="responsive-form-body" style="margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px dashed #e2e8f0;">
-                        <!-- Left: Image Area (Functional Upload) -->
-                        <div class="form-image-upload">
-                            @if (!string.IsNullOrEmpty(editingMaterial.ImageUrl))
-                            {
-                                <img src="@editingMaterial.ImageUrl" style="width: 100%; height: 100%; object-fit: cover;" />
-                                <button style="position: absolute; top: 2px; right: 2px; background: rgba(255,255,255,0.8); border: none; border-radius: 50%; padding: 2px 5px; font-size: 0.7rem; cursor: pointer;" @onclick="() => editingMaterial.ImageUrl = null">X</button>
-                            }
-                            else
-                            {
-                                <label style="cursor: pointer; text-align: center; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0.5rem;">
-                                    <i class="bi bi-camera" style="font-size: 1.25rem; color: #94a3b8;"></i>
-                                    <span style="font-size: 0.65rem; color: #64748b; font-weight: 600;">Ảnh</span>
-                                    <InputFile OnChange="HandleImageUpload" style="display: none;" />
-                                </label>
-                            }
-                        </div>
-
-                        <!-- Right: Fields (Compact) -->
-                        <div class="form-fields-grid">
-                            <div>
-                                <label class="form-label-small">Mã sản phẩm</label>
-                                <input type="text" @bind="editingMaterial.ProductCode" placeholder="Mã..." class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
+                        <!-- Left: Sidebar (Image + Stock) -->
+                        <div class="form-sidebar">
+                            <div class="form-image-upload" style="position: relative; width: 100%; height: 150px; border: 2px dashed #e2e8f0; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc; overflow: hidden;">
+                                @if (!string.IsNullOrEmpty(editingMaterial.ImageUrl))
+                                {
+                                    <img src="@editingMaterial.ImageUrl" style="width: 100%; height: 100%; object-fit: cover;" />
+                                    <button style="position: absolute; top: 5px; right: 5px; background: white; border: 1px solid #e2e8f0; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #ef4444;" @onclick="() => editingMaterial.ImageUrl = null"><i class="bi bi-trash"></i></button>
+                                }
+                                else
+                                {
+                                    <label style="cursor: pointer; text-align: center; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1rem;">
+                                        <i class="bi bi-camera" style="font-size: 1.5rem; color: #94a3b8; margin-bottom: 0.5rem;"></i>
+                                        <span style="font-size: 0.7rem; color: #64748b; font-weight: 700;">THÊM ẢNH</span>
+                                        <InputFile OnChange="HandleImageUpload" style="display: none;" />
+                                    </label>
+                                }
                             </div>
                             <div>
-                                <label class="form-label-small">Tên vật liệu</label>
-                                <input type="text" @bind="editingMaterial.Name" placeholder="Tên..." class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
-                            </div>
-                            <div>
-                                <label class="form-label-small">Nhóm vật liệu</label>
-                                <select @bind="editingMaterial.CategoryId" class="form-select-modern" style="padding: 0.5rem 2rem 0.5rem 0.75rem;">
-                                    <option value="0">-- Nhóm --</option>
-                                    @foreach (var c in categories) { <option value="@c.Id">@c.Name</option> }
-                                </select>
-                            </div>
-                            <div>
-                                <label class="form-label-small">Đơn vị tính</label>
-                                <input list="unit-list" @bind="editingMaterial.Unit" placeholder="Chọn hoặc nhập ĐVT..." class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
-                                <datalist id="unit-list">
-                                    @foreach (var u in units)
-                                    {
-                                        <option value="@u">@u</option>
-                                    }
-                                </datalist>
-                            </div>
-                            <div>
-                                <label class="form-label-small">Trung gian</label>
-                                <select @bind="editingMaterial.SupplierId" class="form-select-modern" style="padding: 0.5rem 2rem 0.5rem 0.75rem;">
-                                    <option value="">-- Chọn đơn vị --</option>
-                                    @foreach (var s in suppliers) { <option value="@s.Id">@s.Name</option> }
-                                </select>
-                            </div>
-                             <div>
                                 <label class="form-label-small">
-                                    Tồn kho 
-                                    @if (editingMaterial.Lots != null && editingMaterial.Lots.Any()) { <span class="text-primary" style="font-size: 0.65rem;">(Tính từ Lô)</span> }
+                                    TỒN KHO 
+                                    @if (editingMaterial.Lots != null && editingMaterial.Lots.Any()) { <span class="text-primary" style="font-size: 0.6rem;">(Lô)</span> }
                                 </label>
                                 <input type="number" step="any" @bind="editingMaterial.StockQty" 
                                        readonly="@(editingMaterial.Lots != null && editingMaterial.Lots.Any())"
                                        class="form-input-modern @(editingMaterial.Lots != null && editingMaterial.Lots.Any() ? "bg-light" : "")" 
-                                       style="padding: 0.5rem 0.75rem;" />
+                                       style="padding: 0.6rem 0.75rem; font-weight: 800; font-size: 1.1rem; color: var(--accent-primary); text-align: center;" />
                             </div>
-                            @if (editingMaterial.Id == 0)
-                            {
-                                <div>
-                                    <label class="form-label-small">Giá nhập khởi tạo</label>
-                                    <input type="text" value="@editingCostPrice.ToString("N0")" 
-                                           @oninput="@((ChangeEventArgs e) => { var raw = e.Value?.ToString()?.Replace(",", ""); if(decimal.TryParse(raw, out var v)) editingCostPrice = v; })" 
-                                           onkeyup="formatCurrencyInput(this)" class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
+                        </div>
+
+                        <!-- Right: Main Content Area (Fields + Lots) -->
+                        <div style="flex: 1; display: flex; flex-direction: column; gap: 1.25rem;">
+                            <div style="display: flex; gap: 1.5rem; align-items: flex-start;">
+                                <!-- Field Grid -->
+                                <div style="flex: 2.5; display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem 1rem;">
+                                    <div style="grid-column: span 1;">
+                                        <label class="form-label-small">MÃ SẢN PHẨM</label>
+                                        <input type="text" @bind="editingMaterial.ProductCode" placeholder="Mã..." class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
+                                    </div>
+                                    <div style="grid-column: span 2;">
+                                        <label class="form-label-small">TÊN VẬT LIỆU</label>
+                                        <input type="text" @bind="editingMaterial.Name" placeholder="Tên vật liệu..." class="form-input-modern" style="padding: 0.5rem 0.75rem; font-weight: 700;" />
+                                    </div>
+
+                                    <div style="grid-column: span 1;">
+                                        <label class="form-label-small">ĐƠN VỊ TÍNH</label>
+                                        <input list="unit-list" @bind="editingMaterial.Unit" placeholder="ĐVT..." class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
+                                        <datalist id="unit-list">
+                                            @foreach (var u in units) { <option value="@u">@u</option> }
+                                        </datalist>
+                                    </div>
+                                    <div style="grid-column: span 2;">
+                                        <label class="form-label-small">NHÓM VẬT LIỆU</label>
+                                        <select @bind="editingMaterial.CategoryId" class="form-select-modern" style="padding: 0.5rem 2rem 0.5rem 0.75rem;">
+                                            <option value="0">-- Nhóm --</option>
+                                            @foreach (var c in categories) { <option value="@c.Id">@c.Name</option> }
+                                        </select>
+                                    </div>
+
+                                    @if (editingMaterial.Id == 0)
+                                    {
+                                        <div style="grid-column: span 1.5;">
+                                            <label class="form-label-small">GIÁ NHẬP KHỞI TẠO</label>
+                                            <input type="text" value="@editingCostPrice.ToString("N0")" @oninput="@((ChangeEventArgs e) => { var raw = e.Value?.ToString()?.Replace(",", ""); if(decimal.TryParse(raw, out var v)) editingCostPrice = v; })" onkeyup="formatCurrencyInput(this)" class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
+                                        </div>
+                                        <div style="grid-column: span 1.5;">
+                                            <label class="form-label-small">GIÁ BÁN KHỞI TẠO</label>
+                                            <input type="text" value="@editingBasePrice.ToString("N0")" @oninput="@((ChangeEventArgs e) => { var raw = e.Value?.ToString()?.Replace(",", ""); if(decimal.TryParse(raw, out var v)) editingBasePrice = v; })" onkeyup="formatCurrencyInput(this)" class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
+                                        </div>
+                                    }
                                 </div>
-                                <div>
-                                    <label class="form-label-small">Giá bán khởi tạo</label>
-                                    <input type="text" value="@editingBasePrice.ToString("N0")" 
-                                           @oninput="@((ChangeEventArgs e) => { var raw = e.Value?.ToString()?.Replace(",", ""); if(decimal.TryParse(raw, out var v)) editingBasePrice = v; })" 
-                                           onkeyup="formatCurrencyInput(this)" class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
+
+                                <!-- Supplier Box (Right) -->
+                                <div style="flex: 1; min-width: 250px;">
+                                    <label class="form-label-small">TRUNG GIAN (NHIỀU CHỖ)</label>
+                                    <div style="border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; padding: 0.75rem; display: flex; flex-direction: column; gap: 0.6rem; min-height: 200px;">
+                                        <div style="position: relative;">
+                                            <i class="bi bi-search" style="position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.8rem;"></i>
+                                            <input type="text" @bind="supplierSearchText" @bind:event="oninput" placeholder="Tìm nhanh..." 
+                                                   style="width: 100%; padding: 0.35rem 0.75rem 0.35rem 2.2rem; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 0.8rem; background: white;" />
+                                        </div>
+                                        <div style="display: flex; flex-wrap: wrap; gap: 0.3rem; min-height: 24px; max-height: 60px; overflow-y: auto;" class="custom-scrollbar">
+                                            @foreach (var sid in selectedEditingSupplierIds) {
+                                                var s = suppliers.FirstOrDefault(x => x.Id == sid);
+                                                if (s != null) {
+                                                    <div style="background: #10b981; color: white; padding: 0.15rem 0.5rem; border-radius: 100px; font-size: 0.65rem; font-weight: 800; display: flex; align-items: center; gap: 0.3rem;">
+                                                        @s.Name.ToUpper()
+                                                        <i class="bi bi-x" style="cursor: pointer;" @onclick="() => ToggleEditingSupplier(s.Id, false)"></i>
+                                                    </div>
+                                                }
+                                            }
+                                        </div>
+                                        <div style="border: 1px solid #e2e8f0; border-radius: 8px; flex: 1; min-height: 100px; max-height: 140px; overflow-y: auto; background: white; padding: 2px;" class="custom-scrollbar">
+                                            @foreach (var s in suppliers.Where(s => string.IsNullOrEmpty(supplierSearchText) || s.Name.Contains(supplierSearchText, StringComparison.OrdinalIgnoreCase)).OrderBy(s => !selectedEditingSupplierIds.Contains(s.Id)).ThenBy(s => s.Name)) {
+                                                bool isSelected = selectedEditingSupplierIds.Contains(s.Id);
+                                                <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.6rem; border-radius: 6px; cursor: pointer; background: @(isSelected ? "#f0fdf4" : "transparent");" @onclick="() => ToggleEditingSupplier(s.Id, !isSelected)">
+                                                    <div style="width: 14px; height: 14px; border: 1px solid @(isSelected ? "#10b981" : "#cbd5e1"); border-radius: 3px; display: flex; align-items: center; justify-content: center; background: @(isSelected ? "#10b981" : "white"); color: white;">
+                                                        @if (isSelected) { <i class="bi bi-check" style="font-size: 0.7rem;"></i> }
+                                                    </div>
+                                                    <span style="font-size: 0.75rem; font-weight: @(isSelected ? "800" : "600"); color: @(isSelected ? "#166534" : "#1e293b");">@s.Name</span>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
                                 </div>
-                            }
+                            </div>
 
                             <!-- Lot Management Section (Always Visible) -->
-                            <div style="grid-column: span 3; margin-top: 1rem; background: #f1f5f9; padding: 1.25rem; border-radius: 12px; border: 1px solid #e2e8f0;">
+                            <div style="background: #f1f5f9; padding: 1.25rem; border-radius: 12px; border: 1px solid #e2e8f0;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
                                     <h5 style="margin: 0; font-size: 0.8rem; font-weight: 800; color: #475569; text-transform: uppercase; display: flex; align-items: center; gap: 0.5rem;">
                                         <i class="bi bi-layers-half"></i> Tồn kho theo Lô (Batch/Lot tracking)
@@ -268,7 +297,14 @@
                                     @m.Name
                                 </h4>
                                 <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 0.35rem;">
-                                    <i class="bi bi-building"></i> <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@(m.Supplier?.Name ?? "Chưa rõ")</span>
+                                    <i class="bi bi-building"></i> 
+                                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                        @if (m.MaterialSuppliers != null && m.MaterialSuppliers.Any()) {
+                                            @string.Join(", ", m.MaterialSuppliers.Select(ms => ms.Supplier?.Name))
+                                        } else {
+                                            @("Chưa rõ")
+                                        }
+                                    </span>
                                 </div>
                                 <div style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px dashed #e2e8f0; display: flex; flex-direction: column; align-items: center; gap: 0.25rem;">
                                     @{
@@ -291,9 +327,7 @@
                 }
             </div>
         }
-        else
-        {
-        @if (viewMode == "table")
+        else if (viewMode == "table")
         {
             <div class="modern-list-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
                 <!-- Header (Optional, for desktop) -->
@@ -331,10 +365,16 @@
                             <div style="font-size: 0.65rem; color: #94a3b8; font-weight: 700;">Định mức: @m.MinStockLevel</div>
                         </div>
 
-                        <!-- Category & Supplier -->
                         <div style="flex: 1; display: flex; flex-direction: column; gap: 0.4rem;">
                             <span class="row-badge-cat">@m.Category?.Name</span>
-                            <span class="row-supplier-name"><i class="bi bi-building"></i> @m.Supplier?.Name</span>
+                            <span class="row-supplier-name">
+                                <i class="bi bi-building"></i> 
+                                @if (m.MaterialSuppliers != null && m.MaterialSuppliers.Any()) {
+                                    @string.Join(", ", m.MaterialSuppliers.Select(ms => ms.Supplier?.Name))
+                                } else {
+                                    @("Chưa rõ")
+                                }
+                            </span>
                         </div>
 
                         <!-- Unit -->
@@ -366,7 +406,6 @@
                 }
             </div>
         }
-        }
 
         @if (TotalPages > 1)
         {
@@ -376,7 +415,6 @@
                 <button class="btn-page nav-btn" disabled="@(currentPage >= TotalPages)" @onclick="() => currentPage++"><i class="bi bi-chevron-right"></i></button>
             </div>
         }
-    }
     }
 </div>
 
@@ -569,9 +607,9 @@
     .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
     .sticky-form-container { position: sticky; top: 0.5rem; z-index: 100; margin-bottom: 1.5rem; }
-    .responsive-form-body { display: flex; gap: 1.5rem; }
-    .form-image-upload { position: relative; width: 120px; height: 120px; border: 2px dashed #e2e8f0; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f8fafc; overflow: hidden; flex-shrink: 0; }
-    .form-fields-grid { flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem 1rem; }
+    .responsive-form-body { display: flex; gap: 2rem; }
+    .form-sidebar { display: flex; flex-direction: column; gap: 1rem; width: 150px; flex-shrink: 0; }
+    .form-fields-grid { flex: 1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem 1.25rem; align-items: start; }
 
     @@media (max-width: 768px) {
         .responsive-title { font-size: 1.75rem !important; }
@@ -595,9 +633,36 @@
     private List<Category> categories = new();
     private List<Supplier> suppliers = new();
     private List<string> units = new();
-    private string searchText = "";
-    private int? selectedCategoryId;
-    private int? selectedSupplierId;
+    private string _searchText = "";
+    private string searchText {
+        get => _searchText;
+        set {
+            if (_searchText != value) {
+                _searchText = value;
+                currentPage = 1;
+            }
+        }
+    }
+    private int? _selectedCategoryId;
+    private int? selectedCategoryId {
+        get => _selectedCategoryId;
+        set {
+            if (_selectedCategoryId != value) {
+                _selectedCategoryId = value;
+                currentPage = 1;
+            }
+        }
+    }
+    private int? _selectedSupplierId;
+    private int? selectedSupplierId {
+        get => _selectedSupplierId;
+        set {
+            if (_selectedSupplierId != value) {
+                _selectedSupplierId = value;
+                currentPage = 1;
+            }
+        }
+    }
     private int currentPage = 1;
     private int pageSize = 12;
 
@@ -608,12 +673,13 @@
     private string qrCodeUrl = "";
 
     private Material editingMaterial = new();
+    private List<int> selectedEditingSupplierIds = new();
     private decimal editingCostPrice;
     private decimal editingBasePrice;
     private Dictionary<int, double> originalLotQtys = new(); // Lưu số lượng gốc để so sánh
     private Dictionary<int, (decimal Cost, decimal Base)> originalLotPrices = new();
-    private string editingCategoryName = "";
     private Category? editingCategory;
+    private string supplierSearchText = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -630,7 +696,7 @@
 
     private List<Material> filteredMaterials => materials
         .Where(m => selectedCategoryId == null || m.CategoryId == selectedCategoryId)
-        .Where(m => selectedSupplierId == null || m.SupplierId == selectedSupplierId)
+        .Where(m => selectedSupplierId == null || (m.MaterialSuppliers != null && m.MaterialSuppliers.Any(ms => ms.SupplierId == selectedSupplierId)))
         .Where(m => string.IsNullOrWhiteSpace(searchText) || 
                    m.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase) || 
                    (m.ProductCode != null && m.ProductCode.Contains(searchText, StringComparison.OrdinalIgnoreCase)))
@@ -642,6 +708,7 @@
     private void ResetForm()
     {
         editingMaterial = new();
+        selectedEditingSupplierIds.Clear();
         editingCostPrice = 0;
         editingBasePrice = 0;
         isFormOpen = false;
@@ -676,6 +743,7 @@
         if (fresh != null)
         {
             editingMaterial = fresh;
+            selectedEditingSupplierIds = fresh.MaterialSuppliers.Select(ms => ms.SupplierId).ToList();
             originalLotQtys = fresh.Lots.ToDictionary(l => l.Id, l => l.StockQty);
             originalLotPrices = fresh.Lots.ToDictionary(l => l.Id, l => (l.CostPrice, l.BasePrice));
             
@@ -687,6 +755,19 @@
             }
 
             isFormOpen = true;
+        }
+    }
+
+    private void ToggleEditingSupplier(int supplierId, object? checkedValue)
+    {
+        bool isChecked = (bool)(checkedValue ?? false);
+        if (isChecked)
+        {
+            if (!selectedEditingSupplierIds.Contains(supplierId)) selectedEditingSupplierIds.Add(supplierId);
+        }
+        else
+        {
+            selectedEditingSupplierIds.Remove(supplierId);
         }
     }
 
@@ -741,8 +822,8 @@
         }
 
         // 2. Lưu thông tin cơ bản của vật tư
-        if (editingMaterial.Id == 0) await WarehouseService.AddMasterMaterialAsync(editingMaterial, editingCostPrice, editingBasePrice);
-        else await WarehouseService.UpdateMasterMaterialAsync(editingMaterial);
+        if (editingMaterial.Id == 0) await WarehouseService.AddMasterMaterialAsync(editingMaterial, selectedEditingSupplierIds, editingCostPrice, editingBasePrice);
+        else await WarehouseService.UpdateMasterMaterialAsync(editingMaterial, selectedEditingSupplierIds);
 
         editingMaterial = new();
         originalLotQtys.Clear();

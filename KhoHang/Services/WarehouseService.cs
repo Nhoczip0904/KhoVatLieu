@@ -18,12 +18,14 @@ public class WarehouseService
     public async Task<List<string>> GetUniqueUnitsAsync()
     {
         using var context = _dbFactory.CreateDbContext();
-        return await context.Materials
+        var commonUnits = new List<string> { "m", "thùng", "bao", "viên", "bộ", "cái", "kg", "lít", "cuộn", "tấm", "cây", "m2", "m3", "chuyến" };
+        var dbUnits = await context.Materials
             .Select(m => m.Unit)
             .Distinct()
             .Where(u => !string.IsNullOrEmpty(u))
-            .OrderBy(u => u)
             .ToListAsync();
+            
+        return commonUnits.Union(dbUnits).OrderBy(u => u).ToList();
     }
 
     public string GetLocalIPAddress()
@@ -56,265 +58,292 @@ public class WarehouseService
     public async Task SeedDataAsync()
     {
         using var context = _dbFactory.CreateDbContext();
-        if (await context.Categories.AnyAsync()) return;
+        
+        // Remove all existing data to ensure a clean state as requested
+        context.MaterialLots.RemoveRange(context.MaterialLots);
+        context.Materials.RemoveRange(context.Materials);
+        context.Categories.RemoveRange(context.Categories);
+        context.Suppliers.RemoveRange(context.Suppliers);
+        context.SupplierPayments.RemoveRange(context.SupplierPayments);
+        context.PurchaseOrders.RemoveRange(context.PurchaseOrders);
+        context.PurchaseOrderItems.RemoveRange(context.PurchaseOrderItems);
+        context.Projects.RemoveRange(context.Projects);
+        context.ProjectMaterials.RemoveRange(context.ProjectMaterials);
+        context.Deliveries.RemoveRange(context.Deliveries);
+        context.DeliveryItems.RemoveRange(context.DeliveryItems);
+        
+        await context.SaveChangesAsync();
 
-        // 1. Categories based on "BẢNG KÊ HÀNG TỒN KHO"
+        // 1. Create standardized Categories
         var categories = new List<Category>
         {
-            new Category { Name = "Cát xây dựng", Icon = "bi-moisture" },
-            new Category { Name = "Đá các loại", Icon = "bi-gem" },
-            new Category { Name = "Gạch xây dựng", Icon = "bi-bricks" },
-            new Category { Name = "Ngói lợp & Phụ kiện", Icon = "bi-house" },
-            new Category { Name = "Gạch men 20x40", Icon = "bi-grid-3x3" },
-            new Category { Name = "Gạch men 25x40", Icon = "bi-grid-3x3" },
-            new Category { Name = "Gạch men 30x45", Icon = "bi-grid-3x3" },
             new Category { Name = "Gạch men 30x60", Icon = "bi-grid-3x3" },
-            new Category { Name = "Gạch men 40x80", Icon = "bi-grid-3x3" },
-            new Category { Name = "Gạch men 30x30", Icon = "bi-grid-3x3" },
-            new Category { Name = "Gạch men 40x40", Icon = "bi-grid-3x3" },
-            new Category { Name = "Gạch men 50x50", Icon = "bi-grid-3x3" },
             new Category { Name = "Gạch men 60x60", Icon = "bi-grid-3x3" },
-            new Category { Name = "Gạch men 80x80", Icon = "bi-grid-3x3" },
-            new Category { Name = "Trang trí & Phụ kiện gạch", Icon = "bi-stars" },
-            new Category { Name = "Xi măng & Bê tông", Icon = "bi-patch-check" },
+            new Category { Name = "Gạch xây dựng", Icon = "bi-bricks" },
             new Category { Name = "Sắt & Thép", Icon = "bi-reception-4" },
-            new Category { Name = "Tôn & Xà gồ", Icon = "bi-layers" },
-            new Category { Name = "Ống nhựa & Phụ kiện", Icon = "bi-droplet" },
-            new Category { Name = "Sơn & Chống thấm", Icon = "bi-paint-bucket" },
-            new Category { Name = "Keo & Bột trét", Icon = "bi-patch-plus" },
-            new Category { Name = "Gỗ, Lam & Tấm trần", Icon = "bi-border-style" },
+            new Category { Name = "Xi măng & Bê tông", Icon = "bi-patch-check" },
             new Category { Name = "Thiết bị Vệ sinh & Bồn nước", Icon = "bi-house-heart" },
-            new Category { Name = "Cửa các loại", Icon = "bi-door-open" }
+            new Category { Name = "Sơn & Chống thấm", Icon = "bi-paint-bucket" },
+            new Category { Name = "Khác", Icon = "bi-box" }
         };
         context.Categories.AddRange(categories);
         await context.SaveChangesAsync();
 
-        // 2. Full Material List from Excel (Tên + Giá nhập + Category)
-        var materials = new List<(Material Mat, decimal Cost)>
+        // 2. Trigger bulk import from Excel-sourced data
+        await AddImportedMaterialsAsync(context, categories);
+        await context.SaveChangesAsync();
+    }
+
+    private async Task AddImportedMaterialsAsync(KhoDbContext context, List<Category> categories)
+    {
+        // Define Suppliers
+        var supplierNames = new List<string>
         {
-            (new Material { Name = "Đá 10x20", Unit = "Thùng", CategoryId = categories[1].Id }, 205000m),
-            (new Material { Name = "Viền 7x60", Unit = "Thùng", CategoryId = categories[14].Id }, 750000m),
-            (new Material { Name = "Viền 10x60", Unit = "Thùng", CategoryId = categories[14].Id }, 1050000m),
-            (new Material { Name = "Tranh ốp tường", Unit = "Viên", CategoryId = categories[14].Id }, 125000m),
-            (new Material { Name = "Sắt Phi 16 Miền Nam", Unit = "cây", CategoryId = categories[16].Id }, 266500m),
-            (new Material { Name = "Sắt Phi 14 Miền Nam", Unit = "cây", CategoryId = categories[16].Id }, 205500m),
-            (new Material { Name = "Sắt Phi 12 Miền Nam", Unit = "cây", CategoryId = categories[16].Id }, 150000m),
-            (new Material { Name = "Sắt Phi 10 Miền Nam", Unit = "cây", CategoryId = categories[16].Id }, 95000m),
-            (new Material { Name = "Sắt Phi 8 Miền Nam", Unit = "kg", CategoryId = categories[16].Id }, 15300m),
-            (new Material { Name = "Sắt Phi 6 Miền Nam", Unit = "kg", CategoryId = categories[16].Id }, 15350m),
-            (new Material { Name = "Sắt Phi 4 Miền Nam", Unit = "kg", CategoryId = categories[16].Id }, 15800m),
-            (new Material { Name = "Kẽm buộc", Unit = "kg", CategoryId = categories[14].Id }, 17500m),
-            (new Material { Name = "Lưới P40", Unit = "kg", CategoryId = categories[14].Id }, 17300m),
-            (new Material { Name = "Gạch Block 19x19x39", Unit = "Viên", CategoryId = categories[14].Id }, 15500m),
-            (new Material { Name = "Gạch ống", Unit = "Viên", CategoryId = categories[2].Id }, 890m),
-            (new Material { Name = "Gạch Thẻ", Unit = "Viên", CategoryId = categories[2].Id }, 800m),
-            (new Material { Name = "Đá 4/6 Cô Tô", Unit = "Khối", CategoryId = categories[1].Id }, 460000m),
-            (new Material { Name = "Đá 1/2 Cô Tô", Unit = "Khối", CategoryId = categories[1].Id }, 560000m),
-            (new Material { Name = "Đá 0x4 Cô Tô", Unit = "Khối", CategoryId = categories[1].Id }, 380000m),
-            (new Material { Name = "Đá 1/2 Thạnh Phú", Unit = "Khối", CategoryId = categories[1].Id }, 460000m),
-            (new Material { Name = "Cát sông nhập khẩu Campuchia", Unit = "Khối", CategoryId = categories[0].Id }, 235000m),
-            (new Material { Name = "Trụ đá 3m", Unit = "cây", CategoryId = categories[1].Id }, 105000m),
-            (new Material { Name = "Trụ đá 2.5m", Unit = "cây", CategoryId = categories[1].Id }, 82000m),
-            (new Material { Name = "Trụ đá 2m", Unit = "cây", CategoryId = categories[1].Id }, 62000m),
-            (new Material { Name = "Trụ đá 1.5m", Unit = "cây", CategoryId = categories[1].Id }, 37000m),
-            (new Material { Name = "Trụ đá 1.2m", Unit = "cây", CategoryId = categories[1].Id }, 28000m),
-            (new Material { Name = "Trụ đá 1m", Unit = "cây", CategoryId = categories[1].Id }, 22000m),
-            (new Material { Name = "Xi măng Vicem Hà Tiên  2 PCB40 - Bao 50 kg", Unit = "bao", CategoryId = categories[15].Id }, 63200m),
-            (new Material { Name = "Xi măng Insee", Unit = "bao", CategoryId = categories[15].Id }, 76500m),
-            (new Material { Name = "Bột trét Ngoại Thất", Unit = "bao", CategoryId = categories[20].Id }, 170000m),
-            (new Material { Name = "Keo chà ron", Unit = "kg", CategoryId = categories[20].Id }, 10000m),
-            (new Material { Name = "Keo dán Gạch", Unit = "kg", CategoryId = categories[14].Id }, 5000m),
-            (new Material { Name = "Lam 3x6", Unit = "cái", CategoryId = categories[21].Id }, 20000m),
-            (new Material { Name = "Lam 3x8", Unit = "cái", CategoryId = categories[21].Id }, 24000m),
-            (new Material { Name = "Đồng tiền 6T", Unit = "cái", CategoryId = categories[14].Id }, 40000m),
-            (new Material { Name = "Đồng Tiền 4T", Unit = "cái", CategoryId = categories[14].Id }, 25000m),
-            (new Material { Name = "Đồng Tiền 2.5T", Unit = "cái", CategoryId = categories[14].Id }, 15000m),
-            (new Material { Name = "Đầu cột 20", Unit = "cái", CategoryId = categories[14].Id }, 55000m),
-            (new Material { Name = "Đầu cột 25", Unit = "cái", CategoryId = categories[14].Id }, 65000m),
-            (new Material { Name = "Đầu cột 30", Unit = "cái", CategoryId = categories[14].Id }, 75000m),
-            (new Material { Name = "Bệt liền khối S604", Unit = "bộ", CategoryId = categories[14].Id }, 1211760m),
-            (new Material { Name = "Bệt BL5", Unit = "bộ", CategoryId = categories[14].Id }, 2401920m),
-            (new Material { Name = "Bàn cầu 2 khối", Unit = "bộ", CategoryId = categories[14].Id }, 680000m),
-            (new Material { Name = "Bàn cầu giả mỹ", Unit = "cái", CategoryId = categories[14].Id }, 140000m),
-            (new Material { Name = "Lavabo", Unit = "cái", CategoryId = categories[22].Id }, 168000m),
-            (new Material { Name = "Chân lavabo", Unit = "cái", CategoryId = categories[22].Id }, 160000m),
-            (new Material { Name = "Vòi Lavabo", Unit = "cái", CategoryId = categories[22].Id }, 45000m),
-            (new Material { Name = "Vòi hồ", Unit = "cái", CategoryId = categories[14].Id }, 240000m),
-            (new Material { Name = "Vòi chén", Unit = "cái", CategoryId = categories[14].Id }, 75000m),
-            (new Material { Name = "Lược rác", Unit = "cái", CategoryId = categories[14].Id }, 45000m),
-            (new Material { Name = "Củ sen", Unit = "cái", CategoryId = categories[14].Id }, 180000m),
-            (new Material { Name = "Vòi xịt vệ sinh", Unit = "cái", CategoryId = categories[22].Id }, 45000m),
-            (new Material { Name = "Gương", Unit = "cái", CategoryId = categories[14].Id }, 280000m),
-            (new Material { Name = "Tủ kệ lavabo", Unit = "cái", CategoryId = categories[22].Id }, 2800000m),
-            (new Material { Name = "Kệ kiến", Unit = "cái", CategoryId = categories[14].Id }, 120000m),
-            (new Material { Name = "Củ sen nóng lạnh", Unit = "cái", CategoryId = categories[14].Id }, 350000m),
-            (new Material { Name = "Sen dây", Unit = "cái", CategoryId = categories[14].Id }, 150000m),
-            (new Material { Name = "Val thao", Unit = "cái", CategoryId = categories[14].Id }, 45000m),
-            (new Material { Name = "Val nhựa", Unit = "cái", CategoryId = categories[14].Id }, 30000m),
-            (new Material { Name = "Phao điện", Unit = "cái", CategoryId = categories[14].Id }, 100000m),
-            (new Material { Name = "Sơn Ngoại 1L", Unit = "lon", CategoryId = categories[19].Id }, 280000m),
-            (new Material { Name = "Sơn Nội thất 5L", Unit = "lon", CategoryId = categories[19].Id }, 280000m),
-            (new Material { Name = "Sơn Nội Thất 18L", Unit = "thùng", CategoryId = categories[19].Id }, 850000m),
-            (new Material { Name = "Sơn Ngoại Thất 5L", Unit = "lon", CategoryId = categories[19].Id }, 480000m),
-            (new Material { Name = "Sơn Ngoại thất 18L", Unit = "Thùng", CategoryId = categories[19].Id }, 1450000m),
-            (new Material { Name = "kệ góc inox", Unit = "cái", CategoryId = categories[14].Id }, 145000m),
-            (new Material { Name = "Vòi lò xo", Unit = "cái", CategoryId = categories[14].Id }, 125000m),
-            (new Material { Name = "Val T khóa", Unit = "cái", CategoryId = categories[14].Id }, 65000m),
-            (new Material { Name = "kệ chén 2 tầng", Unit = "cái", CategoryId = categories[14].Id }, 950000m),
-            (new Material { Name = "ngói mũi hài", Unit = "Cái", CategoryId = categories[3].Id }, 4500m),
-            (new Material { Name = "gạch sáng", Unit = "Cái", CategoryId = categories[14].Id }, 46000m),
-            (new Material { Name = "bánh ú", Unit = "Cái", CategoryId = categories[14].Id }, 11000m),
-            (new Material { Name = "Sen Cây", Unit = "bộ", CategoryId = categories[14].Id }, 550000m),
-            (new Material { Name = "Kệ inox", Unit = "cái", CategoryId = categories[14].Id }, 280000m),
-            (new Material { Name = "Máng inox", Unit = "cái", CategoryId = categories[14].Id }, 50000m),
-            (new Material { Name = "Chậu inox 2 học", Unit = "cái", CategoryId = categories[14].Id }, 1050000m),
-            (new Material { Name = "Chậu inox 1 học", Unit = "cái", CategoryId = categories[14].Id }, 850000m),
-            (new Material { Name = "Bồn Nhựa 300L", Unit = "cái", CategoryId = categories[22].Id }, 853000m),
-            (new Material { Name = "Bồn Nhựa 500L", Unit = "cái", CategoryId = categories[22].Id }, 1170000m),
-            (new Material { Name = "Bồn nhựa 1000L", Unit = "cái", CategoryId = categories[22].Id }, 1831000m),
-            (new Material { Name = "Bồn inox 300L", Unit = "cái", CategoryId = categories[22].Id }, 1803000m),
-            (new Material { Name = "Bồn inox 500L", Unit = "cái", CategoryId = categories[22].Id }, 2194000m),
-            (new Material { Name = "Khung lafong", Unit = "m", CategoryId = categories[14].Id }, 75000m),
-            (new Material { Name = "Mút 3F", Unit = "tấm", CategoryId = categories[14].Id }, 28000m),
-            (new Material { Name = "Ống 114", Unit = "cây", CategoryId = categories[18].Id }, 250500m),
-            (new Material { Name = "Ống 90", Unit = "cây", CategoryId = categories[18].Id }, 142300m),
-            (new Material { Name = "Ống 60", Unit = "cây", CategoryId = categories[18].Id }, 108800m),
-            (new Material { Name = "Ống 49", Unit = "cây", CategoryId = categories[18].Id }, 97000m),
-            (new Material { Name = "Ống 42", Unit = "cây", CategoryId = categories[18].Id }, 77000m),
-            (new Material { Name = "Ống 34", Unit = "cây", CategoryId = categories[18].Id }, 59000m),
-            (new Material { Name = "Ống 27", Unit = "cây", CategoryId = categories[18].Id }, 41000m),
-            (new Material { Name = "Ống 21", Unit = "cây", CategoryId = categories[18].Id }, 28000m),
-            (new Material { Name = "Tol 2.4m", Unit = "tấm", CategoryId = categories[17].Id }, 63000m),
-            (new Material { Name = "Tol 2m", Unit = "tấm", CategoryId = categories[17].Id }, 40000m),
-            (new Material { Name = "Tol xi măng sóng", Unit = "tấm", CategoryId = categories[17].Id }, 52000m),
-            (new Material { Name = "Tol xi măng phẳng", Unit = "tấm", CategoryId = categories[17].Id }, 58000m),
-            (new Material { Name = "Cửa nhôm 8x200", Unit = "bộ", CategoryId = categories[23].Id }, 950000m),
-            (new Material { Name = "Cửa nhôm 75x190", Unit = "bộ", CategoryId = categories[23].Id }, 850000m),
-            (new Material { Name = "Cửa sổ 8x10", Unit = "bộ", CategoryId = categories[23].Id }, 620000m),
-            (new Material { Name = "Cửa sổ 10x12", Unit = "bộ", CategoryId = categories[23].Id }, 740000m),
+            "Anh Lành", "Anh Lộc", "DPL", "Dinh ghe cát", "Dân", "Grand", "Hiền Thanh Phú", "Hiền thanh phú", "Hùng", 
+            "Kiện Chín Phước", "Lành Ý Mỹ", "Mỹ Hòa", "NHT", "Nam Hà Thành", "Nghĩa", "Nguyễn Tình", "Nhà Ý", "PAK", 
+            "TÂY ĐÔ", "TÀI", "THÀNH PHÁT", "Tài gạch sale", "Thanh Phong VTC", "Thành Phát", "Thái Hoàng", "Thái Trung", 
+            "Thắng Dola", "Thuận Phát", "Tocera", "Tol Đức Thịnh", "Tấn Nhã", "Tấn Phong", "XUÂN", "Xuân", "Xuân - TOCERA", 
+            "Xuân - nhà Ý", "Xuân Nhà Ý", "Xuân PAK", "catalan", "nam hà thành", "thuận phát", "Đồng Tâm", "Đại Phú Lộc", 
+            "Đại phú lộc", "Đức Lộc", "Ghe Hải", "Ghe cường", "Ghe cường lò Thanh Bình", "Thành Trung"
         };
 
-        foreach (var item in materials)
+        var suppliers = new Dictionary<string, Supplier>();
+        foreach (var name in supplierNames)
         {
-            context.Materials.Add(item.Mat);
-            await context.SaveChangesAsync();
-
-            context.MaterialLots.Add(new MaterialLot
-            {
-                MaterialId = item.Mat.Id,
-                LotNumber = "Mặc định",
-                StockQty = 0,
-                CostPrice = item.Cost,
-                BasePrice = item.Cost * 1.2m, // Tự động gợi ý giá bán +20%
-                Note = "Sản phẩm mẫu"
-            });
+            var s = new Supplier { Name = name };
+            context.Suppliers.Add(s);
+            suppliers[name.ToLower()] = s;
         }
+        await context.SaveChangesAsync();
 
-        // 3. Extra Tile List from "Sổ làm việc.xlsx"
-        var extraMaterials = new List<(Material Mat, decimal Cost)>
+        // Define Materials
+        var materialData = new[]
         {
-            (new Material { Name = "Gạch 20x40 - 24128T KP", Unit = "m", CategoryId = categories[4].Id }, 0m),
-            (new Material { Name = "Gạch 20x40 - 2111 hpd", Unit = "m", CategoryId = categories[4].Id }, 0m),
-            (new Material { Name = "Gạch 20x40 - 2032 hpd", Unit = "m", CategoryId = categories[4].Id }, 0m),
-            (new Material { Name = "Gạch 20x40 - 2484 kp", Unit = "m", CategoryId = categories[4].Id }, 0m),
-            (new Material { Name = "Gạch 25x40 - 2530 lộc v", Unit = "m", CategoryId = categories[5].Id }, 0m),
-            (new Material { Name = "Gạch 25x40 - 2515 lộc v", Unit = "m", CategoryId = categories[5].Id }, 0m),
-            (new Material { Name = "Gạch 25x40 - 2505 lộc v", Unit = "m", CategoryId = categories[5].Id }, 0m),
-            (new Material { Name = "Gạch 25x40 - 2525 lộc v", Unit = "m", CategoryId = categories[5].Id }, 0m),
-            (new Material { Name = "Gạch 30x45 - 3025 hồng v", Unit = "m", CategoryId = categories[6].Id }, 0m),
-            (new Material { Name = "Gạch 30x45 - 3405 hồng v", Unit = "m", CategoryId = categories[6].Id }, 0m),
-            (new Material { Name = "Gạch 30x45 - 3045 hồng v", Unit = "m", CategoryId = categories[6].Id }, 0m),
-            (new Material { Name = "Gạch 30x60 - 3647 lộc v", Unit = "m", CategoryId = categories[7].Id }, 0m),
-            (new Material { Name = "Gạch 30x60 - 3615 lộc v", Unit = "m", CategoryId = categories[7].Id }, 0m),
-            (new Material { Name = "Gạch 30x60 - 3605 lộc v", Unit = "m", CategoryId = categories[7].Id }, 0m),
-            (new Material { Name = "Gạch 30x60 - 3625 lộc v", Unit = "m", CategoryId = categories[7].Id }, 0m),
-            (new Material { Name = "Gạch 40x80 - 4801 Luxury", Unit = "m", CategoryId = categories[8].Id }, 0m),
-            (new Material { Name = "Gạch 40x80 - 4802 Luxury", Unit = "m", CategoryId = categories[8].Id }, 0m),
-            (new Material { Name = "Gạch 30x30 - 3001 Nice sân", Unit = "m", CategoryId = categories[9].Id }, 0m),
-            (new Material { Name = "Gạch 30x30 - 3314 Nice sân", Unit = "m", CategoryId = categories[9].Id }, 0m),
-            (new Material { Name = "Gạch 30x30 - 3326 lộc v", Unit = "m", CategoryId = categories[9].Id }, 0m),
-            (new Material { Name = "Gạch 30x30 - 3105 lộc v", Unit = "m", CategoryId = categories[9].Id }, 0m),
-            (new Material { Name = "Gạch 40x40 - NY 433 cột", Unit = "m", CategoryId = categories[10].Id }, 0m),
-            (new Material { Name = "Gạch 40x40 - Rich 44006", Unit = "m", CategoryId = categories[10].Id }, 0m),
-            (new Material { Name = "Gạch 40x40 - Vilacera 462 cỏ", Unit = "m", CategoryId = categories[10].Id }, 0m),
-            (new Material { Name = "Gạch 40x40 - Trang trí 434", Unit = "m", CategoryId = categories[10].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - TTP 517 mè nhạt", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - TTP 521 mè đậm", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - PAK 5035", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - NY 555", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - NY 569 tím", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - NY 569 xanh", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - PAK 503", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - PAK 5015 gỗ", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - NY573", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - PAK 514", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - PAK 501 gỗ nâu", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - PAK5022 sân", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - Nice 55056 gỗ nâu", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - NY 5503", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - PAK 501 vân khói", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - NY 508", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - NY580", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - PN553", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - PN E53", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - PAK 520 mè", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - PAK 538", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - gỗ Restar", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - HG 55058 vân xám", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 50x50 - HG 55050 trắng vân khói", Unit = "m", CategoryId = categories[11].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK DL604", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK 66N", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK 6623", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK 60055 vincenza", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK 6619 Fico", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK 6601 Luxury", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK 6103 Fico", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK 661 gỗ xám", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - Men 6602", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - Men 609", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - Men 6278", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - Men 6601", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - Men 609 LB", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - Men 607 mè", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - Men 069", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - PAK giả đá 6273", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK vision xanh", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK 60 xà cừ trắng 2 da", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK 60 đỏ 2 da", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK trắng 2 da", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK trắng TP Vietdecor", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK trắng Vincenza", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK trắng Fico", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK đen TP Mikado", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK đen gân tr 6662", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK đỏ TP Mikado", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK đỏ TP Luxury", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK đỏ gân trắng", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - Men 6003", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - Men KP 660056", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - Bk đen VC HT", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK Fico 6907 vân xanh", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK 60 đen VC khắc kim", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 60x60 - BK DT67N", Unit = "m", CategoryId = categories[12].Id }, 0m),
-            (new Material { Name = "Gạch 80x80 - Nâu Khắc kim", Unit = "m", CategoryId = categories[13].Id }, 0m),
-            (new Material { Name = "Gạch 80x80 - BK xà cừ trắng", Unit = "m", CategoryId = categories[13].Id }, 0m),
-            (new Material { Name = "Gạch 80x80 - DT 86N", Unit = "m", CategoryId = categories[13].Id }, 0m),
+            new { Name = "3634T", Unit = "m", Price = 82000.0m, Category = "Gạch men 30x60", Supplier = "Nhà Ý" },
+            new { Name = "3634V", Unit = "m", Price = 94000.0m, Category = "Gạch men 30x60", Supplier = "Nhà Ý" },
+            new { Name = "3634D", Unit = "m", Price = 21000.0m, Category = "Gạch men 30x60", Supplier = "Nhà Ý" },
+            new { Name = "SV 558", Unit = "thùng", Price = 78000.0m, Category = "Gạch men 30x60", Supplier = "Nhà Ý" },
+            new { Name = "NKSM 569", Unit = "thùng", Price = 78000.0m, Category = "Gạch men 30x60", Supplier = "Nhà Ý" },
+            new { Name = "Độc quyền 4040", Unit = "thùng", Price = 66000.0m, Category = "Gạch men 30x60", Supplier = "PAK" },
+            new { Name = "Gỗ 50 5015", Unit = "thùng", Price = 75000.0m, Category = "Gạch men 30x60", Supplier = "PAK" },
+            new { Name = "gỗ 40 483", Unit = "thùng", Price = 67000.0m, Category = "Gạch men 30x60", Supplier = "PAK" },
+            new { Name = "balet", Unit = "m", Price = 50000.0m, Category = "Gạch men 30x60", Supplier = "PAK" },
+            new { Name = "GR39000", Unit = "m", Price = 84000.0m, Category = "Gạch men 30x60", Supplier = "DPL" },
+            new { Name = "GR39000V", Unit = "m", Price = 85000.0m, Category = "Gạch men 30x60", Supplier = "DPL" },
+            new { Name = "GR39000D", Unit = "m", Price = 86000.0m, Category = "Gạch men 30x60", Supplier = "DPL" },
+            new { Name = "cát vàng", Unit = "m", Price = 200000.0m, Category = "Gạch men 30x60", Supplier = "DPL" },
+            new { Name = "36045", Unit = "m", Price = 84000.0m, Category = "Gạch men 30x60", Supplier = "XUÂN" },
+            new { Name = "36045V", Unit = "m", Price = 85000.0m, Category = "Gạch men 30x60", Supplier = "XUÂN" },
+            new { Name = "36045D", Unit = "m", Price = 85000.0m, Category = "Gạch men 30x60", Supplier = "XUÂN" },
+            new { Name = "6601", Unit = "m", Price = 116000.0m, Category = "Gạch men 30x60", Supplier = "XUÂN" },
+            new { Name = "60 đỏ trơn", Unit = "m", Price = 140000.0m, Category = "Gạch men 30x60", Supplier = "XUÂN" },
+            new { Name = "80", Unit = "m", Price = 310000.0m, Category = "Gạch men 30x60", Supplier = "Đồng Tâm" },
+            new { Name = "Tocera PVY3701", Unit = "thùng", Price = 68500.0m, Category = "Gạch men 30x60", Supplier = "XUÂN" },
+            new { Name = "Tocera Y3701", Unit = "thùng", Price = 68500.0m, Category = "Gạch men 30x60", Supplier = "XUÂN" },
+            new { Name = "60 BK đen", Unit = "m", Price = 141000.0m, Category = "Gạch men 30x60", Supplier = "XUÂN" },
+            new { Name = "61 BK trắng", Unit = "m", Price = 121000.0m, Category = "Gạch men 30x60", Supplier = "XUÂN" },
+            new { Name = "60 đồng chất Pancera", Unit = "m", Price = 96000.0m, Category = "Gạch men 30x60", Supplier = "XUÂN" },
+            new { Name = "BK đỏ gân trắng 6616 catalan", Unit = "m", Price = 187000.0m, Category = "Gạch men 30x60", Supplier = "XUÂN" },
+            new { Name = "20 tặng 1", Unit = "m", Price = 0m, Category = "Gạch men 30x60", Supplier = "XUÂN" },
+            new { Name = "BK hoa cương 6615 catalan", Unit = "m", Price = 182000.0m, Category = "Gạch men 30x60", Supplier = "XUÂN" },
+            new { Name = "30x60 363 loại 1 thân", Unit = "thùng", Price = 79000.0m, Category = "Gạch men 30x60", Supplier = "thuận phát" },
+            new { Name = "30x60 363 loại 1 viền", Unit = "m", Price = 79000.0m, Category = "Gạch men 30x60", Supplier = "thuận phát" },
+            new { Name = "30x60 363 loại 1 điểm", Unit = "m", Price = 89000.0m, Category = "Gạch men 30x60", Supplier = "thuận phát" },
+            new { Name = "60x60 6601", Unit = "m", Price = 80000.0m, Category = "Gạch men 30x60", Supplier = "thuận phát" },
+            new { Name = "60 đen vân cam", Unit = "thùng", Price = 187000.0m, Category = "Gạch men 30x60", Supplier = "catalan" },
+            new { Name = "xe bagac", Unit = "m", Price = 0m, Category = "Gạch men 30x60", Supplier = "catalan" },
+            new { Name = "máy bagac", Unit = "m", Price = 0m, Category = "Gạch men 30x60", Supplier = "catalan" },
+            new { Name = "gạch 558", Unit = "thùng", Price = 80000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "gạch 569", Unit = "thùng", Price = 80000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "Gạch 25x40 Kingming", Unit = "thùng", Price = 67000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "Gạch 5071", Unit = "thùng", Price = 86500.0m, Category = "Gạch men 30x60", Supplier = "Thành Phát" },
+            new { Name = "Fico TAP6103", Unit = "m", Price = 120000.0m, Category = "Gạch men 30x60", Supplier = "Hiền Thanh Phú" },
+            new { Name = "Balet", Unit = "cái", Price = 80000.0m, Category = "Gạch men 30x60", Supplier = "Hiền Thanh Phú" },
+            new { Name = "Bể 5T tính ra + thêm vốn 3.000/m", Unit = "m", Price = 0m, Category = "Gạch men 30x60", Supplier = "Hiền Thanh Phú" },
+            new { Name = "M3610 Đậm", Unit = "thùng", Price = 75925.92592592593m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "M3606 T", Unit = "thùng", Price = 75925.92592592593m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "M3606 V", Unit = "thùng", Price = 75925.92592592593m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "M3606 Đ", Unit = "thùng", Price = 85185.18518518518m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "6 balet", Unit = "m", Price = 50000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "trừ tiên xe gạch lộn mẫu", Unit = "m", Price = 0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "50x50 SM 580", Unit = "thùng", Price = 74000.0m, Category = "Gạch men 30x60", Supplier = (string)null },
+            new { Name = "50x50 SM569", Unit = "thùng", Price = 74000.0m, Category = "Gạch men 30x60", Supplier = (string)null },
+            new { Name = "50x50 SM561", Unit = "thùng", Price = 79000.0m, Category = "Gạch men 30x60", Supplier = (string)null },
+            new { Name = "Gạch 50 QH5035", Unit = "thùng", Price = 73000.0m, Category = "Gạch men 30x60", Supplier = (string)null },
+            new { Name = "Gạch 5506", Unit = "thùng", Price = 75000.0m, Category = "Gạch men 30x60", Supplier = (string)null },
+            new { Name = "MQ 3612A", Unit = "thùng", Price = 78703.7037037037m, Category = "Gạch men 30x60", Supplier = (string)null },
+            new { Name = "MQ 3606 T", Unit = "thùng", Price = 76388.88888888889m, Category = "Gạch men 30x60", Supplier = (string)null },
+            new { Name = "MQ 3606 V", Unit = "thùng", Price = 76388.88888888889m, Category = "Gạch men 30x60", Supplier = (string)null },
+            new { Name = "MQ3606 D", Unit = "thùng", Price = 85648.14814814815m, Category = "Gạch men 30x60", Supplier = (string)null },
+            new { Name = "K361T", Unit = "thùng", Price = 85000.0m, Category = "Gạch men 30x60", Supplier = (string)null },
+            new { Name = "K361V", Unit = "thùng", Price = 85000.0m, Category = "Gạch men 30x60", Supplier = (string)null },
+            new { Name = "K361D", Unit = "thùng", Price = 95000.0m, Category = "Gạch men 30x60", Supplier = (string)null },
+            new { Name = "K362T", Unit = "thùng", Price = 78240.74074074073m, Category = "Gạch men 30x60", Supplier = (string)null },
+            new { Name = "K362V", Unit = "thùng", Price = 78240.74074074073m, Category = "Gạch men 30x60", Supplier = (string)null },
+            new { Name = "K362D", Unit = "thùng", Price = 87500.0m, Category = "Gạch men 30x60", Supplier = (string)null },
+            new { Name = "SM569", Unit = "thùng", Price = 80000.0m, Category = "Gạch men 30x60", Supplier = (string)null },
+            new { Name = "BK Fico 6619 (6 kiện)", Unit = "thùng", Price = 113000.0m, Category = "Gạch men 30x60", Supplier = "Kiện Chín Phước" },
+            new { Name = "BK Fico 6619", Unit = "thùng", Price = 113000.0m, Category = "Gạch men 30x60", Supplier = "Kiện Chín Phước" },
+            new { Name = "BK Fico 6611", Unit = "thùng", Price = 113000.0m, Category = "Gạch men 30x60", Supplier = "Kiện Chín Phước" },
+            new { Name = "363 viền", Unit = "m", Price = 95000.0m, Category = "Gạch men 30x60", Supplier = "nam hà thành" },
+            new { Name = "360 thân", Unit = "m", Price = 81000.0m, Category = "Gạch men 30x60", Supplier = "nam hà thành" },
+            new { Name = "30x60 điểm", Unit = "m", Price = 16020.0m, Category = "Gạch men 30x60", Supplier = "nam hà thành" },
+            new { Name = "phí giao hàng", Unit = "m", Price = 16800.0m, Category = "Gạch men 30x60", Supplier = "nam hà thành" },
+            new { Name = "60x60 ECO63  L1", Unit = "m", Price = 88000.0m, Category = "Gạch men 30x60", Supplier = "nam hà thành" },
+            new { Name = "60X60 ECO69  L1", Unit = "m", Price = 88000.0m, Category = "Gạch men 30x60", Supplier = "nam hà thành" },
+            new { Name = "CHUYỂN KHOẢN TRẢ", Unit = "m", Price = 0m, Category = "Gạch men 30x60", Supplier = "nam hà thành" },
+            new { Name = "30x60 K360", Unit = "thùng", Price = 73000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "30x60 K360V", Unit = "thùng", Price = 83000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "60x60 K6602", Unit = "thùng", Price = 74000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "Chuyển Khoản Trả", Unit = "m", Price = 0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "Fico 40 bông xám", Unit = "thùng", Price = 64000.0m, Category = "Gạch men 30x60", Supplier = "Anh Lành" },
+            new { Name = "Fico 40 vân xám", Unit = "thùng", Price = 64000.0m, Category = "Gạch men 30x60", Supplier = "Anh Lành" },
+            new { Name = "Gạch K6602", Unit = "thùng", Price = 74000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "BK 67N", Unit = "thùng", Price = 107000.0m, Category = "Gạch men 30x60", Supplier = "Nam Hà Thành" },
+            new { Name = "BK 66N", Unit = "thùng", Price = 107000.0m, Category = "Gạch men 30x60", Supplier = "Nam Hà Thành" },
+            new { Name = "SV4203 giống 4107 nhà ý", Unit = "thùng", Price = 73000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "SV4026 giống 577 Nhà Ý", Unit = "thùng", Price = 66000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "SV415 giống 5071 Nhà Ý", Unit = "thùng", Price = 66000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "SV5506 giống 577 (5V/th)", Unit = "thùng", Price = 78000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "SV555 Nhà Ý (5V/th)", Unit = "thùng", Price = 77000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "Cầu Dola mini 1 nhấn", Unit = "bộ", Price = 510000.0m, Category = "Thiết bị Vệ sinh & Bồn nước", Supplier = "Thắng Dola" },
+            new { Name = "Chân dola", Unit = "cái", Price = 120000.0m, Category = "Thiết bị Vệ sinh & Bồn nước", Supplier = "Thắng Dola" },
+            new { Name = "Tiểu nam", Unit = "cái", Price = 120000.0m, Category = "Thiết bị Vệ sinh & Bồn nước", Supplier = "Thắng Dola" },
+            new { Name = "Cầu 2 nhấn dola", Unit = "bộ", Price = 630000.0m, Category = "Thiết bị Vệ sinh & Bồn nước", Supplier = "Thắng Dola" },
+            new { Name = "lavabo dola", Unit = "cái", Price = 120000.0m, Category = "Thiết bị Vệ sinh & Bồn nước", Supplier = "Thắng Dola" },
+            new { Name = "DPL483 thân", Unit = "thùng", Price = 99000.0m, Category = "Gạch men 30x60", Supplier = "Đại phú lộc" },
+            new { Name = "ECO63", Unit = "thùng", Price = 85000.0m, Category = "Gạch men 30x60", Supplier = "Nam Hà Thành" },
+            new { Name = "Phương Nam 39000T", Unit = "thùng", Price = 83000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "Phương Nam 39000V", Unit = "thùng", Price = 84000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "Phương Nam 39000D", Unit = "thùng", Price = 84000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "PAK 4129", Unit = "thùng", Price = 68000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "HT 2", Unit = "m", Price = 57000.0m, Category = "Xi măng & Bê tông", Supplier = "Mỹ Hòa" },
+            new { Name = "insee", Unit = "m", Price = 74300.0m, Category = "Xi măng & Bê tông", Supplier = "Mỹ Hòa" },
+            new { Name = "DT66N", Unit = "m", Price = 107000.0m, Category = "Gạch men 30x60", Supplier = "Nam Hà Thành" },
+            new { Name = "40x80 492V", Unit = "m", Price = 90000.0m, Category = "Gạch men 30x60", Supplier = "Nam Hà Thành" },
+            new { Name = "XN3613 Điểm", Unit = "thùng", Price = 87000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "P3601V3 Điểm", Unit = "thùng", Price = 83000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "Gạch 30x60 P3601D", Unit = "thùng", Price = 83000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "Gạch 30x60 P3601", Unit = "thùng", Price = 73000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "Đá 1/2 trắng", Unit = "m", Price = 670000.0m, Category = "Xi măng & Bê tông", Supplier = "Tấn Nhã" },
+            new { Name = "Phương Nam 39300V", Unit = "thùng", Price = 87000.0m, Category = "Sắt & Thép", Supplier = "Xuân" },
+            new { Name = "Phương Nam 39300D", Unit = "thùng", Price = 87000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "BK 60 DT 72N", Unit = "thùng", Price = 109000.0m, Category = "Gạch men 30x60", Supplier = "Nam Hà Thành" },
+            new { Name = "Men 50 E53", Unit = "thùng", Price = 68000.0m, Category = "Gạch men 30x60", Supplier = "Nam Hà Thành" },
+            new { Name = "Đá 40x40 DS4400", Unit = "m", Price = 123000.0m, Category = "Xi măng & Bê tông", Supplier = "Thái Trung" },
+            new { Name = "Bàn cầu V37 CT bán mẫu tặng la + chân", Unit = "m", Price = 2790000.0m, Category = "Thiết bị Vệ sinh & Bồn nước", Supplier = "Thái Trung" },
+            new { Name = "ĐT 37000 Thân Hà Thanh", Unit = "thùng", Price = 82000.0m, Category = "Gạch men 30x60", Supplier = "Thái Trung" },
+            new { Name = "Men mờ 3800TN nhạt HT", Unit = "thùng", Price = 83000.0m, Category = "Gạch men 30x60", Supplier = "NHT" },
+            new { Name = "Men mờ 3802 HT", Unit = "thùng", Price = 85000.0m, Category = "Gạch men 30x60", Supplier = "NHT" },
+            new { Name = "Men mờ 3800TD Đậm HT", Unit = "thùng", Price = 16460.0m, Category = "Gạch men 30x60", Supplier = "NHT" },
+            new { Name = "Chuyển trả đủ", Unit = "m", Price = 0m, Category = "Gạch men 30x60", Supplier = "NHT" },
+            new { Name = "Men 40x80 4080", Unit = "thùng", Price = 91000.0m, Category = "Gạch men 30x60", Supplier = "NHT" },
+            new { Name = "Men 40x80 460TD đậm", Unit = "thùng", Price = 93000.0m, Category = "Gạch men 30x60", Supplier = "NHT" },
+            new { Name = "Men 40x80 462 Điểm", Unit = "thùng", Price = 35000.0m, Category = "Gạch men 30x60", Supplier = "NHT" },
+            new { Name = "Gạch 36000 trắng PN", Unit = "thùng", Price = 81000.0m, Category = "Gạch men 30x60", Supplier = "Nguyễn Tình" },
+            new { Name = "Gạch 60x60 LX60003 vân PN", Unit = "thùng", Price = 83000.0m, Category = "Gạch men 30x60", Supplier = "Nguyễn Tình" },
+            new { Name = "Đá 1/2 đen", Unit = "m", Price = 800000.0m, Category = "Xi măng & Bê tông", Supplier = "Tấn Nhã" },
+            new { Name = "BK ĐL604", Unit = "thùng", Price = 105000.0m, Category = "Gạch men 30x60", Supplier = "Đức Lộc" },
+            new { Name = "Men 30x60 DL 3615 Đậm (20T)", Unit = "thùng", Price = 84000.0m, Category = "Gạch men 30x60", Supplier = "Đức Lộc" },
+            new { Name = "Men 30x60 DL 3615 Nhạt (170T)", Unit = "thùng", Price = 82000.0m, Category = "Gạch men 30x60", Supplier = "Đức Lộc" },
+            new { Name = "Men 30x60 DL 3615 Điểm (18T)", Unit = "viên", Price = 22000.0m, Category = "Gạch men 30x60", Supplier = "Đức Lộc" },
+            new { Name = "Xi măng Cần thơ", Unit = "bao", Price = 67000.0m, Category = "Xi măng & Bê tông", Supplier = "Đức Lộc" },
+            new { Name = "Men 60 PAK", Unit = "thùng", Price = 76000.0m, Category = "Gạch men 30x60", Supplier = "Đức Lộc" },
+            new { Name = "Men 30x60 P3601V3", Unit = "thùng", Price = 73000.0m, Category = "Gạch men 30x60", Supplier = "Đức Lộc" },
+            new { Name = "Men 30x60 P3601D", Unit = "thùng", Price = 83000.0m, Category = "Gạch men 30x60", Supplier = "Đức Lộc" },
+            new { Name = "Men 30x60 P3601", Unit = "thùng", Price = 73000.0m, Category = "Gạch men 30x60", Supplier = "Đức Lộc" },
+            new { Name = "Men 30x60 MQ 3610", Unit = "thùng", Price = 75000.0m, Category = "Gạch men 30x60", Supplier = "Đức Lộc" },
+            new { Name = "PN GHC 3605V", Unit = "thùng", Price = 82000.0m, Category = "Gạch men 30x60", Supplier = "Đức Lộc" },
+            new { Name = "PN GHC 3605D", Unit = "thùng", Price = 82000.0m, Category = "Gạch men 30x60", Supplier = "Đức Lộc" },
+            new { Name = "DPL 39300V", Unit = "thùng", Price = 87000.0m, Category = "Sắt & Thép", Supplier = "Đức Lộc" },
+            new { Name = "DPL 39300D", Unit = "thùng", Price = 87000.0m, Category = "Gạch men 30x60", Supplier = "Đức Lộc" },
+            new { Name = "Gạch 50 HG 55058 xám 2 kiện", Unit = "thùng", Price = 75000.0m, Category = "Gạch men 30x60", Supplier = "Thành Phát" },
+            new { Name = "Gạch 50 HG 55050 trắng vân khói 2 kiện", Unit = "thùng", Price = 75000.0m, Category = "Gạch men 30x60", Supplier = "Thành Phát" },
+            new { Name = "Gạch 433 NY trang trí", Unit = "thùng", Price = 82000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "Gạch 30x60 NY 3640BS", Unit = "thùng", Price = 85000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "Gạch 30x60 NY 3640D", Unit = "thùng", Price = 100000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "Gạch 30x60 NY 3640", Unit = "thùng", Price = 83000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "Gạch ống", Unit = "viên", Price = 1500.0m, Category = "Gạch xây dựng", Supplier = "Xuân" },
+            new { Name = "Xi măng HT2", Unit = "bao", Price = 67500.0m, Category = "Xi măng & Bê tông", Supplier = "Xuân" },
+            new { Name = "Cát 1.8 rớt tàu Dũng", Unit = "m", Price = 265000.0m, Category = "Xi măng & Bê tông", Supplier = "Xuân" },
+            new { Name = "Lưới P40", Unit = "kg", Price = 19700.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "Gạch 3700", Unit = "thùng", Price = 85000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "Gạch 3702V", Unit = "thùng", Price = 85000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "Gạch 3702D", Unit = "thùng", Price = 95000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "DL604", Unit = "thùng", Price = 108000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "DT62", Unit = "thùng", Price = 109000.0m, Category = "Gạch men 30x60", Supplier = "Xuân" },
+            new { Name = "ghe Dinh", Unit = "chuyến", Price = 3500000.0m, Category = "Gạch xây dựng", Supplier = "Dinh ghe cát" },
+            new { Name = "Ghe Hùng 100m", Unit = "viên", Price = 0m, Category = "Gạch xây dựng", Supplier = "Dinh ghe cát" },
+            new { Name = "kẽm buộc", Unit = "kg", Price = 21400.0m, Category = "Sắt & Thép", Supplier = (string)null },
+            new { Name = "Sắt phi 10V", Unit = "cây", Price = 113600.0m, Category = "Sắt & Thép", Supplier = "Tấn Nhã" },
+            new { Name = "Sắt phi 12V", Unit = "cây", Price = 179000.0m, Category = "Sắt & Thép", Supplier = "Tấn Nhã" },
+            new { Name = "Sắt phi 14V", Unit = "cây", Price = 245500.0m, Category = "Sắt & Thép", Supplier = "Tấn Nhã" },
+            new { Name = "Sắt phi 16V", Unit = "cây", Price = 318000.0m, Category = "Sắt & Thép", Supplier = "Tấn Nhã" },
+            new { Name = "Sắt phi 10 HP", Unit = "cây", Price = 111800.0m, Category = "Sắt & Thép", Supplier = "Thành Trung" },
+            new { Name = "phí VC", Unit = "viên", Price = 90.0m, Category = "Gạch xây dựng", Supplier = "Ghe Hải" },
+            new { Name = "Thẻ xém Hiệp Hưng", Unit = "viên", Price = 620.0m, Category = "Gạch xây dựng", Supplier = "Ghe Hải" },
+            new { Name = "Ống xém Ánh nguyệt", Unit = "viên", Price = 800.0m, Category = "Gạch xây dựng", Supplier = "Ghe Hải" },
+            new { Name = "thẻ ngọn", Unit = "viên", Price = 640.0m, Category = "Gạch xây dựng", Supplier = "Ghe cường" },
+            new { Name = "ngọn lỗ tròn", Unit = "viên", Price = 840.0m, Category = "Gạch xây dựng", Supplier = "Ghe cường" },
+            new { Name = "xém lỗ vuông", Unit = "viên", Price = 770.0m, Category = "Gạch xây dựng", Supplier = "Ghe cường" },
+            new { Name = "Vận chuyển", Unit = "viên", Price = 90.0m, Category = "Gạch xây dựng", Supplier = "Ghe cường" },
+            new { Name = "ống ngọn", Unit = "viên", Price = 780.0m, Category = "Gạch xây dựng", Supplier = "Ghe cường lò Thanh Bình" },
+            new { Name = "ống xém", Unit = "viên", Price = 770.0m, Category = "Gạch xây dựng", Supplier = "Ghe cường lò Thanh Bình" },
+            new { Name = "Phí VC", Unit = "viên", Price = 80.0m, Category = "Gạch xây dựng", Supplier = "Ghe cường lò Thanh Bình" },
         };
 
-        foreach (var item in extraMaterials)
-        {
-            context.Materials.Add(item.Mat);
-            await context.SaveChangesAsync();
+        var categoryMap = categories.ToDictionary(c => c.Name, c => c.Id);
+        var materialMap = new Dictionary<string, Material>();
 
-            context.MaterialLots.Add(new MaterialLot
+        foreach (var data in materialData)
+        {
+            // Chuẩn hóa tên (ví dụ: Sắt 10V -> Sắt phi 10V)
+            string normalizedName = data.Name.Trim();
+            if (normalizedName == "Sắt 10V") normalizedName = "Sắt phi 10V";
+            
+            string key = $"{normalizedName.ToLower()}_{data.Unit.ToLower()}";
+
+            if (!materialMap.TryGetValue(key, out var m))
             {
-                MaterialId = item.Mat.Id,
-                LotNumber = "Mặc định",
-                StockQty = 0,
-                CostPrice = 0,
-                BasePrice = 0,
-                Note = "Import từ sổ làm việc"
-            });
+                if (!categoryMap.TryGetValue(data.Category, out int catId))
+                {
+                    catId = categoryMap.Values.FirstOrDefault();
+                }
+
+                m = new Material
+                {
+                    Name = normalizedName,
+                    Unit = data.Unit,
+                    CategoryId = catId,
+                    StockQty = 0
+                };
+
+                context.Materials.Add(m);
+                await context.SaveChangesAsync();
+                materialMap[key] = m;
+
+                // Tạo lô mặc định cho vật tư mới
+                context.MaterialLots.Add(new MaterialLot
+                {
+                    MaterialId = m.Id,
+                    LotNumber = "Mặc định",
+                    StockQty = 0,
+                    CostPrice = data.Price,
+                    BasePrice = data.Price * 1.2m,
+                    Note = "Import từ Excel"
+                });
+            }
+
+            // Link to Supplier (Many-to-Many)
+            if (data.Supplier != null && suppliers.TryGetValue(data.Supplier.ToLower(), out var s))
+            {
+                // Kiểm tra xem đã link chưa để tránh duplicate trong cùng một đợt seed
+                bool alreadyLinked = await context.MaterialSuppliers.AnyAsync(ms => ms.MaterialId == m.Id && ms.SupplierId == s.Id);
+                if (!alreadyLinked)
+                {
+                    context.MaterialSuppliers.Add(new MaterialSupplier { MaterialId = m.Id, SupplierId = s.Id });
+                }
+            }
         }
         await context.SaveChangesAsync();
     }
@@ -382,7 +411,8 @@ public class WarehouseService
         return await context.Materials
             .AsNoTracking()
             .Include(m => m.Category)
-            .Include(m => m.Supplier)
+            .Include(m => m.MaterialSuppliers)
+                .ThenInclude(ms => ms.Supplier)
             .Include(m => m.Lots)
             .ToListAsync();
     }
@@ -392,16 +422,41 @@ public class WarehouseService
         using var context = _dbFactory.CreateDbContext();
         return await context.Materials
             .Include(m => m.Category)
-            .Include(m => m.Supplier)
+            .Include(m => m.MaterialSuppliers)
+                .ThenInclude(ms => ms.Supplier)
             .Include(m => m.Lots)
             .FirstOrDefaultAsync(m => m.Id == id);
     }
 
-    public async Task AddMasterMaterialAsync(Material material, decimal costPrice, decimal basePrice)
+    public async Task LinkMaterialToSupplierAsync(int materialId, int supplierId)
     {
         using var context = _dbFactory.CreateDbContext();
+        var exists = await context.MaterialSuppliers.AnyAsync(ms => ms.MaterialId == materialId && ms.SupplierId == supplierId);
+        if (!exists)
+        {
+            context.MaterialSuppliers.Add(new MaterialSupplier { MaterialId = materialId, SupplierId = supplierId });
+            await context.SaveChangesAsync();
+        }
+    }
+
+    public async Task AddMasterMaterialAsync(Material material, List<int> supplierIds, decimal costPrice, decimal basePrice)
+    {
+        using var context = _dbFactory.CreateDbContext();
+        
+        // Clear internal collections before add to prevent issues if they were populated
+        material.MaterialSuppliers = new();
+        
         context.Materials.Add(material);
         await context.SaveChangesAsync();
+
+        // Add Suppliers
+        if (supplierIds != null && supplierIds.Any())
+        {
+            foreach (var sid in supplierIds)
+            {
+                context.MaterialSuppliers.Add(new MaterialSupplier { MaterialId = material.Id, SupplierId = sid });
+            }
+        }
 
         // Tự động tạo lô Mặc định cho sản phẩm mới
         context.MaterialLots.Add(new MaterialLot
@@ -416,13 +471,11 @@ public class WarehouseService
         await context.SaveChangesAsync();
     }
 
-    public async Task UpdateMasterMaterialAsync(Material material)
+    public async Task UpdateMasterMaterialAsync(Material material, List<int> supplierIds)
     {
         using var context = _dbFactory.CreateDbContext();
         var old = await context.Materials.AsNoTracking().Include(m => m.Lots).FirstOrDefaultAsync(m => m.Id == material.Id);
         
-        // Chỉ ghi log kho tổng nếu vật tư này KHÔNG quản lý theo Lô
-        // (Vật tư có lô sẽ được log riêng trong UpdateMaterialLotQtyAsync)
         if (old != null && (old.Lots == null || !old.Lots.Any()))
         {
             if (old.StockQty != material.StockQty)
@@ -439,7 +492,21 @@ public class WarehouseService
             }
         }
 
+        // Update basic info
         context.Materials.Update(material);
+
+        // Update Suppliers
+        var existingSuppliers = await context.MaterialSuppliers.Where(ms => ms.MaterialId == material.Id).ToListAsync();
+        context.MaterialSuppliers.RemoveRange(existingSuppliers);
+        
+        if (supplierIds != null)
+        {
+            foreach (var sid in supplierIds)
+            {
+                context.MaterialSuppliers.Add(new MaterialSupplier { MaterialId = material.Id, SupplierId = sid });
+            }
+        }
+
         await context.SaveChangesAsync();
     }
 
@@ -723,7 +790,6 @@ public class WarehouseService
             .Include(p => p.Supplier)
             .Include(p => p.Items)
                 .ThenInclude(i => i.Material)
-                    .ThenInclude(m => m.Supplier)
             .OrderByDescending(p => p.Timestamp)
             .ToListAsync();
     }
@@ -737,10 +803,7 @@ public class WarehouseService
         await context.SaveChangesAsync();
 
         // 2. Tính toán và tách công nợ cho từng nhà cung cấp trong đơn
-        var itemGroups = po.Items.GroupBy(i => {
-            var m = context.Materials.Find(i.MaterialId);
-            return m?.SupplierId ?? 0;
-        }).ToList();
+        var itemGroups = po.Items.GroupBy(i => i.SupplierId ?? po.SupplierId).ToList();
 
         foreach (var group in itemGroups)
         {
@@ -768,7 +831,11 @@ public class WarehouseService
             var lotNum = item.LotNumber;
             if (string.IsNullOrWhiteSpace(lotNum)) lotNum = "Mặc định";
 
-            var lot = await context.MaterialLots.FirstOrDefaultAsync(l => l.MaterialId == material.Id && l.LotNumber == lotNum);
+            // Tìm lô theo MaterialId, LotNumber
+            var lot = await context.MaterialLots.FirstOrDefaultAsync(l => 
+                l.MaterialId == material.Id && 
+                l.LotNumber == lotNum);
+
             if (lot == null)
             {
                 lot = new MaterialLot
@@ -785,15 +852,15 @@ public class WarehouseService
             else
             {
                 lot.StockQty += item.Qty;
-                lot.CostPrice = item.CostPrice; // Cập nhật giá nhập mới nhất cho lô này
+                lot.CostPrice = item.CostPrice;
                 if (item.BasePrice.HasValue) lot.BasePrice = item.BasePrice.Value;
                 context.MaterialLots.Update(lot);
             }
 
             material.StockQty += item.Qty;
-            
             context.Materials.Update(material);
 
+            var itemSupplierId = item.SupplierId ?? po.SupplierId;
             context.InventoryTransactions.Add(new InventoryTransaction
             {
                 MaterialId = material.Id,
@@ -801,11 +868,10 @@ public class WarehouseService
                 Type = "Nhập",
                 QtyChange = item.Qty,
                 LotNumber = lotNum,
-                Note = $"Nhập phiếu #{po.Id:D5}",
+                Note = $"Nhập phiếu #{po.Id:D5} (Nguồn: NCC ID {itemSupplierId})",
                 ReferenceId = po.Id.ToString()
             });
         }
-
         await context.SaveChangesAsync();
     }
 
@@ -848,7 +914,8 @@ public class WarehouseService
         using var context = _dbFactory.CreateDbContext();
         return await context.Materials
             .Where(m => m.StockQty <= m.MinStockLevel)
-            .Include(m => m.Supplier)
+            .Include(m => m.MaterialSuppliers)
+                .ThenInclude(ms => ms.Supplier)
             .Include(m => m.Lots)
             .ToListAsync();
     }

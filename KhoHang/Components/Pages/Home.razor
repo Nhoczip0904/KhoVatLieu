@@ -269,8 +269,7 @@
 
         // Main Warehouse Alert: Use the dedicated service method for accuracy (compares with MinStockLevel)
         lowStockMaterials = await WarehouseService.GetLowStockMaterialsAsync();
-        // Only show top 8 most urgent items for warehouse to keep UI clean
-        lowStockMaterials = lowStockMaterials.OrderBy(m => m.StockQty).Take(8).ToList();
+        lowStockMaterials = lowStockMaterials.OrderBy(m => m.StockQty).ToList();
 
         // Project Alert Logic: Only active projects (GetProjectsAsync(false))
         var activeProjects = await WarehouseService.GetProjectsAsync(false);

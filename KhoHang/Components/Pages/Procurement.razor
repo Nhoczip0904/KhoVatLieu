@@ -11,9 +11,16 @@
         <div>
             <h1 class="responsive-title" style="font-size: 2.2rem; font-weight: 800; font-family: 'Outfit'; margin: 0; color: #0f172a;">Nhập hàng & PO</h1>
         </div>
-        <button class="btn-primary" @onclick="OpenCreateModal">
-            <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">Tạo Phiếu Nhập</span><span class="d-sm-none">Thêm</span>
-        </button>
+        <div style="display: flex; gap: 0.75rem;">
+            <button class="btn btn-success" style="padding: 0.6rem 1.25rem; border-radius: 12px; font-weight: 700; display: flex; align-items: center; gap: 0.5rem; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);" @onclick="ExportToExcel">
+                <i class="bi bi-file-earmark-excel"></i> 
+                <span class="d-none d-sm-inline">Xuất Excel Tổng</span>
+                <span class="d-sm-none">Excel</span>
+            </button>
+            <button class="btn-primary" style="padding: 0.6rem 1.25rem; border-radius: 12px;" @onclick="OpenCreateModal">
+                <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">Tạo Phiếu Nhập</span><span class="d-sm-none">Thêm</span>
+            </button>
+        </div>
     </div>
     
     <!-- New Style Category Filters (Wrapping like Inventory Ledger) -->
@@ -128,11 +135,10 @@
                                     <td class="mobile-hide">
                                         @{
                                             var supplierNames = po.Items
-                                                .Select(i => materials.FirstOrDefault(m => m.Id == i.MaterialId)?.Supplier?.Name)
+                                                .Select(i => i.SupplierId != null ? suppliers.FirstOrDefault(s => s.Id == i.SupplierId)?.Name : po.Supplier?.Name)
                                                 .Where(n => !string.IsNullOrEmpty(n))
                                                 .Distinct()
                                                 .ToList();
-                                            if (!supplierNames.Any()) supplierNames = new List<string?> { po.Supplier?.Name ?? "N/A" };
                                             <span>@string.Join(", ", supplierNames)</span>
                                         }
                                     </td>
@@ -222,6 +228,7 @@
                             <thead style="position: sticky; top: 0; z-index: 10; background: #f8fafc;">
                                 <tr style="color: #64748b; font-size: 0.7rem; text-transform: uppercase; font-weight: 800;">
                                     <th style="padding: 0.75rem 0.5rem; border-bottom: 1px solid #e2e8f0;">Vật tư</th>
+                                    <th class="mobile-hide" style="padding: 0.75rem 0.5rem; border-bottom: 1px solid #e2e8f0;">Nhà cung cấp</th>
                                     <th style="padding: 0.75rem 0.5rem; border-bottom: 1px solid #e2e8f0;">Lô</th>
                                     <th class="mobile-hide" style="padding: 0.75rem 0.5rem; border-bottom: 1px solid #e2e8f0; text-align: center;">ĐVT</th>
                                     <th style="padding: 0.75rem 0.5rem; border-bottom: 1px solid #e2e8f0; text-align: center;">SL</th>
@@ -255,6 +262,38 @@
                                                     <div style="font-size: 0.75rem; color: #94a3b8;">@m?.Unit</div>
                                                 </div>
                                             </div>
+                                        </td>
+                                        <td class="mobile-hide" style="padding: 0.4rem 0.5rem; vertical-align: top;">
+                                            <select class="form-select-modern" style="width: 100%; border: 1px solid #e2e8f0; padding: 0.4rem 0.6rem; border-radius: 6px; font-size: 0.85rem;" 
+                                                    value="@item.SupplierId" 
+                                                    @onchange="@(async (ChangeEventArgs e) => { 
+                                                        if(int.TryParse(e.Value?.ToString(), out var sid)) 
+                                                            await SelectAndLinkSupplierAsync(item, m, sid); 
+                                                    })">
+                                                <option value="">-- Chọn NCC --</option>
+                                                @foreach (var s in suppliers) { <option value="@s.Id">@s.Name</option> }
+                                            </select>
+
+                                            @if (m != null)
+                                            {
+                                                <div style="margin-top: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.4rem; max-height: 120px; overflow-y: auto; padding-right: 4px;" class="custom-scrollbar">
+                                                    @if (m.MaterialSuppliers != null)
+                                                    {
+                                                        @foreach (var ms in m.MaterialSuppliers)
+                                                        {
+                                                            <div @onclick="() => item.SupplierId = ms.SupplierId"
+                                                                 style="background: @(item.SupplierId == ms.SupplierId ? "var(--accent-primary)" : "white"); 
+                                                                        color: @(item.SupplierId == ms.SupplierId ? "white" : "#1e293b");
+                                                                        border: 1px solid @(item.SupplierId == ms.SupplierId ? "var(--accent-primary)" : "#e2e8f0"); 
+                                                                        border-radius: 4px; padding: 0.15rem 0.5rem; cursor: pointer; transition: all 0.2s; height: 32px; display: flex; align-items: center; min-width: 80px;"
+                                                                 onmouseover="if(this.style.background!=='var(--accent-primary)') this.style.background='#f8fafc'"
+                                                                 onmouseout="if(this.style.background!=='var(--accent-primary)') this.style.background='white'">
+                                                                <div style="font-size: 0.75rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@ms.Supplier?.Name</div>
+                                                            </div>
+                                                        }
+                                                    }
+                                                </div>
+                                            }
                                         </td>
                                         <td style="padding: 0.4rem 0.5rem; vertical-align: top;">
                                             <input class="form-control-modern" style="width: 100%; border: 1px solid #e2e8f0; padding: 0.4rem 0.6rem; border-radius: 6px; font-size: 0.85rem; font-weight: 700; color: var(--accent-primary);" 
@@ -409,11 +448,10 @@
                                         <div style="font-size: 1.5rem; font-weight: 900; color: #1e293b; line-height: 1.2;">
                                             @{
                                                 var supplierNames = selectedPo.Items
-                                                    .Select(i => materials.FirstOrDefault(m => m.Id == i.MaterialId)?.Supplier?.Name)
+                                                    .Select(i => i.SupplierId != null ? suppliers.FirstOrDefault(s => s.Id == i.SupplierId)?.Name : selectedPo.Supplier?.Name)
                                                     .Where(n => !string.IsNullOrEmpty(n))
                                                     .Distinct()
                                                     .ToList();
-                                                if (!supplierNames.Any()) supplierNames = new List<string?> { selectedPo.Supplier?.Name ?? "N/A" };
                                                 var displayNames = string.Join(", ", supplierNames);
                                             }
                                             <i class="bi bi-building-fill" style="margin-right: 0.6rem; color: #2563eb;"></i> @displayNames
@@ -445,7 +483,7 @@
                                 <tbody>
                                     @{
                                         var groupedItems = selectedPo.Items
-                                            .GroupBy(i => materials.FirstOrDefault(m => m.Id == i.MaterialId)?.SupplierId ?? 0)
+                                            .GroupBy(i => i.SupplierId ?? selectedPo.SupplierId)
                                             .ToList();
                                     }
                                     @foreach (var group in groupedItems)
