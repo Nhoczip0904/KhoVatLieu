@@ -59,19 +59,13 @@ public class WarehouseService
     {
         using var context = _dbFactory.CreateDbContext();
         
-        // Remove all existing data to ensure a clean state as requested
-        context.MaterialLots.RemoveRange(context.MaterialLots);
-        context.Materials.RemoveRange(context.Materials);
-        context.Categories.RemoveRange(context.Categories);
-        context.Suppliers.RemoveRange(context.Suppliers);
-        context.SupplierPayments.RemoveRange(context.SupplierPayments);
-        context.PurchaseOrders.RemoveRange(context.PurchaseOrders);
-        context.PurchaseOrderItems.RemoveRange(context.PurchaseOrderItems);
-        context.Projects.RemoveRange(context.Projects);
-        context.ProjectMaterials.RemoveRange(context.ProjectMaterials);
-        context.Deliveries.RemoveRange(context.Deliveries);
-        context.DeliveryItems.RemoveRange(context.DeliveryItems);
-        
+        // Kiểm tra nếu đã có dữ liệu thì không seed lại nữa để tránh mất dữ liệu người dùng
+        if (context.Materials.Any())
+        {
+            return;
+        }
+
+        // Nếu DB trống, tiến hành seed dữ liệu mẫu
         await context.SaveChangesAsync();
 
         // 1. Create standardized Categories
