@@ -615,48 +615,126 @@ else
             <div class="modal-content" style="max-width: 900px; padding: 0; overflow: hidden; border: none; border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
                 <div style="padding: 0; display: flex; flex-direction: column; max-height: 90vh;">
                     <!-- Header (Fixed at top) -->
-                    <div style="background: var(--accent-primary); color: white; padding: 1.25rem 2rem; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
-                        <div style="display: flex; align-items: center; gap: 1rem;">
-                            <i class="bi bi-file-earmark-check" style="font-size: 1.8rem;"></i>
-                            <h2 style="margin: 0; font-size: 1.25rem; font-weight: 800; letter-spacing: 0.5px;">XÁC NHẬN XUẤT KHO</h2>
+                    <div style="background: var(--accent-primary); color: white; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <i class="bi bi-file-earmark-check" style="font-size: 1.5rem;"></i>
+                            <div>
+                                <h2 style="margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: 0.5px; line-height: 1.2;">XÁC NHẬN XUẤT KHO</h2>
+                                <div style="font-size: 0.75rem; opacity: 0.9; font-weight: 500; margin-top: 2px;">
+                                    Dự án: @(string.IsNullOrEmpty(project.CustomerName) ? project.Customer?.Name : project.CustomerName)
+                                </div>
+                            </div>
                         </div>
-                        <button type="button" @onclick="() => showDeliveryReview = false" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer;">
+                        <button type="button" @onclick="() => showDeliveryReview = false" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                             <i class="bi bi-x-lg"></i>
                         </button>
                     </div>
 
                     <!-- Scrollable Body (Contains Items + Summary + Actions) -->
                     <div style="padding: 1rem; overflow-y: auto; flex: 1;">
-                        <!-- Order Items -->
-                        <div style="background: #f8fafc; border-radius: 16px; padding: 1.5rem; border: 1px solid #e2e8f0; margin-bottom: 1.5rem;">
-                            <h4 style="margin-top: 0; margin-bottom: 1.25rem; color: var(--text-secondary); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Chi tiết đơn hàng</h4>
+                        <div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 1rem; overflow: hidden;">
+                            <div style="padding: 0.75rem 1rem; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                                <h4 style="margin: 0; color: #475569; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">Chi tiết phát sinh đơn này</h4>
+                                <div style="font-size: 0.75rem; color: #64748b; font-weight: 700;">@DateTime.Now.ToString("dd/MM/yyyy HH:mm")</div>
+                            </div>
                             
-                            <div class="delivery-items-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-                                @foreach (var item in previewDelivery.Items)
+                            <div class="table-responsive">
+                                <table class="table align-middle" style="margin-bottom: 0; font-size: 0.85rem; border-collapse: collapse;">
+                                    <thead style="background: #f8fafc; color: #64748b;">
+                                        <tr style="font-size: 0.7rem; text-transform: uppercase; font-weight: 800; border-bottom: 2px solid #e2e8f0;">
+                                            <th style="padding: 0.75rem; text-align: center; width: 40px;">STT</th>
+                                            <th style="padding: 0.75rem; text-align: left;">Vật liệu</th>
+                                            <th style="padding: 0.75rem; text-align: center; width: 80px;" class="mobile-hide">Lô</th>
+                                            <th style="padding: 0.75rem; text-align: center; width: 60px;">SL</th>
+                                            <th style="padding: 0.75rem; text-align: center; width: 50px;">ĐVT</th>
+                                            <th style="padding: 0.75rem; text-align: right;" class="mobile-hide">Đơn giá</th>
+                                            <th style="padding: 0.75rem; text-align: right; width: 100px;">Thành tiền</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @{ int previewStt = 1; }
+                                        
+                                        @if (previewOpeningBalance != 0)
+                                        {
+                                            <tr style="background: #f8fafc; font-style: italic;">
+                                                <td style="text-align: center; padding: 0.5rem;">@(previewStt++)</td>
+                                                <td colspan="5" style="font-weight: 700; color: @(previewOpeningBalance < 0 ? "#166534" : "#475569"); padding: 0.5rem;">
+                                                    @(previewOpeningBalance < 0 ? "Tiền cọc chốt từ kỳ trước" : "Dư nợ chốt từ kỳ trước")
+                                                </td>
+                                                <td style="text-align: right; font-weight: 800; color: @(previewOpeningBalance < 0 ? "#166534" : "#1e293b"); padding: 0.5rem;">
+                                                    @Math.Abs(previewOpeningBalance).ToString("N0")
+                                                </td>
+                                            </tr>
+                                        }
+
+                                        @if (previewIntermediatePayments.Any())
+                                        {
+                                            @foreach (var p in previewIntermediatePayments)
+                                            {
+                                                <tr style="background: #f0fdf4; font-style: italic;">
+                                                    <td style="text-align: center; padding: 0.5rem;">@(previewStt++)</td>
+                                                    <td colspan="5" style="color: #166534; font-weight: 600; padding: 0.5rem;">
+                                                        <i class="bi bi-cash-stack"></i> 
+                                                        Khách thanh toán (@p.Timestamp.ToString("dd/MM/yyyy"))
+                                                    </td>
+                                                    <td style="text-align: right; font-weight: 800; color: #166534; padding: 0.5rem;">
+                                                        -@p.Amount.ToString("N0")
+                                                    </td>
+                                                </tr>
+                                            }
+                                        }
+
+                                        @foreach (var item in previewDelivery.Items)
+                                        {
+                                            <tr style="@(item.Qty < 0 ? "background: #fff1f2;" : "")">
+                                                <td style="text-align: center; padding: 0.6rem 0.5rem;">@(previewStt++)</td>
+                                                <td style="font-weight: 700; color: @(item.Qty < 0 ? "var(--error)" : "#1e293b"); padding: 0.6rem 0.5rem;">
+                                                    @(item.Qty < 0 ? "[TRẢ LẠI] " : "")@item.Name
+                                                </td>
+                                                <td style="text-align: center; color: #64748b; font-size: 0.75rem; padding: 0.6rem 0.5rem;" class="mobile-hide">
+                                                    @(item.LotNumber != "Mặc định" ? item.LotNumber : "")
+                                                </td>
+                                                <td style="text-align: center; font-weight: 800; color: @(item.Qty < 0 ? "var(--error)" : "inherit"); padding: 0.6rem 0.5rem;">
+                                                    @Math.Abs(item.Qty).ToString("0.##")
+                                                </td>
+                                                <td style="text-align: center; padding: 0.6rem 0.5rem; color: #64748b;">@item.Unit</td>
+                                                <td style="text-align: right; padding: 0.6rem 0.5rem; color: #64748b;" class="mobile-hide">@item.Price.ToString("N0")</td>
+                                                <td style="text-align: right; font-weight: 900; color: @(item.Qty < 0 ? "var(--error)" : "var(--accent-primary)"); padding: 0.6rem 0.5rem;">
+                                                    @(item.Qty < 0 ? "-" : "")@Math.Abs(item.Subtotal).ToString("N0")
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Summary Sections (Mirror Invoice Totals) -->
+                        <div style="background: #f8fafc; border-radius: 12px; padding: 1rem; border: 1px solid #e2e8f0; margin-bottom: 1.5rem;">
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                @if (previewDelivery.Items.Any(i => i.Qty > 0))
                                 {
-                                    <div style="background: white; border: 1px solid #f1f5f9; padding: 1rem; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-                                        <div>
-                                            <div style="font-weight: 700; color: #1e293b; font-size: 0.9rem;">@item.Name</div>
-                                            <div style="display: flex; gap: 0.75rem; align-items: center; margin-top: 2px;">
-                                                @if (!string.IsNullOrEmpty(item.LotNumber))
-                                                {
-                                                    <span style="font-size: 0.7rem; color: var(--accent-primary); font-weight: 700; background: rgba(16, 185, 129, 0.1); padding: 1px 6px; border-radius: 4px;">Lô: @item.LotNumber</span>
-                                                }
-                                                <span style="font-size: 0.75rem; color: var(--text-muted);">x @item.Qty @item.Unit</span>
-                                            </div>
-                                        </div>
-                                        <div style="font-weight: 800; color: #0f172a; text-align: right;">
-                                            <div style="font-size: 0.85rem;">@item.Subtotal.ToString("N0") đ</div>
-                                            <div style="font-size: 0.65rem; color: var(--text-muted); font-weight: 400;">@item.Price.ToString("N0")/đv</div>
-                                        </div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #64748b;">
+                                        <span>Giá trị hàng giao mới:</span>
+                                        <span style="font-weight: 700;">@previewDelivery.Items.Where(i => i.Qty > 0).Sum(i => i.Subtotal).ToString("N0") đ</span>
                                     </div>
                                 }
-                            </div>
-
-                            <hr style="border: none; border-top: 2px solid white; margin: 1.25rem 0;" />
-                            <div style="display: flex; justify-content: space-between; font-size: 1rem; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-                                <span style="font-weight: 700; color: var(--text-secondary);">Tổng tiền hàng (@previewDelivery.Items.Count món):</span>
-                                <span style="font-weight: 950; color: var(--accent-primary); font-size: 1.2rem;">@previewDelivery.TotalAmount.ToString("N0") đ</span>
+                                @if (previewDelivery.Items.Any(i => i.Qty < 0))
+                                {
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #166534;">
+                                        <span>Giá trị hàng trả lại:</span>
+                                        <span style="font-weight: 700;">-@Math.Abs(previewDelivery.Items.Where(i => i.Qty < 0).Sum(i => i.Subtotal)).ToString("N0") đ</span>
+                                    </div>
+                                }
+                                
+                                <div style="display: flex; justify-content: space-between; font-size: 1rem; align-items: center; border-top: 1px dashed #cbd5e1; padding-top: 0.5rem; margin-top: 0.25rem;">
+                                    <span style="font-weight: 700; color: #475569;">
+                                        @(previewDelivery.TotalAmount < 0 ? "TỔNG KHẤU TRỪ:" : "TỔNG PHÁT SINH ĐƠN NÀY:")
+                                    </span>
+                                    <span style="font-weight: 900; color: @(previewDelivery.TotalAmount < 0 ? "#166534" : "var(--accent-primary)");">
+                                        @(previewDelivery.TotalAmount < 0 ? "-" : "")@Math.Abs(previewDelivery.TotalAmount).ToString("N0") đ
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
@@ -1038,6 +1116,8 @@ else
     private ProjectMaterial? materialToEdit;
     private List<ProjectMaterial> selectedMaterialsToConfig = new();
     private Delivery? previewDelivery;
+    private decimal previewOpeningBalance;
+    private List<Payment> previewIntermediatePayments = new();
     private bool showCompleteConfirm = false;
 
     // Payment fields
@@ -1261,6 +1341,16 @@ else
         }
 
         var itemsTotal = itemsToDeliver.Sum(x => x.Subtotal);
+        
+        // Calculate preview metadata (Opening Balance & Intermediate Payments)
+        var lastDelivery = deliveries.OrderByDescending(d => d.Timestamp).FirstOrDefault();
+        previewIntermediatePayments = project.Payments
+            .Where(p => (lastDelivery == null || p.Timestamp > lastDelivery.Timestamp) && p.Timestamp < DateTime.Now && p.ShowOnInvoice)
+            .OrderBy(p => p.Timestamp)
+            .ToList();
+            
+        previewOpeningBalance = lastDelivery?.GrandTotal ?? (invoiceBalance + previewIntermediatePayments.Sum(p => p.Amount));
+
         previewDelivery = new Delivery
         {
             ProjectId = project.Id,

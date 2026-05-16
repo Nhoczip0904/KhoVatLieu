@@ -111,15 +111,13 @@
                             </div>
                             <div>
                                 <label class="form-label-small">Đơn vị tính</label>
-                                <select @bind="editingMaterial.Unit" class="form-select-modern" style="padding: 0.5rem 2rem 0.5rem 0.75rem;">
-                                    <option value="">-- ĐVT --</option>
-                                    <option value="Viên">Viên</option>
-                                    <option value="Khối">Khối</option>
-                                    <option value="Bao">Bao</option>
-                                    <option value="Cây">Cây</option>
-                                    <option value="Kg">Kg</option>
-                                    <option value="Cuộn">Cuộn</option>
-                                </select>
+                                <input list="unit-list" @bind="editingMaterial.Unit" placeholder="Chọn hoặc nhập ĐVT..." class="form-input-modern" style="padding: 0.5rem 0.75rem;" />
+                                <datalist id="unit-list">
+                                    @foreach (var u in units)
+                                    {
+                                        <option value="@u">@u</option>
+                                    }
+                                </datalist>
                             </div>
                             <div>
                                 <label class="form-label-small">Trung gian</label>
@@ -596,6 +594,7 @@
     private List<Material> materials = new();
     private List<Category> categories = new();
     private List<Supplier> suppliers = new();
+    private List<string> units = new();
     private string searchText = "";
     private int? selectedCategoryId;
     private int? selectedSupplierId;
@@ -626,6 +625,7 @@
         materials = await WarehouseService.GetMasterMaterialsAsync();
         categories = await WarehouseService.GetCategoriesAsync();
         suppliers = await WarehouseService.GetSuppliersAsync();
+        units = await WarehouseService.GetUniqueUnitsAsync();
     }
 
     private List<Material> filteredMaterials => materials
