@@ -31,6 +31,17 @@
         </div>
     </div>
 }
+<!-- Mobile Category Select -->
+<div class="mobile-category-select">
+    <select class="form-select-modern" @onchange="@(e => FilterByStockCategory(string.IsNullOrEmpty(e.Value?.ToString()) ? null : int.Parse(e.Value.ToString())))">
+        <option value="">-- Chọn danh mục --</option>
+        @foreach (var cat in categories)
+        {
+            <option value="@cat.Id" selected="@(selectedCategoryId == cat.Id)">@cat.Name</option>
+        }
+    </select>
+</div>
+
 <!-- Category Filter Badges -->
 <div class="filter-tabs mb-4" style="display: flex; gap: 0.5rem; flex-wrap: wrap; background: white; padding: 1.25rem; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
     <div class="filter-tab @(selectedCategoryId == null ? "active" : "")" 
@@ -355,3 +366,18 @@
 
 <KhoHang.Components.Shared.MaterialSelectionModal @bind-IsOpen="showMaterialModal" OnMaterialsSelected="OnMaterialsSelected" AllowZeroStock="true" SingleSelection="true" />
 </div>
+
+<style>
+    .mobile-category-select {
+        display: none;
+    }
+    @@media (max-width: 576px) {
+        .mobile-category-select {
+            display: block !important;
+            margin-bottom: 1rem;
+        }
+        .filter-tabs {
+            display: none !important;
+        }
+    }
+</style>

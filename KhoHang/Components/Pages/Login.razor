@@ -1,0 +1,220 @@
+@page "/"
+@layout EmptyLayout
+@inject NavigationManager Navigation
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="logo-area">
+            <div class="logo-icon">📦</div>
+            <h1>KHO HÀNG V1</h1>
+            <p>Chào mừng bạn trở lại!</p>
+        </div>
+        
+        <div class="form-group">
+            <label for="username">Tài khoản</label>
+            <input type="text" id="username" @bind="Username" placeholder="Nhập tài khoản" />
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Mật khẩu</label>
+            <input type="password" id="password" @bind="Password" placeholder="Nhập mật khẩu" />
+        </div>
+        
+        <div class="form-actions">
+            <div class="remember-me">
+                <input type="checkbox" id="remember" @bind="RememberMe" />
+                <label for="remember">Nhớ mật khẩu</label>
+            </div>
+            <a href="#" class="forgot-pwd">Quên mật khẩu?</a>
+        </div>
+        
+        <button class="btn-login" @onclick="HandleLogin">Đăng Nhập</button>
+        
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <div class="error-message">@ErrorMessage</div>
+        }
+    </div>
+</div>
+
+<style>
+    /* Premium CSS for Login */
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #1a2a6c 0%, #b21f1f 50%, #fdbb2d 100%); /* Vibrant gradient */
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    
+    .login-card {
+        background: rgba(255, 255, 255, 0.9);
+        padding: 3rem;
+        border-radius: 2rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        width: 100%;
+        max-width: 450px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    .logo-area {
+        text-align: center;
+        margin-bottom: 2.5rem;
+    }
+    
+    .logo-icon {
+        font-size: 3.5rem;
+        margin-bottom: 0.5rem;
+        animation: float 3s ease-in-out infinite;
+    }
+    
+    @@keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+    }
+    
+    .logo-area h1 {
+        color: #1a202c;
+        font-size: 2rem;
+        font-weight: 800;
+        margin-bottom: 0.25rem;
+        background: linear-gradient(to right, #1a2a6c, #b21f1f);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    
+    .logo-area p {
+        color: #718096;
+        font-size: 1rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        display: block;
+        color: #2d3748;
+        font-size: 0.9rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-group input {
+        width: 100%;
+        padding: 0.85rem 1.25rem;
+        border: 1px solid #cbd5e0;
+        border-radius: 0.75rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: rgba(255, 255, 255, 0.8);
+    }
+    
+    .form-group input:focus {
+        outline: none;
+        border-color: #b21f1f;
+        box-shadow: 0 0 0 4px rgba(178, 31, 31, 0.1);
+        background: #ffffff;
+    }
+    
+    .form-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        font-size: 0.9rem;
+    }
+    
+    .remember-me {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .remember-me input {
+        width: 1.2rem;
+        height: 1.2rem;
+        accent-color: #b21f1f;
+        cursor: pointer;
+    }
+    
+    .remember-me label {
+        color: #4a5568;
+        cursor: pointer;
+        font-weight: 500;
+    }
+    
+    .forgot-pwd {
+        color: #b21f1f;
+        text-decoration: none;
+        font-weight: 600;
+        transition: color 0.2s;
+    }
+    
+    .forgot-pwd:hover {
+        color: #1a2a6c;
+    }
+    
+    .btn-login {
+        width: 100%;
+        padding: 1rem;
+        background: linear-gradient(to right, #1a2a6c, #b21f1f);
+        color: white;
+        border: none;
+        border-radius: 0.75rem;
+        font-size: 1.1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        opacity: 0.95;
+    }
+    
+    .btn-login:active {
+        transform: translateY(0);
+    }
+    
+    .error-message {
+        color: #e53e3e;
+        font-size: 0.9rem;
+        margin-top: 1.25rem;
+        text-align: center;
+        font-weight: 500;
+        background: rgba(254, 215, 215, 0.5);
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+    }
+</style>
+
+@code {
+    private string Username { get; set; } = "ChiHaiKute";
+    private string Password { get; set; } = "0939532769";
+    private bool RememberMe { get; set; } = false;
+    private string ErrorMessage { get; set; } = "";
+
+    private void HandleLogin()
+    {
+        // For demonstration, we accept the specific username and any non-empty password
+        if (Username == "ChiHaiKute" && !string.IsNullOrEmpty(Password))
+        {
+            // Login success, redirect to home
+            Navigation.NavigateTo("/dashboard");
+        }
+        else if (string.IsNullOrEmpty(Password))
+        {
+            ErrorMessage = "Vui lòng nhập mật khẩu!";
+        }
+        else
+        {
+            ErrorMessage = "Tài khoản không chính xác!";
+        }
+    }
+}

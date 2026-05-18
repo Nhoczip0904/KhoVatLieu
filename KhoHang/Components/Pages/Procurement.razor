@@ -23,6 +23,17 @@
         </div>
     </div>
     
+    <!-- Mobile Category Select -->
+    <div class="mobile-category-select">
+        <select class="form-select-modern" @onchange="@(e => FilterByCategory(string.IsNullOrEmpty(e.Value?.ToString()) ? null : int.Parse(e.Value.ToString())))">
+            <option value="">-- Chọn danh mục --</option>
+            @foreach (var cat in categories)
+            {
+                <option value="@cat.Id" selected="@(selectedCategoryId == cat.Id)">@cat.Name</option>
+            }
+        </select>
+    </div>
+
     <!-- New Style Category Filters (Wrapping like Inventory Ledger) -->
     <div class="filter-tabs-wrapper" style="display: flex; column-gap: 0.75rem; row-gap: 0.4rem; flex-wrap: wrap; margin-bottom: 1.5rem; padding: 0.25rem 0;">
         <button class="btn-filter-pill @(selectedCategoryId == null ? "active" : "")" 
@@ -228,7 +239,7 @@
                             <thead style="position: sticky; top: 0; z-index: 10; background: #f8fafc;">
                                 <tr style="color: #64748b; font-size: 0.7rem; text-transform: uppercase; font-weight: 800;">
                                     <th style="padding: 0.75rem 0.5rem; border-bottom: 1px solid #e2e8f0;">Vật tư</th>
-                                    <th class="mobile-hide" style="padding: 0.75rem 0.5rem; border-bottom: 1px solid #e2e8f0;">Nhà cung cấp</th>
+                                    <th style="padding: 0.75rem 0.5rem; border-bottom: 1px solid #e2e8f0;">Nhà cung cấp</th>
                                     <th style="padding: 0.75rem 0.5rem; border-bottom: 1px solid #e2e8f0;">Lô</th>
                                     <th class="mobile-hide" style="padding: 0.75rem 0.5rem; border-bottom: 1px solid #e2e8f0; text-align: center;">ĐVT</th>
                                     <th style="padding: 0.75rem 0.5rem; border-bottom: 1px solid #e2e8f0; text-align: center;">SL</th>
@@ -263,7 +274,7 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="mobile-hide" style="padding: 0.4rem 0.5rem; vertical-align: top;">
+                                        <td style="padding: 0.4rem 0.5rem; vertical-align: top;">
                                             <select class="form-select-modern" style="width: 100%; border: 1px solid #e2e8f0; padding: 0.4rem 0.6rem; border-radius: 6px; font-size: 0.85rem;" 
                                                     value="@item.SupplierId" 
                                                     @onchange="@(async (ChangeEventArgs e) => { 
@@ -586,4 +597,16 @@
     }
     .custom-scrollbar::-webkit-scrollbar { display: none; }
     .custom-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .mobile-category-select {
+        display: none;
+    }
+    @@media (max-width: 576px) {
+        .mobile-category-select {
+            display: block !important;
+            margin-bottom: 1rem;
+        }
+        .filter-tabs-wrapper {
+            display: none !important;
+        }
+    }
 </style>

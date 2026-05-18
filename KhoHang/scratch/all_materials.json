@@ -1,0 +1,2788 @@
+[
+  {
+    "Name": "Cát 1.8 rớt tàu Dũng",
+    "Category": "Cát",
+    "Unit": "m",
+    "Price": 265000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "cát vàng",
+    "Category": "Cát",
+    "Unit": "m",
+    "Price": 200000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "2032 hpd",
+    "Category": "Gạch men 20x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "2111 hpd",
+    "Category": "Gạch men 20x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "24128T KP",
+    "Category": "Gạch men 20x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "2484 kp",
+    "Category": "Gạch men 20x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "25X40 2326 TOCERA thân",
+    "Category": "Gạch men 25x40",
+    "Unit": "m",
+    "Price": 72000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "25X40 2326 TOCERA viền",
+    "Category": "Gạch men 25x40",
+    "Unit": "m",
+    "Price": 79000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Gạch 25x40 Kingming",
+    "Category": "Gạch men 25x40",
+    "Unit": "m",
+    "Price": 67000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Nice 2008",
+    "Category": "Gạch men 25x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Nice 2008V",
+    "Category": "Gạch men 25x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "TT 26151",
+    "Category": "Gạch men 25x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "TT 74483",
+    "Category": "Gạch men 25x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "TT 74487",
+    "Category": "Gạch men 25x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "khói ceradoni 2619",
+    "Category": "Gạch men 25x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "3005 xếp gạch",
+    "Category": "Gạch men 30x30",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "30331G",
+    "Category": "Gạch men 30x30",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "367 vân xanh",
+    "Category": "Gạch men 30x30",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "NY 3020",
+    "Category": "Gạch men 30x30",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "NY 330",
+    "Category": "Gạch men 30x30",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Nice 30331 bóng",
+    "Category": "Gạch men 30x30",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Nice 327",
+    "Category": "Gạch men 30x30",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Nice 3332",
+    "Category": "Gạch men 30x30",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Tocera 30769",
+    "Category": "Gạch men 30x30",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "VTC 30366",
+    "Category": "Gạch men 30x30",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "VTC 30801",
+    "Category": "Gạch men 30x30",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "KP 80215",
+    "Category": "Gạch men 30x45",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Tocera 3711",
+    "Category": "Gạch men 30x45",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Tocera 3711 viền",
+    "Category": "Gạch men 30x45",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "36055N",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "36055V",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "365 D",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "E35S đậm",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 85000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "HT 3700",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "HT 3702D",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "HT 3702V",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "NY 3640 thân",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "NY 3640BS viền",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "NY 3640D điểm",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK 3279 trắng",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK 360 trắng",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK 3601V3D",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK 3601V3T",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK 3601V3V",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK 3610 Đậm",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK 363D",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK 363T",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PN 36000 trắng",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PN 36000D7",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PN 36000V7",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PN 3605D",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PN 3605V",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PN 39000",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PN 39000D",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PN 39000T",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PN 39000V",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PN 39001 D",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PN 39001 T",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PN 39001 V",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PN 39300D",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PN 39300V",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Thân 36010",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Tomira 36569",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Trang trí 36101",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Viền 36010",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Viền núi Ý Mỹ",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Viền tím Ý Mỹ",
+    "Category": "Gạch men 30x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "40X40 415",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 66000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Fico 402",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Fico 419 bông xám",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "LAN 4204 sân",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "NY 4026",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "NY 415 sân",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "NY 418 sân",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "NY 433 cột",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "NY 439",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "NY 4536 sỏi",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Nice 043 gỗ nâu",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK 4170 sân",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK 482 mè",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK 498 sân",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Rich 44006",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Rich 44009 gỗ nâu",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "TTP40x40 4208        TOCERA",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 73000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Trang trí 434",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Vilacera 1401 nhám",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Vilacera 462 cỏ",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Vilacera 462 nhám",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Đá 40x40 DS4400",
+    "Category": "Gạch men 40x40",
+    "Unit": "m",
+    "Price": 123000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "HT 4080 trắng",
+    "Category": "Gạch men 40x80",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK 481 trắng vân",
+    "Category": "Gạch men 40x80",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PN 483 trắng vân",
+    "Category": "Gạch men 40x80",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "HG 55050 trắng vân khói",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "HG 55058 vân xám",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "NY 508",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "NY 5503",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "NY 555",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "NY 569 tím",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "NY 569 xanh",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "NY573",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "NY580",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Nice 55056 gỗ nâu",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK 501 gỗ nâu",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK 501 vân khói",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK 5015 gỗ",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK 503",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK 5035",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK 514",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK 520 mè",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK 538",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK5022 sân",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PN E53",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PN553",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "TTP 517 mè nhạt",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "TTP 521 mè đậm",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "gỗ Restar",
+    "Category": "Gạch men 50x50",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "30x60 363 loại 1 thân",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 76388.88888888889,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "30x60 363 loại 1 viền",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 76388.88888888889,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "30x60 363 loại 1 điểm",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 85648.14814814815,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "30x60 K360",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 73000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "30x60 K360V",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 83000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "30x60 Tomira 36569",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 55000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "30x60 nhạt",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "30x60 viền GR55",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "30x60 điểm",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 16020.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "30x60 đậm",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "360 thân",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 81000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "36045",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 84000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "36045D",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 85000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "36045V",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 85000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "60 BK đen",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 141000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "60 Mikado đỏ",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 118000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "60 trắng Mikado",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 100000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "60 đen vân cam",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 132000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "60 đỏ trơn",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 140000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "60 đồng chất Pancera",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 96000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "60X60 ECO69  L1",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 88000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "60x60 6601",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 80000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "60x60 ECO63  L1",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 88000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "60x60 K6602",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 76000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "6601",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 116000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "BK 60 DT 72N",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 109000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "BK 60 xà cừ trắng 2 da",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK 60 đen VC khắc kim",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK 60 đỏ 2 da",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK 60055 vincenza",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK 6103 Fico",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK 6601 Luxury",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK 661 gỗ xám",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK 6619 Fico",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK 6623",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK 66N",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 107000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "BK DL604",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK DT67N",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK Fico 6907 vân xanh",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK trắng 2 da",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK trắng Fico",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK trắng TP Vietdecor",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK trắng Vincenza",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK vision xanh",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK ĐL604",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 105000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "BK đen TP Mikado",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK đen gân tr 6662",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK đỏ TP Luxury",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK đỏ TP Mikado",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "BK đỏ gân trắng",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Bk đen VC HT",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "DL604",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 108000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Gạch 30x60 NY 3640",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 83000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Gạch 30x60 NY 3640BS",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 85000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Gạch 30x60 NY 3640D",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 100000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Gạch 36000 trắng PN",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 81000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Gạch 60x60 LX60003 vân PN",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 83000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Gạch K6602",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 74000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Kho Phương Nam GR36055 Nhạt",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 67000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Kho Phương Nam GR36055 Đậm",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 67000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Kho Phương Nam GR36057 Viền",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 67000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "M3606 T",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 75925.92592592593,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "M3606 V",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 75925.92592592593,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "M3606 Đ",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 85185.18518518518,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "MQ 3606 T",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 76388.88888888889,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "MQ 3606 V",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 76388.88888888889,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "MQ3606 D",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 85648.14814814815,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Men 069",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Men 30x60 DL 3615 Nhạt (170T)",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 82000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Men 30x60 DL 3615 Điểm (18T)",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 22000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Men 30x60 DL 3615 Đậm (20T)",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 84000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Men 30x60 MQ 3610",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 75000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Men 30x60 P3601",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 73000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Men 30x60 P3601D",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 83000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Men 30x60 P3601V3",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 73000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Men 40x80 460TD đậm",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 93000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Men 60 PAK",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 76000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Men 6003",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Men 607 mè",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Men 609",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Men 609 LB",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Men 6278",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Men 6601",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Men 6602",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Men KP 660056",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PAK K6604",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 76000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "PAK MQ3606",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 75000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "PAK giả đá 6273",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "PN GHC 3605D",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 82000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "PN GHC 3605V",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 82000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Phương Nam 36000",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 81000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Phương Nam 36000D7",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 83000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Phương Nam 36000V7",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 83000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Vincenza VC60055",
+    "Category": "Gạch men 60x60",
+    "Unit": "m",
+    "Price": 105000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "40x80 492T",
+    "Category": "Gạch men 80x80",
+    "Unit": "m",
+    "Price": 90000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "40x80 492V",
+    "Category": "Gạch men 80x80",
+    "Unit": "m",
+    "Price": 90000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "50X50 580    (THÙNG 5V)",
+    "Category": "Gạch men 80x80",
+    "Unit": "m",
+    "Price": 73000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "50x50 SM 580",
+    "Category": "Gạch men 80x80",
+    "Unit": "m",
+    "Price": 74000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "80",
+    "Category": "Gạch men 80x80",
+    "Unit": "m",
+    "Price": 310000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "BK 80 AMP 88005 L1",
+    "Category": "Gạch men 80x80",
+    "Unit": "m",
+    "Price": 217000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "BK xà cừ trắng",
+    "Category": "Gạch men 80x80",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "DT 86N",
+    "Category": "Gạch men 80x80",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Men 40x80 4080",
+    "Category": "Gạch men 80x80",
+    "Unit": "m",
+    "Price": 91000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Men 40x80 462 Điểm",
+    "Category": "Gạch men 80x80",
+    "Unit": "m",
+    "Price": 35000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Men mờ 3800TD Đậm HT",
+    "Category": "Gạch men 80x80",
+    "Unit": "m",
+    "Price": 16460.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Men mờ 3800TN nhạt HT",
+    "Category": "Gạch men 80x80",
+    "Unit": "m",
+    "Price": 83000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Men mờ 3802 HT",
+    "Category": "Gạch men 80x80",
+    "Unit": "m",
+    "Price": 85000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Nâu Khắc kim",
+    "Category": "Gạch men 80x80",
+    "Unit": "m",
+    "Price": 0,
+    "Supplier": null
+  },
+  {
+    "Name": "Tocera V30801",
+    "Category": "Gạch men 80x80",
+    "Unit": "m",
+    "Price": 88000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "20 tặng 1",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "2008T",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 60000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "2008V",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 60000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "30x30 V30366",
+    "Category": "Khác",
+    "Unit": "thùng",
+    "Price": 88000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "30x45 PVY3711",
+    "Category": "Khác",
+    "Unit": "288",
+    "Price": 70000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "30x45 PY3712",
+    "Category": "Khác",
+    "Unit": "120",
+    "Price": 70000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "363 viền",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 81000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "3634D",
+    "Category": "Khác",
+    "Unit": "m",
+    "Price": 21000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "3634T",
+    "Category": "Khác",
+    "Unit": "m",
+    "Price": 82000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "3634V",
+    "Category": "Khác",
+    "Unit": "m",
+    "Price": 94000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "40 gỗ nâu 043",
+    "Category": "Khác",
+    "Unit": "112",
+    "Price": 66000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "40 gỗ xám 444",
+    "Category": "Khác",
+    "Unit": "112",
+    "Price": 66000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "50x50 SM561",
+    "Category": "Khác",
+    "Unit": "80T",
+    "Price": 79000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "50x50 SM569",
+    "Category": "Khác",
+    "Unit": "80T",
+    "Price": 74000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "6 balet",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 50000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "61 BK trắng",
+    "Category": "Khác",
+    "Unit": "m",
+    "Price": 121000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "BK 100 X 100 1010005S2",
+    "Category": "Khác",
+    "Unit": "Viên",
+    "Price": 285000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "BK 67N",
+    "Category": "Khác",
+    "Unit": "64",
+    "Price": 107000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "BK Fico 6611",
+    "Category": "Khác",
+    "Unit": "96",
+    "Price": 113000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "BK Fico 6619",
+    "Category": "Khác",
+    "Unit": "128",
+    "Price": 113000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "BK Fico 6619 (6 kiện)",
+    "Category": "Khác",
+    "Unit": "192",
+    "Price": 113000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "BK hoa cương 6615 catalan",
+    "Category": "Khác",
+    "Unit": "m",
+    "Price": 182000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "BK đỏ gân trắng 6616 catalan",
+    "Category": "Khác",
+    "Unit": "m",
+    "Price": 187000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Bàn cầu V37 CT bán mẫu tặng la + chân",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 2790000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Bể 5T tính ra + thêm vốn 3.000/m",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Bớt",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "CHUYỂN KHOẢN TRẢ",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Chuyển trả đủ",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Chân dola",
+    "Category": "Khác",
+    "Unit": "cái",
+    "Price": 120000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Còn lại",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Cầu 2 nhấn dola",
+    "Category": "Khác",
+    "Unit": "bộ",
+    "Price": 630000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Cầu Dola mini 1 nhấn",
+    "Category": "Khác",
+    "Unit": "bộ",
+    "Price": 510000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "DPL 39300D",
+    "Category": "Khác",
+    "Unit": "30",
+    "Price": 87000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "DPL 39300V",
+    "Category": "Khác",
+    "Unit": "30",
+    "Price": 87000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "DPL483 thân",
+    "Category": "Khác",
+    "Unit": "48",
+    "Price": 99000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "DT62",
+    "Category": "Khác",
+    "Unit": "52",
+    "Price": 109000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "DT63N",
+    "Category": "Khác",
+    "Unit": "9",
+    "Price": 108000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "DT66N",
+    "Category": "Khác",
+    "Unit": "240",
+    "Price": 109000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "DT83N",
+    "Category": "Khác",
+    "Unit": "10",
+    "Price": 124000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "DT86N",
+    "Category": "Khác",
+    "Unit": "140",
+    "Price": 124000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "ECO63",
+    "Category": "Khác",
+    "Unit": "57",
+    "Price": 85000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Fico 40 bông xám",
+    "Category": "Khác",
+    "Unit": "176",
+    "Price": 64000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Fico 40 vân xám",
+    "Category": "Khác",
+    "Unit": "176",
+    "Price": 64000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Fico TAP6103",
+    "Category": "Khác",
+    "Unit": "m",
+    "Price": 120000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "GR39000",
+    "Category": "Khác",
+    "Unit": "m",
+    "Price": 87000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "GR39000D",
+    "Category": "Khác",
+    "Unit": "m",
+    "Price": 86000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "GR39000V",
+    "Category": "Khác",
+    "Unit": "m",
+    "Price": 85000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Ghe Hùng 100m",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Giá 4.000.000/ch",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Giả hoa cương 517 (6V/T = 1.5m)",
+    "Category": "Khác",
+    "Unit": "30",
+    "Price": 86000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Giả hoa cương 521 (6V/T = 1.5m)",
+    "Category": "Khác",
+    "Unit": "20",
+    "Price": 86000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Gạch 3700",
+    "Category": "Khác",
+    "Unit": "180",
+    "Price": 85000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Gạch 3702D",
+    "Category": "Khác",
+    "Unit": "10",
+    "Price": 95000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Gạch 3702V",
+    "Category": "Khác",
+    "Unit": "20",
+    "Price": 85000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Gạch 433 NY trang trí",
+    "Category": "Khác",
+    "Unit": "56",
+    "Price": 82000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Gạch 50 HG 55050 trắng vân khói 2 kiện",
+    "Category": "Khác",
+    "Unit": "144",
+    "Price": 75000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Gạch 50 HG 55058 xám 2 kiện",
+    "Category": "Khác",
+    "Unit": "144",
+    "Price": 75000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Gạch 50 QH5035",
+    "Category": "Khác",
+    "Unit": "144T",
+    "Price": 73000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Gạch 5071",
+    "Category": "Khác",
+    "Unit": "thùng",
+    "Price": 86500.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Gạch 5506",
+    "Category": "Khác",
+    "Unit": "176T",
+    "Price": 75000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Gạch nhà Ý 508",
+    "Category": "Khác",
+    "Unit": "160",
+    "Price": 70000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Gạch ống",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 1500.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Gỗ 50 5015",
+    "Category": "Khác",
+    "Unit": "thùng",
+    "Price": 75000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "HT 2",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 57000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Hà Thanh  6623",
+    "Category": "Khác",
+    "Unit": "160",
+    "Price": 107000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Hà Thanh 6624",
+    "Category": "Khác",
+    "Unit": "80",
+    "Price": 107000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "K361D",
+    "Category": "Khác",
+    "Unit": "1",
+    "Price": 95000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "K361T",
+    "Category": "Khác",
+    "Unit": "1",
+    "Price": 85000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "K361V",
+    "Category": "Khác",
+    "Unit": "1",
+    "Price": 85000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "K362 Thân Nhà máy",
+    "Category": "Khác",
+    "Unit": "120",
+    "Price": 73000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "K362 Thân kho",
+    "Category": "Khác",
+    "Unit": "40",
+    "Price": 75000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "K362 Viền kho",
+    "Category": "Khác",
+    "Unit": "17",
+    "Price": 75000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "K362 Điểm Nhà Máy",
+    "Category": "Khác",
+    "Unit": "15",
+    "Price": 83000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "K362D",
+    "Category": "Khác",
+    "Unit": "21T",
+    "Price": 87500.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "K362T",
+    "Category": "Khác",
+    "Unit": "42T",
+    "Price": 78240.74074074073,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "K362V",
+    "Category": "Khác",
+    "Unit": "21T",
+    "Price": 78240.74074074073,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "K501",
+    "Category": "Khác",
+    "Unit": "215",
+    "Price": 72000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Lưới P40",
+    "Category": "Khác",
+    "Unit": "kg",
+    "Price": 19700.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "M3610 Đậm",
+    "Category": "Khác",
+    "Unit": "72T",
+    "Price": 75925.92592592593,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "MQ 3612A",
+    "Category": "Khác",
+    "Unit": "37T",
+    "Price": 78703.7037037037,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Men 40 402 bông xanh",
+    "Category": "Khác",
+    "Unit": "m",
+    "Price": 68000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Men 4818",
+    "Category": "Khác",
+    "Unit": "86",
+    "Price": 94000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Men 50 E53",
+    "Category": "Khác",
+    "Unit": "128",
+    "Price": 68000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "NKSM 569",
+    "Category": "Khác",
+    "Unit": "thùng",
+    "Price": 78000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Nam Hà Thành",
+    "Category": "Khác",
+    "Unit": "364",
+    "Price": 108000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Nhà Ý 5503",
+    "Category": "Khác",
+    "Unit": "144",
+    "Price": 76000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Nhà Ý SV44015",
+    "Category": "Khác",
+    "Unit": "80",
+    "Price": 68000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Nhà Ý gỗ 44009",
+    "Category": "Khác",
+    "Unit": "240",
+    "Price": 66000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Nhà ý SV 415",
+    "Category": "Khác",
+    "Unit": "240",
+    "Price": 68000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "PAK 403 SV",
+    "Category": "Khác",
+    "Unit": "240",
+    "Price": 64000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "PAK 4129",
+    "Category": "Khác",
+    "Unit": "80",
+    "Price": 68000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "PAK QH3282",
+    "Category": "Khác",
+    "Unit": "135",
+    "Price": 75000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "PAK QH3282V",
+    "Category": "Khác",
+    "Unit": "38",
+    "Price": 75000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "PAK SV4170",
+    "Category": "Khác",
+    "Unit": "192",
+    "Price": 65000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Phương Nam 39000D",
+    "Category": "Khác",
+    "Unit": "20",
+    "Price": 84000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Phương Nam 39000T",
+    "Category": "Khác",
+    "Unit": "120",
+    "Price": 83000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Phương Nam 39000V",
+    "Category": "Khác",
+    "Unit": "20",
+    "Price": 84000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Phương Nam 39001D",
+    "Category": "Khác",
+    "Unit": "30",
+    "Price": 84000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Phương Nam 39001T",
+    "Category": "Khác",
+    "Unit": "300",
+    "Price": 83000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Phương Nam 39001V",
+    "Category": "Khác",
+    "Unit": "40",
+    "Price": 84000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Phương Nam 39300D",
+    "Category": "Khác",
+    "Unit": "30",
+    "Price": 87000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Phương Nam 39300V",
+    "Category": "Khác",
+    "Unit": "35",
+    "Price": 87000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Phương Nam ESV 553",
+    "Category": "Khác",
+    "Unit": "320",
+    "Price": 79000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "QH3279 D",
+    "Category": "Khác",
+    "Unit": "10",
+    "Price": 85000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "QH3279 T",
+    "Category": "Khác",
+    "Unit": "180",
+    "Price": 75000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "QH3279 V",
+    "Category": "Khác",
+    "Unit": "13",
+    "Price": 77000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "SM569",
+    "Category": "Khác",
+    "Unit": "80T",
+    "Price": 80000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "SV 558",
+    "Category": "Khác",
+    "Unit": "thùng",
+    "Price": 78000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "SV K407 PAK",
+    "Category": "Khác",
+    "Unit": "42",
+    "Price": 73000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "SV4026 giống 577 Nhà Ý",
+    "Category": "Khác",
+    "Unit": "160",
+    "Price": 68000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "SV415 giống 5071 Nhà Ý",
+    "Category": "Khác",
+    "Unit": "160",
+    "Price": 66000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "SV4203 giống 4107 nhà ý",
+    "Category": "Khác",
+    "Unit": "80",
+    "Price": 73000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "SV5506 giống 577 (5V/th)",
+    "Category": "Khác",
+    "Unit": "160",
+    "Price": 78000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "SV555 Nhà Ý (5V/th)",
+    "Category": "Khác",
+    "Unit": "80",
+    "Price": 77000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Sáng sóng tròn",
+    "Category": "Khác",
+    "Unit": "100",
+    "Price": 48000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Sáng sóng vuông",
+    "Category": "Khác",
+    "Unit": "100",
+    "Price": 60000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Sân 40 415",
+    "Category": "Khác",
+    "Unit": "thùng",
+    "Price": 66000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Sân 50",
+    "Category": "Khác",
+    "Unit": "m",
+    "Price": 73000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Sân 50 5503 nhà ý (5V/T = 1.25m ))",
+    "Category": "Khác",
+    "Unit": "240",
+    "Price": 73000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Sắt 10V",
+    "Category": "Khác",
+    "Unit": "cây",
+    "Price": 104600.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Sắt 14V",
+    "Category": "Khác",
+    "Unit": "cây",
+    "Price": 227400.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Sắt phi 10V",
+    "Category": "Khác",
+    "Unit": "cây",
+    "Price": 93000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Sắt phi 12V",
+    "Category": "Khác",
+    "Unit": "cây",
+    "Price": 158680.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Sắt phi 14V",
+    "Category": "Khác",
+    "Unit": "cây",
+    "Price": 217760.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "TRẢ ĐỦ",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "TTP30x30 V30366    tocra",
+    "Category": "Khác",
+    "Unit": "thùng",
+    "Price": 88000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "TTP4208        TOCERA",
+    "Category": "Khác",
+    "Unit": "thùng",
+    "Price": 73000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Thành Phát",
+    "Category": "Khác",
+    "Unit": "kho",
+    "Price": 173000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Thái Hoàng",
+    "Category": "Khác",
+    "Unit": "giao",
+    "Price": 195000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Tiểu nam",
+    "Category": "Khác",
+    "Unit": "cái",
+    "Price": 120000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Tocera PVY3701",
+    "Category": "Khác",
+    "Unit": "thùng",
+    "Price": 68500.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Tocera Y3701",
+    "Category": "Khác",
+    "Unit": "thùng",
+    "Price": 68500.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Tol 2.4m",
+    "Category": "Khác",
+    "Unit": "100",
+    "Price": 52800.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Tol 3m",
+    "Category": "Khác",
+    "Unit": "100",
+    "Price": 66000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Trả dư",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Trả đủ :",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Trả đủ:",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Tây Đô",
+    "Category": "Khác",
+    "Unit": "chành",
+    "Price": 187000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "VA3620 nhạt",
+    "Category": "Khác",
+    "Unit": "m",
+    "Price": 86000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "VA3620 đậm",
+    "Category": "Khác",
+    "Unit": "m",
+    "Price": 86000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "balet",
+    "Category": "Khác",
+    "Unit": "cái",
+    "Price": 50000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "bàn",
+    "Category": "Khác",
+    "Unit": "1",
+    "Price": 4000000.0,
+    "Supplier": "TỔNG PHÍ"
+  },
+  {
+    "Name": "bộ",
+    "Category": "Khác",
+    "Unit": "1",
+    "Price": 6730000.0,
+    "Supplier": "TỔNG PHÍ"
+  },
+  {
+    "Name": "cái",
+    "Category": "Khác",
+    "Unit": "1",
+    "Price": 1650000.0,
+    "Supplier": "TỔNG PHÍ"
+  },
+  {
+    "Name": "căn",
+    "Category": "Khác",
+    "Unit": "9",
+    "Price": 4500000.0,
+    "Supplier": "TỔNG PHÍ"
+  },
+  {
+    "Name": "ghe Dinh",
+    "Category": "Khác",
+    "Unit": "chuyến",
+    "Price": 3500000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "gạch 558",
+    "Category": "Khác",
+    "Unit": "thùng",
+    "Price": 80000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "gạch 569",
+    "Category": "Khác",
+    "Unit": "thùng",
+    "Price": 80000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "gỗ 40 483",
+    "Category": "Khác",
+    "Unit": "thùng",
+    "Price": 67000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "insee",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 74300.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "kg",
+    "Category": "Khác",
+    "Unit": "1",
+    "Price": 1500000.0,
+    "Supplier": "TỔNG PHÍ"
+  },
+  {
+    "Name": "lavabo dola",
+    "Category": "Khác",
+    "Unit": "cái",
+    "Price": 120000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "máy bagac",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "phí giao hàng",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 16800.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "th",
+    "Category": "Khác",
+    "Unit": "7",
+    "Price": 595000.0,
+    "Supplier": "TỔNG PHÍ"
+  },
+  {
+    "Name": "trừ bể",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "trừ tiên xe gạch lộn mẫu",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "xe bagac",
+    "Category": "Khác",
+    "Unit": "bao",
+    "Price": 0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "ĐT 37000 Thân Hà Thanh",
+    "Category": "Khác",
+    "Unit": "240",
+    "Price": 82000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "ĐT 3702 Thân Hà Thanh",
+    "Category": "Khác",
+    "Unit": "200",
+    "Price": 85000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "ĐT 3702 Viền Hà Thanh",
+    "Category": "Khác",
+    "Unit": "30",
+    "Price": 82000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "ĐT 3702 Điểm",
+    "Category": "Khác",
+    "Unit": "20",
+    "Price": 87000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "ĐT 62N",
+    "Category": "Khác",
+    "Unit": "70",
+    "Price": 109000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Đại Phú Lộc",
+    "Category": "Khác",
+    "Unit": "120",
+    "Price": 92000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Độc quyền 4040",
+    "Category": "Khác",
+    "Unit": "thùng",
+    "Price": 66000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Sáng xi măng",
+    "Category": "Xi măng & Bê tông",
+    "Unit": "100",
+    "Price": 48000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Xi măng Cần thơ",
+    "Category": "Xi măng & Bê tông",
+    "Unit": "bao",
+    "Price": 67000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Xi măng HT2",
+    "Category": "Xi măng & Bê tông",
+    "Unit": "bao",
+    "Price": 67500.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Giả đá 40 44013",
+    "Category": "Đá, Sỏi",
+    "Unit": "thùng",
+    "Price": 66000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Giả đá 40 KS439",
+    "Category": "Đá, Sỏi",
+    "Unit": "thùng",
+    "Price": 66000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Giả đá HC 50 517 TTP",
+    "Category": "Đá, Sỏi",
+    "Unit": "50",
+    "Price": 89330.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Đá 1/2 trắng",
+    "Category": "Đá, Sỏi",
+    "Unit": "m",
+    "Price": 670000.0,
+    "Supplier": "Xuân"
+  },
+  {
+    "Name": "Đá 1/2 đen",
+    "Category": "Đá, Sỏi",
+    "Unit": "m",
+    "Price": 800000.0,
+    "Supplier": "Xuân"
+  }
+]
