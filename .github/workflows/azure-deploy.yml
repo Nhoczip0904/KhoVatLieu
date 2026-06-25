@@ -18,9 +18,16 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'
+          cache: true
 
       - name: Restore NuGet Packages
         run: dotnet restore KhoHang/KhoHang.csproj
+
+      - name: Check Code Formatting
+        run: dotnet format --verify-no-changes --severity warn
+
+      - name: Check NuGet Package Vulnerabilities
+        run: dotnet list KhoHang/KhoHang.csproj package --vulnerable
 
       - name: Build Application
         run: dotnet build KhoHang/KhoHang.csproj --configuration Release --no-restore
