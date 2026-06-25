@@ -1,6 +1,8 @@
 @using KhoHang.Services
+@using KhoHang.Models
 @using Microsoft.AspNetCore.Components.Web
 @inject AiService AiService
+@inject WarehouseService WarehouseService
 @inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
 
@@ -70,11 +72,66 @@
                                 }
                                 <div class="msg-bubble">
                                     <div class="msg-content">
-                                        @ConvertMarkdownToHtml(msg.Text)
+                                        @ConvertMarkdownToHtml(AiService.RemoveActionBlock(msg.Text))
                                     </div>
                                     <div class="msg-time">@DateTime.Now.ToString("HH:mm")</div>
                                 </div>
                             </div>
+
+                            @* Action Confirmation Card *@
+                            @if (msg.Role == "model")
+                            {
+                                var action = AiService.ParseActionFromResponse(msg.Text);
+                                if (action != null)
+                                {
+                                    var isCurrentPending = pendingAction != null && pendingAction == action;
+                                    var wasExecuted = executedActions.Contains(msg.Text.GetHashCode());
+                                    <div class="action-card @(wasExecuted ? "executed" : "")">
+                                        <div class="action-card-header">
+                                            <i class="bi @GetActionIcon(action.Type)"></i>
+                                            <span>@GetActionLabel(action.Type)</span>
+                                        </div>
+                                        <div class="action-card-body">
+                                            <p class="action-summary">@action.Summary</p>
+                                            <div class="action-data-grid">
+                                                @foreach (var kv in action.Data)
+                                                {
+                                                    @if (!string.IsNullOrEmpty(kv.Value))
+                                                    {
+                                                        <div class="action-data-row">
+                                                            <span class="action-data-label">@GetFieldLabel(kv.Key)</span>
+                                                            <span class="action-data-value">@kv.Value</span>
+                                                        </div>
+                                                    }
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="action-card-footer">
+                                            @if (wasExecuted)
+                                            {
+                                                <div class="action-done-badge">
+                                                    <i class="bi bi-check-circle-fill"></i> Đã thực hiện thành công!
+                                                </div>
+                                            }
+                                            else if (isExecutingAction)
+                                            {
+                                                <div class="action-loading">
+                                                    <div class="spinner-border spinner-border-sm"></div> Đang xử lý...
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <button class="action-btn-accept" @onclick="() => ExecuteActionAsync(action, msg.Text.GetHashCode())">
+                                                    <i class="bi bi-check-lg"></i> Xác nhận thực hiện
+                                                </button>
+                                                <button class="action-btn-reject" @onclick="() => RejectAction(msg)">
+                                                    <i class="bi bi-x-lg"></i> Từ chối
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            }
                         }
 
                         @if (isGenerating)
@@ -662,6 +719,133 @@
         from { opacity: 0; transform: translateY(5px); }
         to { opacity: 1; transform: translateY(0); }
     }
+
+    /* Agentic AI - Action Confirmation Cards */
+    .action-card {
+        margin: 0.5rem 0 0.5rem 2.5rem;
+        background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+        border: 1px solid #7dd3fc;
+        border-radius: 16px;
+        overflow: hidden;
+        animation: slide-up-card 0.3s ease;
+        box-shadow: 0 4px 15px rgba(56, 189, 248, 0.15);
+    }
+    .action-card.executed {
+        opacity: 0.7;
+        border-color: #86efac;
+        background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    }
+    @@keyframes slide-up-card {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .action-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.6rem 1rem;
+        background: linear-gradient(135deg, #0284c7, #0369a1);
+        color: white;
+        font-weight: 800;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .action-card-header i { font-size: 1rem; }
+    .action-card-body {
+        padding: 0.75rem 1rem;
+    }
+    .action-summary {
+        margin: 0 0 0.5rem 0;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #0c4a6e;
+        line-height: 1.4;
+    }
+    .action-data-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+    }
+    .action-data-row {
+        display: flex;
+        gap: 0.5rem;
+        font-size: 0.78rem;
+        align-items: baseline;
+    }
+    .action-data-label {
+        font-weight: 800;
+        color: #475569;
+        min-width: 80px;
+        flex-shrink: 0;
+    }
+    .action-data-value {
+        font-weight: 600;
+        color: #0f172a;
+    }
+    .action-card-footer {
+        display: flex;
+        gap: 0.5rem;
+        padding: 0.6rem 1rem;
+        border-top: 1px solid #bae6fd;
+        background: rgba(255,255,255,0.5);
+    }
+    .action-btn-accept {
+        flex: 1;
+        padding: 0.5rem;
+        border: none;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        font-weight: 800;
+        font-size: 0.78rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        transition: all 0.2s;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+    .action-btn-accept:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    }
+    .action-btn-reject {
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        background: white;
+        color: #64748b;
+        font-weight: 700;
+        font-size: 0.78rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        transition: all 0.2s;
+    }
+    .action-btn-reject:hover {
+        background: #fee2e2;
+        color: #ef4444;
+        border-color: #fca5a5;
+    }
+    .action-done-badge {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: #059669;
+        font-weight: 800;
+        font-size: 0.8rem;
+    }
+    .action-loading {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #0284c7;
+        font-weight: 700;
+        font-size: 0.8rem;
+    }
 </style>
 
 @code {
@@ -902,4 +1086,119 @@
         html = string.Join("\n", processedLines);
         return new MarkupString(html);
     }
+    private AiService.AiAction? pendingAction;
+    private bool isExecutingAction = false;
+    private HashSet<int> executedActions = new();
+
+    private async Task ExecuteActionAsync(AiService.AiAction action, int msgHash)
+    {
+        isExecutingAction = true;
+        StateHasChanged();
+
+        try
+        {
+            string resultMessage;
+            switch (action.Type)
+            {
+                case "create_project":
+                    var project = new Project
+                    {
+                        CustomerName = action.Data.GetValueOrDefault("customerName", ""),
+                        Phone = action.Data.GetValueOrDefault("phone"),
+                        Address = action.Data.GetValueOrDefault("address"),
+                        CreatedAt = DateTime.Now
+                    };
+                    await WarehouseService.CreateProjectAsync(project);
+                    resultMessage = $"✅ **Đã tạo dự án thành công!** Dự án cho khách hàng **{project.CustomerName}** đã được khởi tạo trong hệ thống.";
+                    break;
+
+                case "add_customer":
+                    var customer = new Customer
+                    {
+                        Name = action.Data.GetValueOrDefault("name", ""),
+                        Phone = action.Data.GetValueOrDefault("phone"),
+                        Address = action.Data.GetValueOrDefault("address"),
+                        Note = action.Data.GetValueOrDefault("note")
+                    };
+                    await WarehouseService.AddCustomerAsync(customer);
+                    resultMessage = $"✅ **Đã thêm khách hàng thành công!** Khách hàng **{customer.Name}** đã được lưu vào danh sách.";
+                    break;
+
+                case "record_payment":
+                    var projectIdStr = action.Data.GetValueOrDefault("projectId", "0");
+                    var amountStr = action.Data.GetValueOrDefault("amount", "0");
+                    if (int.TryParse(projectIdStr, out var projId) && decimal.TryParse(amountStr.Replace(",", ""), out var amount))
+                    {
+                        var payment = new Payment
+                        {
+                            ProjectId = projId,
+                            Amount = amount,
+                            Method = action.Data.GetValueOrDefault("method", "Tiền mặt"),
+                            Note = action.Data.GetValueOrDefault("note", "Ghi nhận qua Trợ lý AI"),
+                            Timestamp = DateTime.Now
+                        };
+                        await WarehouseService.AddPaymentAsync(payment);
+                        resultMessage = $"✅ **Đã ghi nhận thanh toán thành công!** Số tiền **{amount:N0} VNĐ** cho dự án ID **{projId}**.";
+                    }
+                    else
+                    {
+                        resultMessage = "❌ **Lỗi:** Không thể xác định ID dự án hoặc số tiền thanh toán.";
+                    }
+                    break;
+
+                default:
+                    resultMessage = $"⚠️ Thao tác **{action.Type}** chưa được hỗ trợ.";
+                    break;
+            }
+
+            executedActions.Add(msgHash);
+            messages.Add(new AiService.ChatMessage { Role = "model", Text = resultMessage });
+        }
+        catch (Exception ex)
+        {
+            messages.Add(new AiService.ChatMessage { Role = "model", Text = $"❌ **Lỗi thực hiện:** {ex.Message}" });
+        }
+
+        isExecutingAction = false;
+        pendingAction = null;
+        StateHasChanged();
+        ScrollToBottom();
+    }
+
+    private void RejectAction(AiService.ChatMessage msg)
+    {
+        executedActions.Add(msg.Text.GetHashCode());
+        messages.Add(new AiService.ChatMessage { Role = "model", Text = "👌 Đã hủy thao tác. Nếu bạn cần gì khác, hãy cho em biết nhé!" });
+        StateHasChanged();
+        ScrollToBottom();
+    }
+
+    private string GetActionIcon(string type) => type switch
+    {
+        "create_project" => "bi-folder-plus",
+        "add_customer" => "bi-person-plus",
+        "record_payment" => "bi-cash-coin",
+        _ => "bi-lightning"
+    };
+
+    private string GetActionLabel(string type) => type switch
+    {
+        "create_project" => "Tạo dự án mới",
+        "add_customer" => "Thêm khách hàng",
+        "record_payment" => "Ghi nhận thanh toán",
+        _ => "Thao tác"
+    };
+
+    private string GetFieldLabel(string key) => key switch
+    {
+        "customerName" => "Khách hàng",
+        "name" => "Tên",
+        "phone" => "SĐT",
+        "address" => "Địa chỉ",
+        "note" => "Ghi chú",
+        "projectId" => "Mã dự án",
+        "amount" => "Số tiền",
+        "method" => "Phương thức",
+        _ => key
+    };
 }

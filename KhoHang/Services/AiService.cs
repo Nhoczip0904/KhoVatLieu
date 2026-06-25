@@ -28,9 +28,59 @@ public class AiService
     public class AiSettings
     {
         public string ApiKey { get; set; } = string.Empty;
-        public string Persona { get; set; } = "friendly"; // "friendly", "serious", "financial"
+        public string Persona { get; set; } = "friendly";
         public string UserNickname { get; set; } = "Quản lý";
-        public string LanguageStyle { get; set; } = "normal"; // "normal", "concise", "humorous"
+        public string LanguageStyle { get; set; } = "normal";
+    }
+
+    // Agentic AI: structured action from AI response
+    public class AiAction
+    {
+        public string Type { get; set; } = string.Empty; // "create_project", "record_payment", "add_customer"
+        public string Summary { get; set; } = string.Empty; // Human-readable summary
+        public Dictionary<string, string> Data { get; set; } = new();
+    }
+
+    /// <summary>
+    /// Parse action block from AI response text. Returns null if no action found.
+    /// AI wraps actions in ```action ... ``` code blocks.
+    /// </summary>
+    public static AiAction? ParseActionFromResponse(string response)
+    {
+        if (string.IsNullOrEmpty(response)) return null;
+
+        var actionStart = response.IndexOf("```action");
+        if (actionStart < 0) return null;
+
+        var jsonStart = response.IndexOf('{', actionStart);
+        var jsonEnd = response.IndexOf("```", jsonStart);
+        if (jsonStart < 0 || jsonEnd < 0) return null;
+
+        var jsonStr = response.Substring(jsonStart, jsonEnd - jsonStart).Trim();
+        try
+        {
+            return JsonSerializer.Deserialize<AiAction>(jsonStr, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Remove the action block from the response text for display purposes.
+    /// </summary>
+    public static string RemoveActionBlock(string response)
+    {
+        if (string.IsNullOrEmpty(response)) return response;
+        var actionStart = response.IndexOf("```action");
+        if (actionStart < 0) return response;
+        var blockEnd = response.IndexOf("```", actionStart + 9);
+        if (blockEnd < 0) return response;
+        return (response.Substring(0, actionStart) + response.Substring(blockEnd + 3)).Trim();
     }
 
     public async Task<string> GenerateResponseAsync(List<ChatMessage> history, AiSettings settings)
@@ -188,18 +238,38 @@ public class AiService
 
     private string GetPersonaInstruction(AiSettings settings)
     {
-        var baseInstruction = $"""
+        var baseInstruction = $$"""
             Bạn là một trợ lý AI thông minh tích hợp sẵn trong Hệ thống Quản lý Kho Hàng.
-            Bạn đang nói chuyện trực tiếp với {settings.UserNickname} (hãy xưng hô thân mật là "{settings.UserNickname}" và xưng là "Trợ lý AI" hoặc "Em").
+            Bạn đang nói chuyện trực tiếp với {{settings.UserNickname}} (hãy xưng hô thân mật là "{{settings.UserNickname}}" và xưng là "Trợ lý AI" hoặc "Em").
             Bạn có quyền truy cập vào thông tin thời gian thực về kho hàng, dự án, công nợ, và dòng tiền của cửa hàng.
             Mục tiêu của bạn là phân tích dữ liệu kho, cung cấp thông tin chính xác, nhanh chóng và đưa ra các đề xuất/gợi ý cá nhân hóa nhằm giúp quản trị viên vận hành hiệu quả nhất.
 
             Ngôn ngữ: Tiếng Việt.
-            Cách trả lời: 
+            Cách trả lời:
             - Sử dụng Markdown để trình bày đẹp mắt, rõ ràng (in đậm các con số, tên vật tư quan trọng, dùng danh sách bullet point).
             - Trả lời dựa TRÊN DỮ LIỆU THỰC TẾ được cung cấp ở dưới. Nếu dữ liệu không có, hãy lịch sự giải thích là thông tin chưa được cập nhật.
             - Không bịa đặt số liệu.
-            - Hãy đề xuất các giải pháp thực tế (ví dụ: khuyên nhập thêm vật tư nào đang sắp hết hàng, nhắc nhở thu hồi nợ dự án nào có công nợ cao, hoặc thanh toán nợ cho nhà cung cấp nào).
+            - Hãy đề xuất các giải pháp thực tế.
+
+            ## TÍNH NĂNG HÀNH ĐỘNG (AGENTIC)
+            Khi người dùng yêu cầu THỰC HIỆN một thao tác (tạo dự án, thêm khách hàng, ghi nhận thanh toán), hãy:
+            1. Trả lời xác nhận bằng ngôn ngữ tự nhiên (tóm tắt thông tin sẽ thực hiện)
+            2. Kèm theo một khối JSON action ở cuối tin nhắn với format chính xác sau:
+
+            ```action
+            {"type": "<action_type>", "summary": "<mô tả ngắn>", "data": {...fields...} }
+            ```
+
+            Các action_type hỗ trợ:
+            - **create_project**: Tạo dự án mới. Data: {"customerName": "...", "phone": "...", "address": "..."}
+            - **add_customer**: Thêm khách hàng. Data: {"name": "...", "phone": "...", "address": "...", "note": "..."}
+            - **record_payment**: Ghi nhận thanh toán. Data: {"projectId": "...", "amount": "...", "method": "Tiền mặt/Chuyển khoản", "note": "..."}
+
+            LƯU Ý QUAN TRỌNG:
+            - Chỉ tạo action block khi người dùng YÊU CẦU RÕ RÀNG muốn thực hiện thao tác.
+            - Nếu thiếu thông tin bắt buộc (tên khách hàng, số tiền...), hãy HỎI LẠI thay vì tự bịa.
+            - Nếu người dùng chỉ hỏi thông tin, KHÔNG tạo action block.
+            - Với record_payment, nếu người dùng nói tên khách/dự án thay vì ID, hãy tra trong danh sách dự án đang chạy bên dưới để tìm projectId chính xác.
             """;
 
         var personaDetails = settings.Persona switch
