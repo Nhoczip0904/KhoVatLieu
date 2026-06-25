@@ -158,7 +158,7 @@ public class AiService
 
             sb.AppendLine($"- Dự án ID {p.Id}: Khách hàng {p.CustomerName} | SĐT: {p.Phone ?? "N/A"} | Địa chỉ: {p.Address ?? "N/A"}");
             sb.AppendLine($"  ↳ Doanh số đã giao: {projTotal:N0} VNĐ | Đã thu: {projPaid:N0} VNĐ | Còn nợ: {projDebt:N0} VNĐ");
-            
+
             // Low items in project
             var lowInProject = p.Materials.Where(m => m.RemainingQty <= (m.TotalQty * 0.15) || m.RemainingQty <= 3).ToList();
             if (lowInProject.Any())
@@ -172,7 +172,7 @@ public class AiService
         // Suppliers debt summary (approximate from payments and POs)
         var pos = await _warehouseService.GetPurchaseOrdersAsync();
         var supplierPayments = await _warehouseService.GetSupplierPaymentsAsync();
-        
+
         sb.AppendLine($"--- NHÀ CUNG CẤP & CÔNG NỢ ---");
         var suppliers = await _warehouseService.GetSuppliersAsync();
         foreach (var s in suppliers)

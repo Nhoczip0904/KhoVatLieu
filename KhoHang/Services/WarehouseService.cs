@@ -24,7 +24,7 @@ public class WarehouseService
             .Distinct()
             .Where(u => !string.IsNullOrEmpty(u))
             .ToListAsync();
-            
+
         return commonUnits.Union(dbUnits).OrderBy(u => u).ToList();
     }
 
@@ -58,7 +58,7 @@ public class WarehouseService
     public async Task SeedDataAsync()
     {
         using var context = _dbFactory.CreateDbContext();
-        
+
         // Kiểm tra nếu đã có dữ liệu thì không seed lại nữa để tránh mất dữ liệu người dùng
         if (context.Materials.Any())
         {
@@ -587,7 +587,7 @@ public class WarehouseService
             // Chuẩn hóa tên (ví dụ: Sắt 10V -> Sắt phi 10V)
             string normalizedName = data.Name.Trim();
             if (normalizedName == "Sắt 10V") normalizedName = "Sắt phi 10V";
-            
+
             string key = $"{normalizedName.ToLower()}_{data.Unit.ToLower()}";
 
             if (!materialMap.TryGetValue(key, out var m))
@@ -736,10 +736,10 @@ public class WarehouseService
     public async Task AddMasterMaterialAsync(Material material, List<int> supplierIds, decimal costPrice, decimal basePrice)
     {
         using var context = _dbFactory.CreateDbContext();
-        
+
         // Clear internal collections before add to prevent issues if they were populated
         material.MaterialSuppliers = new();
-        
+
         context.Materials.Add(material);
         await context.SaveChangesAsync();
 
@@ -769,7 +769,7 @@ public class WarehouseService
     {
         using var context = _dbFactory.CreateDbContext();
         var old = await context.Materials.AsNoTracking().Include(m => m.Lots).FirstOrDefaultAsync(m => m.Id == material.Id);
-        
+
         if (old != null && (old.Lots == null || !old.Lots.Any()))
         {
             if (old.StockQty != material.StockQty)
@@ -792,7 +792,7 @@ public class WarehouseService
         // Update Suppliers
         var existingSuppliers = await context.MaterialSuppliers.Where(ms => ms.MaterialId == material.Id).ToListAsync();
         context.MaterialSuppliers.RemoveRange(existingSuppliers);
-        
+
         if (supplierIds != null)
         {
             foreach (var sid in supplierIds)
@@ -883,21 +883,21 @@ public class WarehouseService
     public async Task<(decimal Revenue, decimal Collected, int Deliveries, int ActiveProjects, List<Delivery> RecentDeliveries, List<Payment> RecentPayments)> GetDashboardStatsAsync()
     {
         using var context = _dbFactory.CreateDbContext();
-        
+
         var deliveries = await context.Deliveries.ToListAsync();
         var revenue = deliveries.Sum(d => d.TotalAmount);
         var deliveryCount = deliveries.Count;
         var activeProjectsCount = await context.Projects.CountAsync(p => !p.IsCompleted);
-        
+
         var payments = await context.Payments.ToListAsync();
         var collected = payments.Sum(p => p.Amount);
-        
+
         var recentDeliveries = await context.Deliveries
             .Include(d => d.Project)
             .OrderByDescending(d => d.Timestamp)
             .Take(50) // Take enough for 30-day filter or just a decent amount
             .ToListAsync();
-            
+
         var recentPayments = await context.Payments
             .Include(p => p.Project)
             .OrderByDescending(p => p.Timestamp)
@@ -1010,15 +1010,15 @@ public class WarehouseService
     public async Task<int> RecordDeliveryAsync(Delivery delivery, List<ProjectMaterial> updatedMaterials)
     {
         using var context = _dbFactory.CreateDbContext();
-        
+
         // Add delivery
         context.Deliveries.Add(delivery);
-        
+
         // Update project material quantities and deduct from main warehouse stock
         foreach (var mat in updatedMaterials)
         {
             context.ProjectMaterials.Update(mat);
-            
+
             // Deduct stock from the main catalog based on delivery item quantity
             var deliveredItem = delivery.Items.FirstOrDefault(i => i.ProjectMaterialId == mat.Id);
             if (deliveredItem != null)
@@ -1039,7 +1039,7 @@ public class WarehouseService
                             context.MaterialLots.Update(lot);
                         }
                     }
-                    
+
                     // Record Inventory Transaction
                     context.InventoryTransactions.Add(new InventoryTransaction
                     {
@@ -1054,7 +1054,7 @@ public class WarehouseService
                 }
             }
         }
-        
+
         await context.SaveChangesAsync();
         return delivery.Id;
     }
@@ -1093,7 +1093,7 @@ public class WarehouseService
     public async Task AddPurchaseOrderAsync(PurchaseOrder po)
     {
         using var context = _dbFactory.CreateDbContext();
-        
+
         // 1. Lưu phiếu nhập hàng chính
         context.PurchaseOrders.Add(po);
         await context.SaveChangesAsync();
@@ -1104,7 +1104,7 @@ public class WarehouseService
         foreach (var group in itemGroups)
         {
             if (group.Key <= 0) continue;
-            
+
             var groupTotal = group.Sum(i => (decimal)i.Qty * i.CostPrice);
             var supplier = await context.Suppliers.FindAsync(group.Key);
 
@@ -1128,8 +1128,8 @@ public class WarehouseService
             if (string.IsNullOrWhiteSpace(lotNum)) lotNum = "Mặc định";
 
             // Tìm lô theo MaterialId, LotNumber
-            var lot = await context.MaterialLots.FirstOrDefaultAsync(l => 
-                l.MaterialId == material.Id && 
+            var lot = await context.MaterialLots.FirstOrDefaultAsync(l =>
+                l.MaterialId == material.Id &&
                 l.LotNumber == lotNum);
 
             if (lot == null)
@@ -1220,10 +1220,10 @@ public class WarehouseService
     public async Task<int> AddCustomerReturnAsync(CustomerReturn cr)
     {
         using var context = _dbFactory.CreateDbContext();
-        
+
         // 1. Save the return record first
         context.CustomerReturns.Add(cr);
-        await context.SaveChangesAsync(); 
+        await context.SaveChangesAsync();
 
         // 2. Prepare itemized delivery records
         var deliveryItems = new List<DeliveryItem>();
@@ -1255,7 +1255,7 @@ public class WarehouseService
                         lot.StockQty += item.Qty;
                         context.MaterialLots.Update(lot);
                     }
-                    
+
                     context.InventoryTransactions.Add(new InventoryTransaction
                     {
                         MaterialId = mainMat.Id,
@@ -1296,7 +1296,7 @@ public class WarehouseService
 
         context.Deliveries.Add(negativeDelivery);
         await context.SaveChangesAsync();
-        
+
         return negativeDelivery.Id;
     }
 
@@ -1335,7 +1335,7 @@ public class WarehouseService
     {
         using var context = _dbFactory.CreateDbContext();
         context.MaterialLots.Update(lot);
-        
+
         // Update aggregate stock qty on material
         var material = await context.Materials.Include(m => m.Lots).FirstOrDefaultAsync(m => m.Id == lot.MaterialId);
         if (material != null)
@@ -1405,7 +1405,7 @@ public class WarehouseService
     public async Task<int> CreateRetailOrderAsync(RetailOrder order)
     {
         using var context = _dbFactory.CreateDbContext();
-        
+
         context.RetailOrders.Add(order);
         await context.SaveChangesAsync();
 
@@ -1415,7 +1415,7 @@ public class WarehouseService
             if (mainMat != null)
             {
                 mainMat.StockQty -= item.Qty;
-                
+
                 var lotNum = string.IsNullOrEmpty(item.LotNumber) ? "Mặc định" : item.LotNumber;
                 var lot = await context.MaterialLots.FirstOrDefaultAsync(l => l.MaterialId == mainMat.Id && l.LotNumber == lotNum);
                 if (lot != null)
@@ -1449,7 +1449,7 @@ public class WarehouseService
 
         if (from.HasValue)
             query = query.Where(r => r.Timestamp >= from.Value);
-        
+
         if (to.HasValue)
         {
             // Bao gồm đến cuối ngày của 'to'

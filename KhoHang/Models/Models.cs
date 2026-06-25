@@ -40,7 +40,7 @@ public class Material
     public double MinStockLevel { get; set; } = 0;
     public string? ImageUrl { get; set; }
     public bool IsDeleted { get; set; } = false;
-    
+
     public int? CategoryId { get; set; }
     public Category? Category { get; set; }
 
@@ -53,13 +53,13 @@ public class MaterialLot
     public int Id { get; set; }
     public int MaterialId { get; set; }
     public Material? Material { get; set; }
-    
+
     [Required]
     public string LotNumber { get; set; } = string.Empty;
     public double StockQty { get; set; }
     public decimal CostPrice { get; set; }
     public decimal BasePrice { get; set; }
-    
+
     public DateTime? ProductionDate { get; set; }
     public string? Note { get; set; } // For color variations, etc.
 }
@@ -77,7 +77,7 @@ public class Customer
 public class Project
 {
     public int Id { get; set; }
-    
+
     public int? CustomerId { get; set; }
     public Customer? Customer { get; set; }
 
@@ -88,7 +88,7 @@ public class Project
     public DateTime CreatedAt { get; set; } = DateTime.Now;
     public bool IsCompleted { get; set; } = false;
     public int InvoiceMode { get; set; } = 1; // 0: Chỉ vật tư, 1: Đối soát tài chính (mặc định)
-    
+
     public List<ProjectMaterial> Materials { get; set; } = new();
     public List<Delivery> Deliveries { get; set; } = new();
     public List<Payment> Payments { get; set; } = new();
@@ -101,10 +101,10 @@ public class ProjectMaterial
     public Project? Project { get; set; }
     public int MaterialId { get; set; }
     public Material? Material { get; set; }
-    
+
     public string Name { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
-    
+
     public decimal CustomPrice { get; set; }
     public double TotalQty { get; set; }
     public double RemainingQty { get; set; }
@@ -118,15 +118,15 @@ public class Delivery
     public int ProjectId { get; set; }
     public Project? Project { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.Now;
-    
+
     public decimal OtherFee { get; set; }
     public string? Note { get; set; }
-    
+
     public decimal ItemsTotal { get; set; }
     public decimal PreviousBalance { get; set; }
     public decimal TotalAmount { get; set; } // Current delivery total
     public decimal GrandTotal { get; set; } // Rolling total
-    
+
     public List<DeliveryItem> Items { get; set; } = new();
 }
 
@@ -135,7 +135,7 @@ public class DeliveryItem
     public int Id { get; set; }
     public int DeliveryId { get; set; }
     public int ProjectMaterialId { get; set; }
-    
+
     public string Name { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
     public decimal Price { get; set; }
@@ -166,7 +166,7 @@ public class PurchaseOrder
     public DateTime Timestamp { get; set; } = DateTime.Now;
     public decimal TotalAmount { get; set; }
     public string? Note { get; set; }
-    
+
     public List<PurchaseOrderItem> Items { get; set; } = new();
 }
 
@@ -220,7 +220,7 @@ public class CustomerReturn
     public DateTime Timestamp { get; set; } = DateTime.Now;
     public decimal TotalAmount { get; set; } // Amount to deduct from Project
     public string? Note { get; set; }
-    
+
     public List<CustomerReturnItem> Items { get; set; } = new();
 }
 
@@ -245,11 +245,11 @@ public class RetailOrder
     public string? Phone { get; set; }
     public string? Address { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.Now;
-    
+
     public decimal TotalAmount { get; set; }
     public decimal AmountPaid { get; set; } // For tracking payment, even though it's 100% paid
     public string? Note { get; set; }
-    
+
     public List<RetailOrderItem> Items { get; set; } = new();
 }
 
@@ -260,7 +260,7 @@ public class RetailOrderItem
     public RetailOrder? RetailOrder { get; set; }
     public int MaterialId { get; set; }
     public Material? Material { get; set; }
-    
+
     public string Name { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
     public decimal Price { get; set; }

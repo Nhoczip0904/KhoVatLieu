@@ -25,7 +25,7 @@ jobs:
         run: dotnet restore KhoHang/KhoHang.csproj
 
       - name: Check Code Formatting
-        run: dotnet format --verify-no-changes --severity warn
+        run: dotnet format --verify-no-changes
 
       - name: Check NuGet Package Vulnerabilities
         run: dotnet list KhoHang/KhoHang.csproj package --vulnerable

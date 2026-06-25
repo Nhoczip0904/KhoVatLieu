@@ -14,30 +14,39 @@ namespace KhoHang.Components.Pages
         protected List<Supplier> suppliers = new();
         protected List<Material> materials = new();
         private string _searchText = "";
-        protected string searchText {
+        protected string searchText
+        {
             get => _searchText;
-            set {
-                if (_searchText != value) {
+            set
+            {
+                if (_searchText != value)
+                {
                     _searchText = value;
                     currentPage = 1;
                 }
             }
         }
         private DateTime? _startDate;
-        protected DateTime? startDate {
+        protected DateTime? startDate
+        {
             get => _startDate;
-            set {
-                if (_startDate != value) {
+            set
+            {
+                if (_startDate != value)
+                {
                     _startDate = value;
                     currentPage = 1;
                 }
             }
         }
         private DateTime? _endDate;
-        protected DateTime? endDate {
+        protected DateTime? endDate
+        {
             get => _endDate;
-            set {
-                if (_endDate != value) {
+            set
+            {
+                if (_endDate != value)
+                {
                     _endDate = value;
                     currentPage = 1;
                 }
@@ -60,9 +69,9 @@ namespace KhoHang.Components.Pages
             {
                 if (!newPo.Items.Any(i => i.MaterialId == m.Id))
                 {
-                    newPo.Items.Add(new PurchaseOrderItem 
-                    { 
-                        MaterialId = m.Id, 
+                    newPo.Items.Add(new PurchaseOrderItem
+                    {
+                        MaterialId = m.Id,
                         Material = m,
                         SupplierId = m.MaterialSuppliers?.FirstOrDefault()?.SupplierId, // Mặc định theo NCC đầu tiên trong danh mục
                         Qty = 1,
@@ -79,7 +88,7 @@ namespace KhoHang.Components.Pages
         protected bool showSupplierDropdown = false;
 
         protected void ToggleSupplierDropdown() => showSupplierDropdown = !showSupplierDropdown;
-        
+
         protected void ToggleSupplier(int id)
         {
             if (selectedSupplierIds.Contains(id)) selectedSupplierIds.Remove(id);
@@ -124,17 +133,19 @@ namespace KhoHang.Components.Pages
         protected int totalPages => (int)Math.Ceiling((double)AllFilteredPOs.Count() / pageSize);
 
         protected IEnumerable<PurchaseOrder> AllFilteredPOs => purchaseOrders
-            .Where(p => {
-                bool matchesSearch = string.IsNullOrWhiteSpace(searchText) || 
-                                     p.Id.ToString("D5").Contains(searchText) || 
+            .Where(p =>
+            {
+                bool matchesSearch = string.IsNullOrWhiteSpace(searchText) ||
+                                     p.Id.ToString("D5").Contains(searchText) ||
                                      (p.Supplier?.Name?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
                                      p.Items.Any(i => materials.FirstOrDefault(m => m.Id == i.MaterialId)?.Name?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false);
-                
+
                 bool matchesDate = (!startDate.HasValue || p.Timestamp.Date >= startDate.Value.Date) &&
                                    (!endDate.HasValue || p.Timestamp.Date <= endDate.Value.Date);
 
-                bool matchesSupplier = !selectedSupplierIds.Any() || 
-                                       p.Items.Any(i => {
+                bool matchesSupplier = !selectedSupplierIds.Any() ||
+                                       p.Items.Any(i =>
+                                       {
                                            var m = materials.FirstOrDefault(mat => mat.Id == i.MaterialId);
                                            return m != null && m.MaterialSuppliers != null && m.MaterialSuppliers.Any(ms => selectedSupplierIds.Contains(ms.SupplierId));
                                        });
@@ -239,7 +250,7 @@ namespace KhoHang.Components.Pages
             if (isSaving) return;
             validationError = "";
 
-            try 
+            try
             {
                 isSaving = true;
                 StateHasChanged();
@@ -251,7 +262,8 @@ namespace KhoHang.Components.Pages
                     SupplierId = newPo.Items.First().SupplierId ?? 0,
                     Timestamp = newPo.Timestamp,
                     Note = newPo.Note,
-                    Items = newPo.Items.Select(i => new PurchaseOrderItem {
+                    Items = newPo.Items.Select(i => new PurchaseOrderItem
+                    {
                         MaterialId = i.MaterialId,
                         SupplierId = i.SupplierId, // Phải gán NCC cho từng món để tách công nợ
                         Qty = i.Qty,
@@ -261,7 +273,7 @@ namespace KhoHang.Components.Pages
                         Subtotal = (decimal)i.Qty * i.CostPrice
                     }).ToList()
                 };
-                
+
                 poForSupplier.TotalAmount = poForSupplier.Items.Sum(i => i.Subtotal);
                 await WarehouseSvc.AddPurchaseOrderAsync(poForSupplier);
 
@@ -294,11 +306,11 @@ namespace KhoHang.Components.Pages
         protected async Task ExportSingleOrder(PurchaseOrder po)
         {
             if (po == null) return;
-            
+
             var sb = new System.Text.StringBuilder();
             sb.Append("<table border='1'>");
             sb.Append($"<tr><td colspan='7' class='title' style='font-size: 1.2rem; font-weight: bold; text-align: center; background-color: #f1f5f9;'>PHIẾU NHẬP HÀNG CHI TIẾT</td></tr>");
-            
+
             var allSupplierNames = po.Items
                 .Select(i => i.SupplierId != null ? suppliers.FirstOrDefault(s => s.Id == i.SupplierId)?.Name : po.Supplier?.Name)
                 .Where(n => !string.IsNullOrEmpty(n))
@@ -347,7 +359,7 @@ namespace KhoHang.Components.Pages
                     sb.Append($"<td style='text-align:right;'>{item.Subtotal:N0}</td>");
                     sb.Append("</tr>");
                 }
-                
+
                 // Subtotal for this supplier within the PO - Corrected to 7 columns total
                 sb.Append($"<tr><td colspan='6' style='text-align:right; font-weight:bold; background-color: #f8fafc;'>CỘNG {supplierName.ToUpper()}:</td><td style='text-align:right; font-weight:bold; background-color: #f8fafc;'>{supplierSubtotal:N0}</td></tr>");
             }
@@ -378,13 +390,14 @@ namespace KhoHang.Components.Pages
             // Gom tất cả các món hàng từ các phiếu đã lọc, và lọc lại từng item theo tiêu chí
             var allFilteredItems = AllFilteredPOs
                 .SelectMany(po => po.Items.Select(i => new { Item = i, PO = po }))
-                .Where(x => {
+                .Where(x =>
+                {
                     var item = x.Item;
                     var po = x.PO;
                     var mat = materials.FirstOrDefault(m => m.Id == item.MaterialId);
-                    
+
                     // Lọc theo search text (tên vật tư)
-                    bool matchesSearch = string.IsNullOrWhiteSpace(searchText) || 
+                    bool matchesSearch = string.IsNullOrWhiteSpace(searchText) ||
                                          (mat?.Name?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false) ||
                                          po.Id.ToString("D5").Contains(searchText) ||
                                          (po.Supplier?.Name?.Contains(searchText, StringComparison.OrdinalIgnoreCase) ?? false);
@@ -477,44 +490,44 @@ namespace KhoHang.Components.Pages
 
             await JS.InvokeVoidAsync("downloadExcel", sb.ToString(), $"BaoCaoNhapHang_TheoNCC_{DateTime.Now:yyyyMMdd}");
         }
-    protected void ResetLot(PurchaseOrderItem item)
-    {
-        item.LotNumber = "";
-        item.CostPrice = 0;
-        item.BasePrice = 0;
-        CalculateTotal();
-    }
-
-    protected void SelectLot(PurchaseOrderItem item, MaterialLot lot)
-    {
-        item.LotNumber = lot.LotNumber;
-        item.CostPrice = lot.CostPrice;
-        item.BasePrice = lot.BasePrice;
-        CalculateTotal();
-    }
-
-    protected async Task SelectAndLinkSupplierAsync(PurchaseOrderItem item, Material material, int supplierId)
-    {
-        item.SupplierId = supplierId;
-        
-        if (material != null)
+        protected void ResetLot(PurchaseOrderItem item)
         {
-            // Kiểm tra xem đã có link chưa
-            bool alreadyLinked = material.MaterialSuppliers?.Any(ms => ms.SupplierId == supplierId) ?? false;
-            
-            if (!alreadyLinked)
-            {
-                await WarehouseSvc.LinkMaterialToSupplierAsync(material.Id, supplierId);
-                // Refresh danh sách material để UI cập nhật các nút bấm NCC
-                materials = await WarehouseSvc.GetMasterMaterialsAsync(includeDeleted: true);
-                
-                // Cập nhật tham chiếu material trong item hiện tại
-                item.Material = materials.FirstOrDefault(m => m.Id == item.MaterialId);
-            }
+            item.LotNumber = "";
+            item.CostPrice = 0;
+            item.BasePrice = 0;
+            CalculateTotal();
         }
-        
-        CalculateTotal();
-        StateHasChanged();
-    }
+
+        protected void SelectLot(PurchaseOrderItem item, MaterialLot lot)
+        {
+            item.LotNumber = lot.LotNumber;
+            item.CostPrice = lot.CostPrice;
+            item.BasePrice = lot.BasePrice;
+            CalculateTotal();
+        }
+
+        protected async Task SelectAndLinkSupplierAsync(PurchaseOrderItem item, Material material, int supplierId)
+        {
+            item.SupplierId = supplierId;
+
+            if (material != null)
+            {
+                // Kiểm tra xem đã có link chưa
+                bool alreadyLinked = material.MaterialSuppliers?.Any(ms => ms.SupplierId == supplierId) ?? false;
+
+                if (!alreadyLinked)
+                {
+                    await WarehouseSvc.LinkMaterialToSupplierAsync(material.Id, supplierId);
+                    // Refresh danh sách material để UI cập nhật các nút bấm NCC
+                    materials = await WarehouseSvc.GetMasterMaterialsAsync(includeDeleted: true);
+
+                    // Cập nhật tham chiếu material trong item hiện tại
+                    item.Material = materials.FirstOrDefault(m => m.Id == item.MaterialId);
+                }
+            }
+
+            CalculateTotal();
+            StateHasChanged();
+        }
     }
 }

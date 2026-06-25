@@ -93,14 +93,14 @@ using (var scope = app.Services.CreateScope())
     try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE Materials ADD COLUMN IsDeleted INTEGER NOT NULL DEFAULT 0;"); } catch { }
     try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE MaterialLots ADD COLUMN BasePrice TEXT;"); } catch { }
     try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE PurchaseOrderItems ADD COLUMN BasePrice TEXT;"); } catch { }
-    
+
     var tables = new[] { "PurchaseOrderItems", "DeliveryItems", "InventoryTransactions", "CustomerReturnItems" };
     foreach (var table in tables)
     {
-        try { await context.Database.ExecuteSqlRawAsync($"ALTER TABLE {table} ADD COLUMN LotNumber TEXT;"); } catch { }
+        try { await context.Database.ExecuteSqlAsync($"ALTER TABLE {table} ADD COLUMN LotNumber TEXT;"); } catch { }
     }
     try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE ProjectMaterials ADD COLUMN TargetLotNumber TEXT;"); } catch { }
-    
+
     var service = scope.ServiceProvider.GetRequiredService<WarehouseService>();
     await service.SeedDataAsync();
 }
@@ -120,8 +120,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapPost("/account/login", async (
-    HttpContext httpContext, 
-    [FromForm] string username, 
+    HttpContext httpContext,
+    [FromForm] string username,
     [FromForm] string password,
     [FromForm] string? remember) =>
 {
@@ -129,19 +129,19 @@ app.MapPost("/account/login", async (
     {
         var claims = new List<Claim> { new Claim(ClaimTypes.Name, username) };
         var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        
+
         var isPersistent = remember == "on";
         var authProperties = new AuthenticationProperties
         {
             IsPersistent = isPersistent,
             ExpiresUtc = isPersistent ? DateTimeOffset.UtcNow.AddDays(30) : null
         };
-        
+
         await httpContext.SignInAsync(
-            CookieAuthenticationDefaults.AuthenticationScheme, 
+            CookieAuthenticationDefaults.AuthenticationScheme,
             new ClaimsPrincipal(claimsIdentity),
             authProperties);
-            
+
         return Results.Redirect("/dashboard");
     }
     return Results.Redirect("/?error=1");

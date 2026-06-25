@@ -7,15 +7,15 @@ namespace KhoHang.Components.Pages;
 public partial class Retail : ComponentBase
 {
     private string activeTab = "create";
-    
+
     // Create Mode
     private RetailOrder newOrder = new();
     private List<RetailOrderItem> draftItems = new();
     private Dictionary<int, List<MaterialLot>> availableLots = new();
-    
+
     private decimal totalAmount = 0;
     private decimal amountPaid = 0;
-    
+
     private bool isSelectionModalOpen = false;
     private bool isProcessing = false;
     private bool showToast = false;
@@ -63,7 +63,7 @@ public partial class Retail : ComponentBase
             {
                 var lots = await WarehouseService.GetMaterialLotsAsync(mat.Id);
                 availableLots[mat.Id] = lots;
-                
+
                 // Pick best lot
                 string lotNum = "";
                 decimal price = 0;
@@ -101,13 +101,13 @@ public partial class Retail : ComponentBase
     private void DuplicateItem(RetailOrderItem item)
     {
         var lots = availableLots.ContainsKey(item.MaterialId) ? availableLots[item.MaterialId] : new List<MaterialLot>();
-        
+
         // Find next unused lot if possible
         var usedLots = draftItems
             .Where(x => x.MaterialId == item.MaterialId)
             .Select(x => x.LotNumber)
             .ToList();
-            
+
         var nextLot = lots.FirstOrDefault(l => !usedLots.Contains(l.LotNumber) && l.StockQty > 0);
 
         if (nextLot == null)
@@ -125,7 +125,7 @@ public partial class Retail : ComponentBase
             Price = item.Price,
             LotNumber = nextLot?.LotNumber ?? ""
         });
-        
+
         UpdateTotals();
         StateHasChanged();
     }
@@ -172,7 +172,7 @@ public partial class Retail : ComponentBase
                 ShowError($"Vui lòng chọn lô cho '{item.Name}'!");
                 return;
             }
-            
+
             // Check stock
             var lots = availableLots[item.MaterialId];
             var lot = lots.FirstOrDefault(l => l.LotNumber == item.LotNumber);
@@ -193,7 +193,7 @@ public partial class Retail : ComponentBase
             newOrder.Items = draftItems.ToList();
             newOrder.Timestamp = DateTime.Now;
 
-            foreach(var item in newOrder.Items)
+            foreach (var item in newOrder.Items)
             {
                 item.Subtotal = (decimal)item.Qty * item.Price;
             }
@@ -208,7 +208,7 @@ public partial class Retail : ComponentBase
             availableLots.Clear();
             totalAmount = 0;
             amountPaid = 0;
-            
+
             activeTab = "history";
             await LoadHistoryAsync();
 

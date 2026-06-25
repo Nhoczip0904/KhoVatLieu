@@ -16,7 +16,7 @@ public class KhoDbContext : DbContext
     public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Payment> Payments => Set<Payment>();
-    
+
     public DbSet<PurchaseOrder> PurchaseOrders => Set<PurchaseOrder>();
     public DbSet<PurchaseOrderItem> PurchaseOrderItems => Set<PurchaseOrderItem>();
     public DbSet<SupplierPayment> SupplierPayments => Set<SupplierPayment>();
@@ -66,7 +66,7 @@ public class KhoDbContext : DbContext
             .HasMany(p => p.Payments)
             .WithOne(p => p.Project)
             .HasForeignKey(p => p.ProjectId);
-            
+
         modelBuilder.Entity<PurchaseOrder>()
             .HasMany(p => p.Items)
             .WithOne()
