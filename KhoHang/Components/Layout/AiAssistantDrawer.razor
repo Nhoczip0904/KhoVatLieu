@@ -1,0 +1,905 @@
+@using KhoHang.Services
+@using Microsoft.AspNetCore.Components.Web
+@inject AiService AiService
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+<!-- Floating Chat Bubble -->
+<button class="ai-chat-bubble @(isOpen ? "drawer-open" : "")" @onclick="ToggleDrawer" title="Hỏi Trợ Lý AI">
+    <div class="bubble-glow"></div>
+    <i class="bi bi-robot font-accent"></i>
+    @if (messages.Count <= 1 && !isOpen)
+    {
+        <span class="bubble-badge-ping"></span>
+    }
+</button>
+
+<!-- Slide-out Drawer Panel -->
+<div class="ai-drawer-container @(isOpen ? "is-open" : "")">
+    <div class="ai-drawer-backdrop" @onclick="CloseDrawer"></div>
+    
+    <div class="ai-drawer">
+        <!-- Header -->
+        <div class="ai-drawer-header">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div class="ai-avatar">
+                    <i class="bi bi-robot"></i>
+                    <span class="status-dot"></span>
+                </div>
+                <div>
+                    <h4 style="margin: 0; font-size: 1.05rem; font-weight: 800; font-family: 'Outfit', sans-serif; color: #0f172a;">Trợ lý AI Kho Hàng</h4>
+                    <span style="font-size: 0.75rem; color: #10b981; font-weight: 600; display: flex; align-items: center; gap: 0.25rem;">
+                         @GetPersonaBadge()
+                    </span>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <button @onclick='() => ChangeTab("settings")' class='header-btn @(activeTab == "settings" ? "active" : "")' title="Cài đặt AI">
+                    <i class="bi bi-gear-fill"></i>
+                </button>
+                <button class="header-btn" @onclick="CloseDrawer" title="Đóng">
+                    <i class="bi bi-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="ai-tabs">
+            <button class="ai-tab-btn @(activeTab == "chat" ? "active" : "")" @onclick='() => ChangeTab("chat")'>
+                <i class="bi bi-chat-text-fill"></i> Trò chuyện
+            </button>
+            <button class="ai-tab-btn @(activeTab == "settings" ? "active" : "")" @onclick='() => ChangeTab("settings")'>
+                <i class="bi bi-sliders"></i> Cá nhân hóa
+            </button>
+        </div>
+
+        <!-- Content Area -->
+        <div class="ai-drawer-body">
+            @if (activeTab == "chat")
+            {
+                <!-- Chat Tab -->
+                <div class="chat-tab-container">
+                    <!-- Messages List -->
+                    <div class="chat-messages" id="chat-history-body">
+                        @foreach (var msg in messages)
+                        {
+                            <div class="chat-message-wrapper @(msg.Role == "user" ? "user-msg" : "ai-msg")">
+                                @if (msg.Role == "model")
+                                {
+                                    <div class="msg-avatar"><i class="bi bi-robot"></i></div>
+                                }
+                                <div class="msg-bubble">
+                                    <div class="msg-content">
+                                        @ConvertMarkdownToHtml(msg.Text)
+                                    </div>
+                                    <div class="msg-time">@DateTime.Now.ToString("HH:mm")</div>
+                                </div>
+                            </div>
+                        }
+
+                        @if (isGenerating)
+                        {
+                            <div class="chat-message-wrapper ai-msg">
+                                <div class="msg-avatar"><i class="bi bi-robot"></i></div>
+                                <div class="msg-bubble typing-bubble">
+                                    <div class="typing-indicator">
+                                        <span></span>
+                                        <span></span>
+                                        <span></span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Quick Suggestions (RAG Buttons) -->
+                    <div class="quick-suggestions">
+                        <button class="suggestion-btn" @onclick='() => SendSuggestedPromptAsync("Vật tư nào trong kho tổng đang hết hoặc sắp hết? Đưa ra danh sách chi tiết và số lượng.")'>
+                            ⚠️ Hết hàng
+                        </button>
+                        <button class="suggestion-btn" @onclick='() => SendSuggestedPromptAsync("Thống kê tổng doanh thu dự kiến, số tiền thực tế đã thu và nợ khách hàng hiện tại.")'>
+                            📊 Doanh số & Nợ
+                        </button>
+                        <button class="suggestion-btn" @onclick='() => SendSuggestedPromptAsync("Những công trình/dự án nào đang chạy có công nợ cao nhất? Hãy gợi ý thu hồi nợ.")'>
+                            💸 Nợ công trình
+                        </button>
+                        <button class="suggestion-btn" @onclick='() => SendSuggestedPromptAsync("Tôi đang nợ những nhà cung cấp nào và số tiền cụ thể là bao nhiêu?")'>
+                            🚚 Nợ nhà cung cấp
+                        </button>
+                    </div>
+
+                    <!-- Input Box -->
+                    <div class="chat-input-area">
+                        <textarea class="chat-textarea" 
+                                  placeholder="Nhập câu hỏi của bạn về kho hàng..." 
+                                  @bind="userInput" 
+                                  @onkeydown="HandleKeyDown"
+                                  disabled="@isGenerating"></textarea>
+                        <button class="send-btn" @onclick="SendMessageAsync" disabled="@(isGenerating || string.IsNullOrWhiteSpace(userInput))">
+                            <i class="bi bi-send-fill"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <!-- Settings Tab (Personalization Engine) -->
+                <div class="settings-tab-container">
+                    <h5 class="settings-sec-title">Thông tin Người dùng</h5>
+                    
+                    <div class="setting-group">
+                        <label class="setting-label">Tên/Biệt danh của bạn</label>
+                        <input type="text" class="setting-input" @bind="settings.UserNickname" placeholder="Ví dụ: Sếp Tổng, Chị Hai, Lộc..." />
+                        <span class="setting-desc">AI sẽ xưng hô thân mật với bạn bằng tên này.</span>
+                    </div>
+
+                    <h5 class="settings-sec-title">Cấu hình Trợ lý AI</h5>
+                    
+                    <div class="setting-group">
+                        <label class="setting-label">Vai trò AI (Persona)</label>
+                        <select class="setting-select" @bind="settings.Persona">
+                            <option value="friendly">😊 Trợ lý thân thiện, nhiệt tình</option>
+                            <option value="serious">💼 Thủ kho nghiêm túc, kỹ thuật</option>
+                            <option value="financial">📈 Cố vấn tài chính tối ưu</option>
+                        </select>
+                        <span class="setting-desc">Thay đổi tính cách và trọng tâm câu trả lời của AI.</span>
+                    </div>
+
+                    <div class="setting-group">
+                        <label class="setting-label">Văn phong trả lời</label>
+                        <select class="setting-select" @bind="settings.LanguageStyle">
+                            <option value="normal">Đầy đủ, chi tiết</option>
+                            <option value="concise">Ngắn gọn, tóm tắt ý chính</option>
+                            <option value="humorous">Hóm hỉnh, hài hước một chút</option>
+                        </select>
+                    </div>
+
+                    <div class="setting-group">
+                        <label class="setting-label">Gemini API Key</label>
+                        <div style="position: relative;">
+                            <input type="@(showApiKey ? "text" : "password")" class="setting-input" @bind="settings.ApiKey" placeholder="AIzaSy..." style="padding-right: 2.5rem;" />
+                            <button class="eye-btn" @onclick="ToggleApiKeyVisibility" type="button">
+                                <i class="bi @(showApiKey ? "bi-eye-slash-fill" : "bi-eye-fill")"></i>
+                            </button>
+                        </div>
+                        <span class="setting-desc">
+                            API Key được lưu trực tiếp dưới trình duyệt của bạn (LocalStorage). Nếu để trống, hệ thống sẽ sử dụng key mặc định từ máy chủ nếu có.
+                        </span>
+                    </div>
+
+                    <button class="save-settings-btn" @onclick="SaveSettingsAsync">
+                        <i class="bi bi-check-circle-fill"></i> Lưu cài đặt
+                    </button>
+
+                    @if (showSavedAlert)
+                    {
+                        <div class="settings-alert-success">
+                            <i class="bi bi-check-circle"></i> Đã lưu cấu hình cá nhân hóa thành công!
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Floating Chat Bubble Style */
+    .ai-chat-bubble {
+        position: fixed;
+        bottom: 1.5rem;
+        right: 1.5rem;
+        width: 3.5rem;
+        height: 3.5rem;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #2563eb, #3b82f6);
+        border: none;
+        box-shadow: 0 8px 30px rgba(37, 99, 235, 0.4);
+        cursor: pointer;
+        z-index: 1050;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .ai-chat-bubble i {
+        color: white;
+        font-size: 1.75rem;
+        z-index: 2;
+    }
+    .ai-chat-bubble:hover {
+        transform: scale(1.1) translateY(-2px);
+        box-shadow: 0 12px 35px rgba(37, 99, 235, 0.5);
+    }
+    .ai-chat-bubble.drawer-open {
+        transform: scale(0) rotate(90deg);
+        opacity: 0;
+        pointer-events: none;
+    }
+    .bubble-glow {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        border-radius: 50%;
+        background: inherit;
+        filter: blur(8px);
+        opacity: 0.6;
+        z-index: 1;
+        animation: pulse-glow 2.5s infinite;
+    }
+    .bubble-badge-ping {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #ef4444;
+        border: 2px solid white;
+        z-index: 3;
+        animation: ping 1.5s infinite;
+    }
+
+    @@keyframes pulse-glow {
+        0%, 100% { transform: scale(1); opacity: 0.5; }
+        50% { transform: scale(1.2); opacity: 0.8; }
+    }
+    @@keyframes ping {
+        0% { transform: scale(1); opacity: 1; }
+        70%, 100% { transform: scale(2); opacity: 0; }
+    }
+
+    /* Drawer Container and Backdrop */
+    .ai-drawer-container {
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 1060;
+        pointer-events: none;
+        font-family: 'Inter', system-ui, sans-serif;
+    }
+    .ai-drawer-container.is-open {
+        pointer-events: auto;
+    }
+    .ai-drawer-backdrop {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(15, 23, 42, 0.15);
+        backdrop-filter: blur(4px);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+    }
+    .ai-drawer-container.is-open .ai-drawer-backdrop {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    /* The Slide-out Drawer Panel */
+    .ai-drawer {
+        position: absolute;
+        top: 0; right: 0; bottom: 0;
+        width: 440px;
+        max-width: 95vw;
+        background: rgba(255, 255, 255, 0.85);
+        backdrop-filter: blur(25px);
+        -webkit-backdrop-filter: blur(25px);
+        border-left: 1px solid rgba(255, 255, 255, 0.4);
+        box-shadow: -10px 0 40px rgba(15, 23, 42, 0.15);
+        display: flex;
+        flex-direction: column;
+        transform: translateX(105%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .ai-drawer-container.is-open .ai-drawer {
+        transform: translateX(0);
+    }
+
+    /* Header Styling */
+    .ai-drawer-header {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid rgba(241, 245, 249, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(255, 255, 255, 0.5);
+    }
+    .ai-avatar {
+        position: relative;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #eff6ff, #dbeafe);
+        color: #2563eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        border: 1px solid #bfdbfe;
+    }
+    .status-dot {
+        position: absolute;
+        bottom: 1px;
+        right: 1px;
+        width: 9px;
+        height: 9px;
+        background: #10b981;
+        border-radius: 50%;
+        border: 2px solid white;
+    }
+    .header-btn {
+        background: transparent;
+        border: none;
+        font-size: 1.1rem;
+        color: #64748b;
+        cursor: pointer;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+    .header-btn:hover {
+        background: rgba(241, 245, 249, 0.9);
+        color: #1e293b;
+    }
+    .header-btn.active {
+        color: #2563eb;
+        background: #eff6ff;
+    }
+
+    /* Tabs Styling */
+    .ai-tabs {
+        display: flex;
+        padding: 0.25rem;
+        background: #f1f5f9;
+        margin: 0.75rem 1.25rem;
+        border-radius: 8px;
+        gap: 0.25rem;
+    }
+    .ai-tab-btn {
+        flex: 1;
+        border: none;
+        background: transparent;
+        padding: 0.5rem;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #64748b;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        transition: all 0.2s;
+    }
+    .ai-tab-btn.active {
+        background: white;
+        color: #1e293b;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Body Area */
+    .ai-drawer-body {
+        flex: 1;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Chat Tab Layout */
+    .chat-tab-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+    }
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0 1.25rem 1.25rem 1.25rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    /* Messages Bubble */
+    .chat-message-wrapper {
+        display: flex;
+        gap: 0.65rem;
+        align-items: flex-start;
+        max-width: 85%;
+    }
+    .chat-message-wrapper.user-msg {
+        align-self: flex-end;
+        flex-direction: row-reverse;
+    }
+    .chat-message-wrapper.ai-msg {
+        align-self: flex-start;
+    }
+    .msg-avatar {
+        width: 1.85rem;
+        height: 1.85rem;
+        border-radius: 50%;
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #2563eb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+    }
+    .msg-bubble {
+        padding: 0.75rem 0.9rem;
+        border-radius: 14px;
+        font-size: 0.875rem;
+        line-height: 1.45;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
+    .user-msg .msg-bubble {
+        background: #2563eb;
+        color: white;
+        border-bottom-right-radius: 2px;
+    }
+    .ai-msg .msg-bubble {
+        background: white;
+        color: #1e293b;
+        border: 1px solid #f1f5f9;
+        border-bottom-left-radius: 2px;
+    }
+    .msg-content {
+        word-break: break-word;
+    }
+    .msg-content br {
+        content: "";
+        margin: 0.25rem 0;
+        display: block;
+    }
+    .msg-time {
+        font-size: 0.68rem;
+        opacity: 0.6;
+        text-align: right;
+        margin-top: 0.25rem;
+    }
+    .user-msg .msg-time { color: rgba(255, 255, 255, 0.8); }
+    .ai-msg .msg-time { color: #94a3b8; }
+
+    /* Typing Indicator Animation */
+    .typing-bubble {
+        background: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
+    }
+    .typing-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.2rem 0.5rem;
+    }
+    .typing-indicator span {
+        width: 6px;
+        height: 6px;
+        background: #94a3b8;
+        border-radius: 50%;
+        display: inline-block;
+        animation: typing-dots 1.4s infinite ease-in-out both;
+    }
+    .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+    .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+    @@keyframes typing-dots {
+        0%, 80%, 100% { transform: scale(0); }
+        40% { transform: scale(1); }
+    }
+
+    /* Quick Suggestions */
+    .quick-suggestions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+        padding: 0.75rem 1.25rem;
+        background: rgba(255, 255, 255, 0.5);
+        border-top: 1px solid rgba(241, 245, 249, 0.7);
+    }
+    .suggestion-btn {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .suggestion-btn:hover {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+        color: #2563eb;
+        transform: translateY(-1px);
+    }
+
+    /* Chat Input Area */
+    .chat-input-area {
+        padding: 0.75rem 1.25rem 1.25rem 1.25rem;
+        background: white;
+        display: flex;
+        gap: 0.5rem;
+        border-top: 1px solid #f1f5f9;
+    }
+    .chat-textarea {
+        flex: 1;
+        height: 2.5rem;
+        min-height: 2.5rem;
+        max-height: 5rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+        outline: none;
+        resize: none;
+        font-family: inherit;
+        transition: border-color 0.2s;
+    }
+    .chat-textarea:focus {
+        border-color: #3b82f6;
+    }
+    .send-btn {
+        background: #2563eb;
+        color: white;
+        border: none;
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+    .send-btn:hover:not(:disabled) {
+        background: #1d4ed8;
+    }
+    .send-btn:disabled {
+        background: #cbd5e1;
+        cursor: not-allowed;
+    }
+
+    /* Settings Tab Style */
+    .settings-tab-container {
+        padding: 1.25rem;
+        overflow-y: auto;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        background: rgba(255, 255, 255, 0.4);
+    }
+    .settings-sec-title {
+        font-size: 0.8rem;
+        font-weight: 800;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0.5rem 0 0.25rem 0;
+        border-bottom: 1px solid #f1f5f9;
+        padding-bottom: 0.25rem;
+    }
+    .setting-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+    .setting-label {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #475569;
+    }
+    .setting-input, .setting-select {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+        outline: none;
+        background: white;
+        font-family: inherit;
+        transition: border-color 0.2s;
+    }
+    .setting-input:focus, .setting-select:focus {
+        border-color: #3b82f6;
+    }
+    .setting-desc {
+        font-size: 0.72rem;
+        color: #64748b;
+        line-height: 1.35;
+    }
+    .eye-btn {
+        position: absolute;
+        top: 50%;
+        right: 0.75rem;
+        transform: translateY(-50%);
+        background: transparent;
+        border: none;
+        color: #64748b;
+        cursor: pointer;
+        padding: 0;
+        font-size: 1rem;
+    }
+    .save-settings-btn {
+        background: #10b981;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.65rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 0.5rem;
+        transition: background 0.2s;
+    }
+    .save-settings-btn:hover {
+        background: #059669;
+    }
+    .settings-alert-success {
+        padding: 0.65rem;
+        background: #ecfdf5;
+        border: 1px solid #a7f3d0;
+        border-radius: 8px;
+        color: #065f46;
+        font-size: 0.78rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        animation: fade-in-alert 0.3s;
+    }
+    @@keyframes fade-in-alert {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+@code {
+    private bool isOpen = false;
+    private string activeTab = "chat"; // "chat" or "settings"
+    private string userInput = string.Empty;
+    private bool isGenerating = false;
+    private bool showApiKey = false;
+    private bool showSavedAlert = false;
+
+    private List<AiService.ChatMessage> messages = new();
+    private AiService.AiSettings settings = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Add a default welcoming message
+        messages.Add(new AiService.ChatMessage
+        {
+            Role = "model",
+            Text = "Xin chào! Tôi là **Trợ lý AI cá nhân hóa** của bạn. Tôi có thể giúp bạn kiểm tra tồn kho, cảnh báo vật tư sắp hết, xem nhanh doanh thu dự án và tình trạng công nợ. Hãy hỏi tôi bất cứ điều gì!"
+        });
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Load settings from localStorage
+            try
+            {
+                var storedNickname = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "ai_nickname");
+                var storedPersona = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "ai_persona");
+                var storedStyle = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "ai_style");
+                var storedApiKey = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "ai_apikey");
+
+                if (!string.IsNullOrEmpty(storedNickname)) settings.UserNickname = storedNickname;
+                if (!string.IsNullOrEmpty(storedPersona)) settings.Persona = storedPersona;
+                if (!string.IsNullOrEmpty(storedStyle)) settings.LanguageStyle = storedStyle;
+                if (!string.IsNullOrEmpty(storedApiKey)) settings.ApiKey = storedApiKey;
+
+                StateHasChanged();
+            }
+            catch { }
+        }
+    }
+
+    private void ToggleDrawer()
+    {
+        isOpen = !isOpen;
+        if (isOpen)
+        {
+            ScrollToBottom();
+        }
+    }
+
+    private void CloseDrawer()
+    {
+        isOpen = false;
+    }
+
+    private void ChangeTab(string tab)
+    {
+        activeTab = tab;
+        showSavedAlert = false;
+        if (tab == "chat")
+        {
+            ScrollToBottom();
+        }
+    }
+
+    private void ToggleApiKeyVisibility()
+    {
+        showApiKey = !showApiKey;
+    }
+
+    private async Task SaveSettingsAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "ai_nickname", settings.UserNickname);
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "ai_persona", settings.Persona);
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "ai_style", settings.LanguageStyle);
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "ai_apikey", settings.ApiKey);
+
+            showSavedAlert = true;
+            
+            // Auto-hide alert after 3 seconds
+            _ = Task.Delay(3000).ContinueWith(_ => InvokeAsync(() =>
+            {
+                showSavedAlert = false;
+                StateHasChanged();
+            }));
+
+            // Reset conversation starting with custom greeting referencing user nickname
+            messages.Clear();
+            messages.Add(new AiService.ChatMessage
+            {
+                Role = "model",
+                Text = $"Chào **{settings.UserNickname}**! Cấu hình trợ lý đã được cập nhật thành công. Trực giác AI của tôi hiện đã được chuyển sang chế độ: **{GetPersonaBadge()}**. Tôi có thể giúp gì cho bạn hôm nay?"
+            });
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving AI settings: {ex.Message}");
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            await SendMessageAsync();
+        }
+    }
+
+    private async Task SendSuggestedPromptAsync(string promptText)
+    {
+        userInput = promptText;
+        await SendMessageAsync();
+    }
+
+    private async Task SendMessageAsync()
+    {
+        if (isGenerating || string.IsNullOrWhiteSpace(userInput)) return;
+
+        var userMessage = userInput.Trim();
+        userInput = string.Empty;
+
+        // Add user message to UI
+        messages.Add(new AiService.ChatMessage
+        {
+            Role = "user",
+            Text = userMessage
+        });
+
+        isGenerating = true;
+        StateHasChanged();
+        ScrollToBottom();
+
+        // Get AI Response
+        var response = await AiService.GenerateResponseAsync(messages, settings);
+
+        // Add AI response to UI
+        messages.Add(new AiService.ChatMessage
+        {
+            Role = "model",
+            Text = response
+        });
+
+        isGenerating = false;
+        StateHasChanged();
+        ScrollToBottom();
+    }
+
+    private void ScrollToBottom()
+    {
+        // Simple JS helper execution to scroll to the bottom of the chat list
+        _ = Task.Delay(50).ContinueWith(async _ =>
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("eval", "const el = document.getElementById('chat-history-body'); if(el) el.scrollTop = el.scrollHeight;");
+            }
+            catch { }
+        });
+    }
+
+    private string GetPersonaBadge()
+    {
+        return settings.Persona switch
+        {
+            "serious" => "Thủ kho nghiêm túc",
+            "financial" => "Cố vấn tài chính",
+            _ => "Trợ lý thân thiện"
+        };
+    }
+
+    private MarkupString ConvertMarkdownToHtml(string markdown)
+    {
+        if (string.IsNullOrEmpty(markdown)) return new MarkupString("");
+        
+        // Escape special chars to prevent script injections
+        var html = markdown
+            .Replace("&", "&amp;")
+            .Replace("<", "&lt;")
+            .Replace(">", "&gt;");
+            
+        // 1. Headers (### Header)
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"### (.*?)(?=\n|$)", "<h6 style='font-weight: 800; margin: 0.5rem 0 0.25rem 0;'>$1</h6>");
+        
+        // 2. Bold text (**text**)
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"\*\*(.*?)\*\*", "<strong>$1</strong>");
+
+        // 3. Icons or Alert emojis styling
+        html = html.Replace("⚠️", "<span style='color:#f59e0b;'>⚠️</span>")
+                   .Replace("❌", "<span style='color:#ef4444;'>❌</span>")
+                   .Replace("🤖", "<span style='color:#2563eb;'>🤖</span>")
+                   .Replace("📊", "<span style='color:#3b82f6;'>📊</span>")
+                   .Replace("💸", "<span style='color:#10b981;'>💸</span>")
+                   .Replace("🚚", "<span style='color:#8b5cf6;'>🚚</span>")
+                   .Replace("✅", "<span style='color:#10b981;'>✅</span>");
+
+        // 4. Bullet points formatting (- line)
+        var lines = html.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+        var inList = false;
+        var processedLines = new List<string>();
+        
+        foreach (var line in lines)
+        {
+            var trimmed = line.TrimStart();
+            if (trimmed.StartsWith("- ") || trimmed.StartsWith("* "))
+            {
+                var content = trimmed.Substring(2);
+                if (!inList)
+                {
+                    processedLines.Add("<ul style='padding-left: 1.1rem; margin-bottom: 0.5rem; margin-top: 0.25rem;'>");
+                    inList = true;
+                }
+                processedLines.Add($"<li style='margin-bottom: 0.15rem;'>{content}</li>");
+            }
+            else
+            {
+                if (inList)
+                {
+                    processedLines.Add("</ul>");
+                    inList = false;
+                }
+                processedLines.Add(line + "<br/>");
+            }
+        }
+        if (inList)
+        {
+            processedLines.Add("</ul>");
+        }
+        
+        html = string.Join("\n", processedLines);
+        return new MarkupString(html);
+    }
+}

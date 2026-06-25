@@ -1,0 +1,495 @@
+@page "/retail"
+@attribute [Authorize]
+@using KhoHang.Models
+@using KhoHang.Services
+@using KhoHang.Components.Shared
+@inject WarehouseService WarehouseService
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<style>
+    .invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1rem;
+    }
+    .invoice-table th {
+        background: #f8fafc;
+        padding: 0.5rem 1rem;
+        border-bottom: 2px solid #e2e8f0;
+        color: #475569;
+        font-weight: 800;
+        font-size: 0.85rem;
+    }
+    .invoice-table td {
+        padding: 0.2rem 0.5rem !important;
+        border-bottom: 1px solid #e2e8f0;
+        color: #1e293b;
+        font-size: 0.85rem;
+    }
+    .signature-section {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+        text-align: center;
+        margin-top: 1.5rem;
+        padding-top: 0.5rem;
+        page-break-inside: avoid;
+    }
+    .sig-block p { margin: 0; font-weight: 700; color: #475569; font-size: 0.85rem; }
+    .sig-space { height: 50px; }
+
+    @@media print {
+        body * {
+            visibility: hidden;
+        }
+        .printable-invoice, .printable-invoice * {
+            visibility: visible;
+        }
+        .printable-invoice {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            margin: 0;
+            padding: 1rem;
+            box-shadow: none !important;
+            border: none !important;
+            background: white !important;
+            color: black !important;
+        }
+        .no-print {
+            display: none !important;
+        }
+        .invoice-table th {
+            background: #f1f5f9 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        @@page { 
+            size: A4 portrait; 
+            margin: 1cm;
+        }
+    }
+</style>
+
+<div class="fade-in no-print">
+    <!-- Header -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem;">
+        <div>
+            <h1 style="margin: 0; font-size: 1.8rem; font-weight: 800; color: #1e293b;">Bán Lẻ</h1>
+        </div>
+        <div style="display: flex; gap: 0.5rem; background: #f1f5f9; padding: 0.25rem; border-radius: 12px;">
+            <button class="@(activeTab == "create" ? "btn-primary" : "btn-outline")" 
+                    style="padding: 0.5rem 1rem; border-radius: 10px; border: none; @(activeTab == "create" ? "" : "background: transparent;")"
+                    @onclick='() => activeTab = "create"'>
+                Tạo đơn mới
+            </button>
+            <button class="@(activeTab == "history" ? "btn-primary" : "btn-outline")" 
+                    style="padding: 0.5rem 1rem; border-radius: 10px; border: none; @(activeTab == "history" ? "" : "background: transparent;")"
+                    @onclick='() => { activeTab = "history"; _ = LoadHistoryAsync(); }'>
+                Lịch sử
+            </button>
+        </div>
+    </div>
+
+    @if (activeTab == "create")
+    {
+        <!-- Form Invoice Bán Lẻ -->
+        <div class="card-modern" style="max-width: 1000px; margin: 0 auto;">
+            <!-- Tiêu đề Hóa Đơn -->
+            <div style="text-align: center; margin-bottom: 2rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 1rem;">
+                <h2 style="font-weight: 900; color: #1e293b; letter-spacing: 2px; text-transform: uppercase;">Phiếu Bán Lẻ</h2>
+                <div style="color: #64748b; font-size: 0.9rem;">Ngày: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</div>
+            </div>
+
+            <!-- Thông tin khách hàng -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                <div style="grid-column: 1 / -1;">
+                    <label style="display: block; font-weight: 700; color: #475569; margin-bottom: 0.5rem; font-size: 0.85rem;">Chọn từ danh bạ khách hàng</label>
+                    <select @onchange="OnCustomerSelected" class="form-input-modern">
+                        <option value="">-- Tạo mới hoặc chọn khách lẻ --</option>
+                        @if (customers != null)
+                        {
+                            @foreach (var c in customers) { <option value="@c.Id">@c.Name (@c.Phone)</option> }
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; font-weight: 700; color: #475569; margin-bottom: 0.5rem; font-size: 0.85rem;">Tên khách hàng (*)</label>
+                    <input type="text" @bind="newOrder.CustomerName" class="form-input-modern" placeholder="Nhập tên khách mua lẻ..." />
+                </div>
+                <div>
+                    <label style="display: block; font-weight: 700; color: #475569; margin-bottom: 0.5rem; font-size: 0.85rem;">Số điện thoại</label>
+                    <input type="text" @bind="newOrder.Phone" class="form-input-modern" placeholder="Số điện thoại..." />
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <label style="display: block; font-weight: 700; color: #475569; margin-bottom: 0.5rem; font-size: 0.85rem;">Địa chỉ</label>
+                    <input type="text" @bind="newOrder.Address" class="form-input-modern" placeholder="Giao đến địa chỉ..." />
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <label style="display: block; font-weight: 700; color: #475569; margin-bottom: 0.5rem; font-size: 0.85rem;">Ghi chú</label>
+                    <input type="text" @bind="newOrder.Note" class="form-input-modern" placeholder="Ghi chú thêm cho đơn hàng..." />
+                </div>
+            </div>
+
+            <!-- Nút thêm hàng -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h3 style="font-size: 1.1rem; margin: 0;">Chi tiết hàng hóa</h3>
+                <button class="btn-primary" style="padding: 0.5rem 1rem; font-size: 0.85rem;" @onclick="() => isSelectionModalOpen = true">
+                    <i class="bi bi-plus-lg"></i> Thêm vật tư
+                </button>
+            </div>
+
+            <!-- Danh sách hàng -->
+            <div style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 2rem;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                    <thead style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; color: #64748b;">
+                        <tr>
+                            <th style="padding: 0.75rem; text-align: left; width: 40px;">STT</th>
+                            <th style="padding: 0.75rem; text-align: left;">Tên hàng hóa</th>
+                            <th style="padding: 0.75rem; text-align: center; width: 130px;">Lô</th>
+                            <th style="padding: 0.75rem; text-align: center; width: 80px;">ĐVT</th>
+                            <th style="padding: 0.75rem; text-align: center; width: 100px;">Số lượng</th>
+                            <th style="padding: 0.75rem; text-align: right; width: 150px;">Đơn giá</th>
+                            <th style="padding: 0.75rem; text-align: right; width: 150px;">Thành tiền</th>
+                            <th style="padding: 0.75rem; width: 50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!draftItems.Any())
+                        {
+                            <tr>
+                                <td colspan="8" style="text-align: center; padding: 3rem; color: #94a3b8; font-style: italic;">
+                                    Chưa có hàng hóa nào được chọn
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            int stt = 1;
+                            foreach (var item in draftItems)
+                            {
+                                <tr style="border-bottom: 1px solid #f1f5f9;">
+                                    <td style="padding: 0.75rem; text-align: center; color: #64748b;">@(stt++)</td>
+                                    <td style="padding: 0.75rem; font-weight: 700; color: #1e293b;">@item.Name</td>
+                                    <td style="padding: 0.75rem;">
+                                        <select @bind="item.LotNumber" @bind:event="onchange" class="form-input-modern" style="padding: 0.25rem 0.5rem; font-size: 0.8rem; width: 100%;">
+                                            @if (availableLots.ContainsKey(item.MaterialId))
+                                            {
+                                                var usedLotsInOtherRows = draftItems
+                                                    .Where(x => x.MaterialId == item.MaterialId && x != item)
+                                                    .Select(x => x.LotNumber)
+                                                    .ToList();
+
+                                                foreach (var lot in availableLots[item.MaterialId])
+                                                {
+                                                    var isUsed = usedLotsInOtherRows.Contains(lot.LotNumber);
+                                                    <option value="@lot.LotNumber" disabled="@isUsed">Lô @lot.LotNumber @(isUsed ? "(Đã chọn)" : "")</option>
+                                                }
+                                            }
+                                        </select>
+                                        
+                                        @{
+                                            var selectedLot = availableLots.ContainsKey(item.MaterialId) 
+                                                ? availableLots[item.MaterialId].FirstOrDefault(l => l.LotNumber == item.LotNumber) 
+                                                : null;
+                                        }
+                                        @if (selectedLot != null)
+                                        {
+                                            <div style="font-size: 0.7rem; color: #64748b; margin-top: 4px; line-height: 1.2;">
+                                                <div>Nhập: <b>@selectedLot.CostPrice.ToString("N0")</b></div>
+                                                <div>Tồn: <b style="color: @(selectedLot.StockQty <= 0 ? "#be123c" : "#10b981");">@selectedLot.StockQty.ToString("0.##")</b></div>
+                                                @if (!string.IsNullOrEmpty(selectedLot.Note))
+                                                {
+                                                    <div style="font-style: italic; color: #94a3b8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@selectedLot.Note">@selectedLot.Note</div>
+                                                }
+                                            </div>
+                                        }
+                                    </td>
+                                    <td style="padding: 0.75rem; text-align: center; color: #64748b;">@item.Unit</td>
+                                    <td style="padding: 0.75rem;">
+                                        <input type="number" step="any" value="@item.Qty" 
+                                               @oninput="@((ChangeEventArgs e) => { 
+                                                   var str = e.Value?.ToString()?.Replace(',', '.');
+                                                   if(double.TryParse(str, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out var v)) 
+                                                   { item.Qty = v; UpdateTotals(); } 
+                                                   else if (string.IsNullOrEmpty(str)) { item.Qty = 0; UpdateTotals(); }
+                                               })"
+                                               class="form-input-modern" style="padding: 0.35rem; text-align: center;" />
+                                    </td>
+                                    <td style="padding: 0.75rem;">
+                                        <input type="text" value="@item.Price.ToString("N0")" 
+                                               @oninput="@((ChangeEventArgs e) => { 
+                                                   var raw = e.Value?.ToString()?.Replace(",", "").Replace(".", ""); 
+                                                   if(decimal.TryParse(raw, out var v)) { item.Price = v; UpdateTotals(); } 
+                                                   else if (string.IsNullOrEmpty(raw)) { item.Price = 0; UpdateTotals(); }
+                                               })" 
+                                               onkeyup="formatCurrencyInput(this)" 
+                                               class="form-input-modern" style="padding: 0.35rem; text-align: right;" />
+                                    </td>
+                                    <td style="padding: 0.75rem; text-align: right; font-weight: 800; color: var(--accent-primary);">
+                                        @((item.Qty * (double)item.Price).ToString("N0"))
+                                    </td>
+                                    <td style="padding: 0.75rem; text-align: center; white-space: nowrap;">
+                                        <button class="btn-icon-small" style="color: var(--accent-primary); margin-right: 4px;" @onclick="() => DuplicateItem(item)" title="Nhân bản để chọn lô khác">
+                                            <i class="bi bi-copy"></i>
+                                        </button>
+                                        <button class="btn-icon-small" style="color: #be123c;" @onclick="() => { draftItems.Remove(item); UpdateTotals(); }">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Tổng kết & Thanh toán -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 2rem;">
+                <div style="flex: 1;">
+                    <label style="display: block; font-weight: 700; color: #475569; margin-bottom: 0.5rem; font-size: 0.85rem;">Ghi chú hóa đơn</label>
+                    <textarea @bind="newOrder.Note" class="form-input-modern" style="min-height: 80px;" placeholder="Ghi chú giao hàng, dặn dò..."></textarea>
+                </div>
+                
+                <div style="width: 350px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem; font-size: 1.1rem;">
+                        <span style="color: #64748b; font-weight: 600;">Tổng cộng:</span>
+                        <span style="font-weight: 800; color: #1e293b;">@totalAmount.ToString("N0") đ</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px dashed #cbd5e1; padding-bottom: 1.5rem;">
+                        <span style="color: #64748b; font-weight: 600;">Khách thanh toán:</span>
+                        <div style="width: 120px;">
+                            <input type="text" value="@amountPaid.ToString("N0")" 
+                                   @oninput="@((ChangeEventArgs e) => { var raw = e.Value?.ToString()?.Replace(",", ""); if(decimal.TryParse(raw, out var v)) amountPaid = v; })" 
+                                   onkeyup="formatCurrencyInput(this)" 
+                                   class="form-input-modern" style="padding: 0.35rem; text-align: right; font-weight: 800; color: #16a34a;" />
+                        </div>
+                    </div>
+
+                    @if (showToast)
+                    {
+                        <div style="background: #fff1f2; color: #be123c; padding: 0.75rem; border-radius: 8px; font-size: 0.85rem; font-weight: 600; margin-bottom: 1rem; border: 1px solid #fecaca;">
+                            @((MarkupString)toastMessage)
+                        </div>
+                    }
+
+                    <button class="btn-primary" style="width: 100%; padding: 1rem; font-size: 1.1rem; font-weight: 800; box-shadow: 0 10px 25px rgba(67, 97, 238, 0.25);"
+                            @onclick="SubmitOrder" disabled="@isProcessing">
+                        @if (isProcessing) { <span class="spinner-border spinner-border-sm"></span> }
+                        CHỐT ĐƠN & XUẤT KHO
+                    </button>
+                    <div style="text-align: center; font-size: 0.75rem; color: #94a3b8; margin-top: 0.75rem;">
+                        Hàng xuất sẽ trừ thẳng vào kho ngay lập tức
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Lịch sử Bán Lẻ -->
+        <div class="card-modern">
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                <div>
+                    <label style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Từ ngày</label>
+                    <input type="date" @bind="filterFrom" class="form-input-modern" />
+                </div>
+                <div>
+                    <label style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Đến ngày</label>
+                    <input type="date" @bind="filterTo" class="form-input-modern" />
+                </div>
+                <div style="flex: 1; min-width: 200px;">
+                    <label style="font-size: 0.75rem; font-weight: 600; color: #64748b;">Khách hàng</label>
+                    <input type="text" @bind="filterCustomer" @bind:event="oninput" @onkeyup="FilterHistory" class="form-input-modern" placeholder="Tìm theo tên khách..." />
+                </div>
+                <div style="display: flex; align-items: flex-end;">
+                    <button class="btn-primary" @onclick="LoadHistoryAsync"><i class="bi bi-funnel"></i> Lọc</button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Mã Đơn</th>
+                            <th>Ngày giờ</th>
+                            <th>Khách hàng</th>
+                            <th>Thông tin</th>
+                            <th style="text-align: right;">Tổng tiền</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (historyOrders == null)
+                        {
+                            <tr><td colspan="6" style="text-align: center;"><div class="spinner-border text-primary"></div></td></tr>
+                        }
+                        else if (!historyOrders.Any())
+                        {
+                            <tr><td colspan="6" style="text-align: center; color: #94a3b8;">Không tìm thấy đơn bán lẻ nào.</td></tr>
+                        }
+                        else
+                        {
+                            foreach (var o in historyOrders)
+                            {
+                                <tr>
+                                    <td style="font-weight: 800; color: #1e293b;">#@o.Id</td>
+                                    <td style="color: #64748b;">@o.Timestamp.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>
+                                        <div style="font-weight: 700; color: var(--accent-primary);">@o.CustomerName</div>
+                                        <div style="font-size: 0.75rem; color: #64748b;">@o.Phone</div>
+                                    </td>
+                                    <td>
+                                         <div style="display: flex; flex-wrap: wrap; gap: 0.3rem; max-width: 350px; margin-bottom: 0.25rem;">
+                                             @foreach (var item in o.Items.Take(5))
+                                             {
+                                                 <span style="background: #f1f5f9; border: 1px solid #e2e8f0; color: #475569; padding: 0.15rem 0.5rem; border-radius: 6px; font-size: 0.7rem; font-weight: 700;">
+                                                     @item.Name (@item.Qty.ToString("0.##")) @(!string.IsNullOrEmpty(item.LotNumber) ? $"[Lô: {item.LotNumber}]" : "")
+                                                 </span>
+                                             }
+                                             @if (o.Items.Count > 5)
+                                             {
+                                                 <span style="font-size: 0.7rem; color: #94a3b8; font-weight: 700; display: inline-flex; align-items: center;">+ @(o.Items.Count - 5) món khác...</span>
+                                             }
+                                         </div>
+                                         @if (!string.IsNullOrEmpty(o.Note))
+                                         {
+                                             <div style="font-size: 0.75rem; color: #64748b; font-weight: 500;">
+                                                 <i class="bi bi-chat-left-text" style="margin-right: 0.2rem; color: #cbd5e1;"></i> @o.Note
+                                             </div>
+                                         }
+                                         @if (!string.IsNullOrEmpty(o.Address))
+                                         {
+                                             <div style="font-size: 0.7rem; color: #94a3b8; font-style: italic; margin-top: 0.1rem;">
+                                                 <i class="bi bi-geo-alt" style="margin-right: 0.2rem; color: #e2e8f0;"></i> @o.Address
+                                             </div>
+                                         }
+                                     </td>
+                                    <td style="text-align: right; font-weight: 800; color: #16a34a;">@o.TotalAmount.ToString("N0") đ</td>
+                                    <td style="text-align: right;">
+                                        <button class="btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" @onclick="() => ViewOrderDetails(o)">
+                                            <i class="bi bi-eye"></i> Chi tiết
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+<MaterialSelectionModal @bind-IsOpen="isSelectionModalOpen" 
+                        OnMaterialsSelected="OnMaterialsSelected"
+                        ExistingMaterialIds="draftItems.Select(d => d.MaterialId).ToList()"
+                        AllowZeroStock="false" />
+
+<!-- Order Details Modal -->
+@if (selectedOrder != null)
+{
+    <div class="modal-overlay">
+        <div class="modal-content printable-invoice" style="max-width: 750px; padding: 1.25rem; border-radius: 8px; position: relative;">
+            
+            <!-- Close button for screen viewing -->
+            <button type="button" class="no-print" @onclick="() => selectedOrder = null" style="position: absolute; right: 0.75rem; top: 0.75rem; background: #f1f5f9; border: none; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                <i class="bi bi-x-lg"></i>
+            </button>
+
+            <!-- Header & Customer Info combined -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000; padding-bottom: 0.4rem; margin-bottom: 0.75rem;">
+                <!-- Left: Title & ID -->
+                <div>
+                    <h2 style="margin: 0; font-size: 1.3rem; font-weight: 950; text-transform: uppercase; color: #000; line-height: 1;">PHIẾU XUẤT HÀNG BÁN LẺ</h2>
+                    <div style="margin-top: 4px; font-size: 0.75rem; color: #475569; font-weight: 700;">
+                        #@selectedOrder.Id | @selectedOrder.Timestamp.ToString("dd/MM/yyyy HH:mm")
+                    </div>
+                </div>
+
+                <!-- Right: Customer Info -->
+                <div style="text-align: right; font-size: 0.8rem; line-height: 1.2;">
+                    <div style="font-weight: 900; color: #0f172a; font-size: 0.9rem;">@selectedOrder.CustomerName</div>
+                    <div style="font-weight: 700; color: #334155; margin-top: 2px;">
+                        <i class="bi bi-telephone"></i> @(string.IsNullOrEmpty(selectedOrder.Phone) ? "---" : selectedOrder.Phone)
+                    </div>
+                    <div style="color: #475569; margin-top: 2px;">
+                        <i class="bi bi-geo-alt"></i> @(string.IsNullOrEmpty(selectedOrder.Address) ? "---" : selectedOrder.Address)
+                    </div>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(selectedOrder.Note))
+            {
+                <div style="font-size: 0.75rem; color: #475569; margin-bottom: 0.5rem; font-style: italic;">
+                    <strong>Ghi chú:</strong> @selectedOrder.Note
+                </div>
+            }
+
+            <!-- Items Table -->
+            <table class="invoice-table">
+                <thead>
+                    <tr>
+                        <th style="width: 35px; text-align: center; padding: 0.3rem;">STT</th>
+                        <th style="text-align: left; padding: 0.3rem;">Tên hàng hóa</th>
+                        <th style="text-align: center; width: 80px; padding: 0.3rem;">Lô</th>
+                        <th style="text-align: center; width: 50px; padding: 0.3rem;">SL</th>
+                        <th style="text-align: center; width: 40px; padding: 0.3rem;">ĐVT</th>
+                        <th style="text-align: right; width: 90px; padding: 0.3rem;">Đơn giá</th>
+                        <th style="text-align: right; width: 100px; padding: 0.3rem;">Thành tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ int stt = 1; }
+                    @foreach(var item in selectedOrder.Items)
+                    {
+                        <tr>
+                            <td style="text-align: center; color: #64748b;">@(stt++)</td>
+                            <td style="font-weight: 700;">@item.Name</td>
+                            <td style="text-align: center; color: #64748b; font-size: 0.75rem;">@item.LotNumber</td>
+                            <td style="text-align: center; font-weight: 700;">@item.Qty.ToString("0.##")</td>
+                            <td style="text-align: center; color: #64748b;">@item.Unit</td>
+                            <td style="text-align: right;">@item.Price.ToString("N0")</td>
+                            <td style="text-align: right; font-weight: 700;">@((item.Qty * (double)item.Price).ToString("N0"))</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <!-- Totals -->
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 0.75rem;">
+                <div style="width: 250px; font-size: 0.85rem;">
+                    <div style="display: flex; justify-content: space-between; padding: 0.15rem 0;">
+                        <span style="color: #475569; font-weight: 600;">Tổng giá trị:</span>
+                        <span style="font-weight: 700;">@selectedOrder.TotalAmount.ToString("N0") đ</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 0.15rem 0; border-top: 1px dashed #cbd5e1; margin-top: 0.15rem;">
+                        <span style="color: #475569; font-weight: 600;">Đã thanh toán:</span>
+                        <span style="font-weight: 800; color: #16a34a;">@selectedOrder.AmountPaid.ToString("N0") đ</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Signatures -->
+            <div class="signature-section" style="grid-template-columns: repeat(2, 1fr);">
+                <div class="sig-block">
+                    <p>Người lập phiếu</p>
+                    <div class="sig-space" style="height: 40px;"></div>
+                </div>
+                <div class="sig-block">
+                    <p>Khách hàng nhận</p>
+                    <div class="sig-space" style="height: 40px;"></div>
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="no-print" style="margin-top: 1rem; display: flex; justify-content: flex-end; gap: 0.5rem; border-top: 1px solid #e2e8f0; padding-top: 0.75rem;">
+                <button class="btn-outline" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;" @onclick="() => selectedOrder = null">Đóng</button>
+                <button class="btn-primary" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;" @onclick='() => JS.InvokeVoidAsync("window.print")'><i class="bi bi-printer"></i> In Hóa Đơn</button>
+            </div>
+        </div>
+    </div>
+}
