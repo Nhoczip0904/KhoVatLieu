@@ -134,7 +134,7 @@ public class AiService
         try
         {
             // Gọi API qua JavaScript (trình duyệt) để tránh bị chặn địa lý trên server Azure
-            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+            var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
             var requestBodyJson = JsonSerializer.Serialize(requestBody, options);
             var rawResponse = await _jsRuntime.InvokeAsync<string>("callGeminiApi", apiKey, requestBodyJson);
 
