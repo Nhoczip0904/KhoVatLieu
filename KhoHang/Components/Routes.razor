@@ -1,6 +1,16 @@
 <Router AppAssembly="typeof(Program).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)" />
+        <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.MainLayout)">
+            <NotAuthorized>
+                <LayoutView Layout="typeof(Layout.EmptyLayout)">
+                    <div style="text-align: center; padding: 5rem; color: #ef4444; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; background: #f8fafc;">
+                        <i class="bi bi-shield-lock" style="font-size: 4rem; display: block; margin-bottom: 1rem;"></i>
+                        <h3 style="font-weight: 700; color: #1e293b; margin: 0;">Bạn không có quyền truy cập!</h3>
+                        <p style="color: #64748b; font-size: 1rem; margin-top: 0.5rem;">Vui lòng <a href="/" style="color: #b21f1f; font-weight: 700; text-decoration: none;">đăng nhập</a> để tiếp tục.</p>
+                    </div>
+                </LayoutView>
+            </NotAuthorized>
+        </AuthorizeRouteView>
         <FocusOnNavigate RouteData="routeData" Selector="h1"/>
     </Found>
 </Router>
