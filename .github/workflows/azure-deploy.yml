@@ -19,6 +19,7 @@ jobs:
         with:
           dotnet-version: '9.0.x'
           cache: true
+          cache-dependency-path: 'KhoHang/KhoHang.csproj'
 
       - name: Restore NuGet Packages
         run: dotnet restore KhoHang/KhoHang.csproj
