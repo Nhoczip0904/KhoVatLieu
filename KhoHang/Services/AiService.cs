@@ -2,19 +2,20 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using KhoHang.Models;
+using Microsoft.JSInterop;
 
 namespace KhoHang.Services;
 
 public class AiService
 {
     private readonly WarehouseService _warehouseService;
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IJSRuntime _jsRuntime;
     private readonly IConfiguration _configuration;
 
-    public AiService(WarehouseService warehouseService, IHttpClientFactory httpClientFactory, IConfiguration configuration)
+    public AiService(WarehouseService warehouseService, IJSRuntime jsRuntime, IConfiguration configuration)
     {
         _warehouseService = warehouseService;
-        _httpClientFactory = httpClientFactory;
+        _jsRuntime = jsRuntime;
         _configuration = configuration;
     }
 
@@ -54,15 +55,9 @@ public class AiService
         var personaInstruction = GetPersonaInstruction(settings);
 
         // 4. Build Payload for Gemini
-        var client = _httpClientFactory.CreateClient();
-        var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={apiKey}";
-
-        var contentsList = new List<object>();
-
-        // We inject the system instruction as the first message or systemInstruction property.
-        // Gemini API supports systemInstruction. Let's build the request body accordingly.
         var systemInstructionText = $"{personaInstruction}\n\nĐÂY LÀ DỮ LIỆU KHO HÀNG THỰC TẾ HIỆN TẠI CỦA CỬA HÀNG/DOANH NGHIỆP:\n{contextBuilder}";
 
+        var contentsList = new List<object>();
         foreach (var msg in history)
         {
             contentsList.Add(new
@@ -88,20 +83,23 @@ public class AiService
 
         try
         {
+            // Gọi API qua JavaScript (trình duyệt) để tránh bị chặn địa lý trên server Azure
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-            var response = await client.PostAsJsonAsync(url, requestBody, options);
+            var requestBodyJson = JsonSerializer.Serialize(requestBody, options);
+            var rawResponse = await _jsRuntime.InvokeAsync<string>("callGeminiApi", apiKey, requestBodyJson);
 
-            if (!response.IsSuccessStatusCode)
-            {
-                var errContent = await response.Content.ReadAsStringAsync();
-                return $"❌ **Lỗi từ AI Service:** {response.StatusCode}. Vui lòng kiểm tra lại API Key hoặc kết nối mạng. Chi tiết: {errContent}";
-            }
-
-            var jsonResult = await response.Content.ReadFromJsonAsync<GeminiResponse>();
+            var jsonResult = JsonSerializer.Deserialize<GeminiResponse>(rawResponse);
             var text = jsonResult?.Candidates?[0]?.Content?.Parts?[0]?.Text;
 
             if (string.IsNullOrWhiteSpace(text))
             {
+                // Kiểm tra xem có lỗi từ API không
+                using var doc = JsonDocument.Parse(rawResponse);
+                if (doc.RootElement.TryGetProperty("error", out var errEl))
+                {
+                    var errMsg = errEl.TryGetProperty("message", out var msgEl) ? msgEl.GetString() : "Unknown error";
+                    return $"❌ **Lỗi từ AI Service:** {errMsg}";
+                }
                 return "🤖 Xin lỗi, tôi không nhận được câu trả lời hợp lệ từ mô hình AI.";
             }
 

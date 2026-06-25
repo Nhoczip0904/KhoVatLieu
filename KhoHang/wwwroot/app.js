@@ -153,3 +153,20 @@ window.formatCurrencyInput = (element) => {
     cursorPosition = cursorPosition + (newLength - originalLength);
     element.setSelectionRange(cursorPosition, cursorPosition);
 };
+
+// Gọi Gemini API trực tiếp từ trình duyệt (tránh bị chặn do vị trí địa lý của server Azure)
+window.callGeminiApi = async (apiKey, requestBodyJson) => {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: requestBodyJson
+        });
+        const text = await response.text();
+        return text;
+    } catch (err) {
+        return JSON.stringify({ error: { message: err.message, status: 'NETWORK_ERROR' } });
+    }
+};
+
