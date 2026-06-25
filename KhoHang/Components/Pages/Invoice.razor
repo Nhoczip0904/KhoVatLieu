@@ -1,4 +1,5 @@
 @page "/invoice/{Id:int}"
+@attribute [Authorize]
 @using KhoHang.Models
 @using KhoHang.Services
 @inject WarehouseService WarehouseService
@@ -192,21 +193,14 @@ else
                 </div>
             </div>
 
-            <div class="signature-section">
+            <div class="signature-section" style="grid-template-columns: repeat(2, 1fr);">
                 <div class="sig-block">
                     <p>Người lập phiếu</p>
                     <div class="sig-space"></div>
-                    <p>(Ký, họ tên)</p>
-                </div>
-                <div class="sig-block">
-                    <p>Người giao hàng</p>
-                    <div class="sig-space"></div>
-                    <p>(Ký, họ tên)</p>
                 </div>
                 <div class="sig-block">
                     <p>Khách hàng nhận</p>
                     <div class="sig-space"></div>
-                    <p>(Ký, họ tên)</p>
                 </div>
             </div>
         </div>
@@ -229,7 +223,7 @@ else
         .invoice-header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
         }
 
         .brand {
@@ -262,8 +256,8 @@ else
         .customer-section {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            margin-bottom: 3rem;
+            gap: 1rem;
+            margin-bottom: 1rem;
         }
 
         .info-block label {
@@ -292,23 +286,23 @@ else
         .invoice-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 3rem;
+            margin-bottom: 1rem;
         }
 
         .invoice-table th {
             background: #f8fafc;
-            padding: 1rem;
+            padding: 0.3rem 0.5rem;
             border-bottom: 2px solid #e2e8f0;
             color: #475569;
             font-weight: 800;
-            font-size: 0.875rem;
+            font-size: 0.85rem;
         }
 
         .invoice-table td {
-            padding: 0.35rem 1rem !important; /* Extremely tight */
+            padding: 0.15rem 0.5rem !important; /* Extremely tight */
             border-bottom: 1px solid #f1f5f9;
             color: #1e293b;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
         }
 
         .summary-section {
@@ -321,12 +315,12 @@ else
 
         .notes p { font-weight: 700; color: #475569; margin-top: 0; }
         .notes ul { padding-left: 1.25rem; color: #64748b; font-size: 0.85rem; }
-        .notes li { margin-bottom: 0.4rem; }
+        .notes li { margin-bottom: 0.1rem; }
 
         .totals {
             display: flex;
             flex-direction: column;
-            gap: 0.6rem;
+            gap: 0.25rem;
         }
 
         .total-row {
@@ -347,8 +341,8 @@ else
             font-weight: 800;
             font-size: 1.1rem;
             color: #0f172a;
-            margin: 0.25rem 0;
-            padding: 0.5rem 0;
+            margin: 0.15rem 0;
+            padding: 0.2rem 0;
             border-bottom: 1px solid #e2e8f0;
         }
 
@@ -356,21 +350,21 @@ else
             font-weight: 900;
             font-size: 1.2rem;
             color: #1e3a8a;
-            padding-top: 0.5rem;
+            padding-top: 0.2rem;
         }
 
         .signature-section {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
+            gap: 1rem;
             text-align: center;
-            margin-top: 1.5rem;
+            margin-top: 1rem;
             padding-top: 0.5rem; /* Reduced from 2rem */
             page-break-inside: avoid;
         }
 
-        .sig-block p { margin: 0; font-weight: 700; color: #475569; }
-        .sig-space { height: 60px; } /* Reduced from 80px */
+        .sig-block p { margin: 0; font-weight: 700; color: #475569; font-size: 0.85rem; }
+        .sig-space { height: 40px; } /* Reduced from 80px */
 
         @@media print {
             /* Hide ALL system UI elements */

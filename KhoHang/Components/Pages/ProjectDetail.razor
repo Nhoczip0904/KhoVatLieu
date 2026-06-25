@@ -1,4 +1,5 @@
 @page "/projects/{Id:int}"
+@attribute [Authorize]
 @using KhoHang.Models
 @using KhoHang.Services
 @inject WarehouseService WarehouseService
@@ -260,6 +261,9 @@ else
                                                             {
                                                                 <span style="font-size: 0.65rem; font-weight: 700; color: @(lotInfo.StockQty <= 0 ? "#be123c" : "#059669");">
                                                                     Tồn: @lotInfo.StockQty.ToString("0.##")
+                                                                </span>
+                                                                <span style="font-size: 0.65rem; font-weight: 700; color: #64748b; margin-left: 4px;">
+                                                                    • Nhập: @lotInfo.CostPrice.ToString("N0")
                                                                 </span>
                                                             }
                                                         </div>

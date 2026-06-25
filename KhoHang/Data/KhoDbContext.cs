@@ -25,6 +25,8 @@ public class KhoDbContext : DbContext
     public DbSet<CustomerReturnItem> CustomerReturnItems => Set<CustomerReturnItem>();
     public DbSet<MaterialLot> MaterialLots => Set<MaterialLot>();
     public DbSet<MaterialSupplier> MaterialSuppliers => Set<MaterialSupplier>();
+    public DbSet<RetailOrder> RetailOrders => Set<RetailOrder>();
+    public DbSet<RetailOrderItem> RetailOrderItems => Set<RetailOrderItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -74,5 +76,10 @@ public class KhoDbContext : DbContext
             .HasMany(r => r.Items)
             .WithOne()
             .HasForeignKey(ri => ri.CustomerReturnId);
+
+        modelBuilder.Entity<RetailOrder>()
+            .HasMany(r => r.Items)
+            .WithOne(ri => ri.RetailOrder)
+            .HasForeignKey(ri => ri.RetailOrderId);
     }
 }

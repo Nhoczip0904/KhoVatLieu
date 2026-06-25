@@ -692,11 +692,18 @@ public class WarehouseService
         }
     }
 
-    public async Task<List<Material>> GetMasterMaterialsAsync()
+    public async Task<List<Material>> GetMasterMaterialsAsync(bool includeDeleted = false)
     {
         using var context = _dbFactory.CreateDbContext();
-        return await context.Materials
-            .AsNoTracking()
+        var query = context.Materials
+            .AsNoTracking();
+
+        if (!includeDeleted)
+        {
+            query = query.Where(m => !m.IsDeleted);
+        }
+
+        return await query
             .Include(m => m.Category)
             .Include(m => m.MaterialSuppliers)
                 .ThenInclude(ms => ms.Supplier)
@@ -803,7 +810,8 @@ public class WarehouseService
         var material = await context.Materials.FindAsync(id);
         if (material != null)
         {
-            context.Materials.Remove(material);
+            material.IsDeleted = true;
+            context.Materials.Update(material);
             await context.SaveChangesAsync();
         }
     }
@@ -905,6 +913,7 @@ public class WarehouseService
         var query = context.Projects
             .Include(p => p.Customer)
             .Include(p => p.Materials)
+                .ThenInclude(pm => pm.Material)
             .AsQueryable();
 
         if (isCompleted.HasValue)
@@ -1200,7 +1209,7 @@ public class WarehouseService
     {
         using var context = _dbFactory.CreateDbContext();
         return await context.Materials
-            .Where(m => m.StockQty <= m.MinStockLevel)
+            .Where(m => !m.IsDeleted && m.StockQty <= m.MinStockLevel)
             .Include(m => m.MaterialSuppliers)
                 .ThenInclude(ms => ms.Supplier)
             .Include(m => m.Lots)
@@ -1390,5 +1399,69 @@ public class WarehouseService
             .Include(pm => pm.Project)
             .Where(pm => pm.MaterialId == materialId && pm.RemainingQty > 0 && (pm.Project != null && !pm.Project.IsCompleted))
             .ToListAsync();
+    }
+
+    // --- RETAIL SALES METHODS ---
+    public async Task<int> CreateRetailOrderAsync(RetailOrder order)
+    {
+        using var context = _dbFactory.CreateDbContext();
+        
+        context.RetailOrders.Add(order);
+        await context.SaveChangesAsync();
+
+        foreach (var item in order.Items)
+        {
+            var mainMat = await context.Materials.FindAsync(item.MaterialId);
+            if (mainMat != null)
+            {
+                mainMat.StockQty -= item.Qty;
+                
+                var lotNum = string.IsNullOrEmpty(item.LotNumber) ? "Mặc định" : item.LotNumber;
+                var lot = await context.MaterialLots.FirstOrDefaultAsync(l => l.MaterialId == mainMat.Id && l.LotNumber == lotNum);
+                if (lot != null)
+                {
+                    lot.StockQty -= item.Qty;
+                    context.MaterialLots.Update(lot);
+                }
+
+                context.InventoryTransactions.Add(new InventoryTransaction
+                {
+                    MaterialId = mainMat.Id,
+                    Timestamp = order.Timestamp,
+                    Type = "Bán lẻ",
+                    QtyChange = -item.Qty,
+                    LotNumber = lotNum,
+                    Note = $"Bán lẻ cho khách: {order.CustomerName} (Đơn số {order.Id})",
+                    ReferenceId = "RETAIL-" + order.Id
+                });
+            }
+        }
+        await context.SaveChangesAsync();
+        return order.Id;
+    }
+
+    public async Task<List<RetailOrder>> GetRetailOrdersAsync(DateTime? from, DateTime? to, string? customerName)
+    {
+        using var context = _dbFactory.CreateDbContext();
+        var query = context.RetailOrders
+            .Include(r => r.Items)
+            .AsQueryable();
+
+        if (from.HasValue)
+            query = query.Where(r => r.Timestamp >= from.Value);
+        
+        if (to.HasValue)
+        {
+            // Bao gồm đến cuối ngày của 'to'
+            var toEndOfDay = to.Value.Date.AddDays(1).AddTicks(-1);
+            query = query.Where(r => r.Timestamp <= toEndOfDay);
+        }
+
+        if (!string.IsNullOrWhiteSpace(customerName))
+        {
+            query = query.Where(r => r.CustomerName.Contains(customerName));
+        }
+
+        return await query.OrderByDescending(r => r.Timestamp).ToListAsync();
     }
 }

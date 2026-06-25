@@ -1,4 +1,5 @@
 @page "/catalog"
+@attribute [Authorize]
 @using KhoHang.Models
 @using KhoHang.Services
 @inject WarehouseService WarehouseService
@@ -409,7 +410,7 @@
                         </div>
 
                         <!-- Actions -->
-                        <div style="width: 140px; display: flex; justify-content: flex-end; gap: 0.4rem;" @onclick:stopPropagation="true">
+                        <div style="width: 180px; display: flex; justify-content: flex-end; gap: 0.4rem;" @onclick:stopPropagation="true">
                             <button class="row-action-btn history" @onclick='() => Nav.NavigateTo($"/inventory-ledger?materialId={m.Id}")' title="Lịch sử kho">
                                 <i class="bi bi-clock-history"></i>
                             </button>
@@ -418,6 +419,9 @@
                             </button>
                             <button class="row-action-btn qr" @onclick="() => ShowQR(m)" title="Mã QR">
                                 <i class="bi bi-qr-code"></i>
+                            </button>
+                            <button class="row-action-btn delete" @onclick="() => ConfirmDeleteMaterial(m)" title="Xóa vật tư">
+                                <i class="bi bi-trash"></i>
                             </button>
                         </div>
                     </div>
@@ -994,6 +998,16 @@
     }
 
     private async Task DeleteCategory(int id) { await WarehouseService.DeleteCategoryAsync(id); await LoadData(); }
+
+    private async Task ConfirmDeleteMaterial(Material m)
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", $"Bạn có chắc chắn muốn xóa vật tư \"{m.Name}\" không?");
+        if (confirmed)
+        {
+            await WarehouseService.DeleteMasterMaterialAsync(m.Id);
+            await LoadData();
+        }
+    }
 
     private async Task HandleImageUpload(InputFileChangeEventArgs e)
     {

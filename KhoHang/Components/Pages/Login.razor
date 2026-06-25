@@ -1,4 +1,5 @@
 @page "/"
+@attribute [AllowAnonymous]
 @layout EmptyLayout
 @inject NavigationManager Navigation
 
@@ -10,25 +11,26 @@
             <p>Chào mừng bạn trở lại!</p>
         </div>
         
-        <div class="form-group">
-            <label for="username">Tài khoản</label>
-            <input type="text" id="username" @bind="Username" placeholder="Nhập tài khoản" />
-        </div>
-        
-        <div class="form-group">
-            <label for="password">Mật khẩu</label>
-            <input type="password" id="password" @bind="Password" placeholder="Nhập mật khẩu" />
-        </div>
-        
-        <div class="form-actions">
-            <div class="remember-me">
-                <input type="checkbox" id="remember" @bind="RememberMe" />
-                <label for="remember">Nhớ mật khẩu</label>
+        <form action="/account/login" method="post">
+            <div class="form-group">
+                <label for="username">Tài khoản</label>
+                <input type="text" id="username" name="username" placeholder="Nhập tài khoản" required />
             </div>
-            <a href="#" class="forgot-pwd">Quên mật khẩu?</a>
-        </div>
-        
-        <button class="btn-login" @onclick="HandleLogin">Đăng Nhập</button>
+            
+            <div class="form-group">
+                <label for="password">Mật khẩu</label>
+                <input type="password" id="password" name="password" placeholder="Nhập mật khẩu" required />
+            </div>
+            
+            <div class="form-actions">
+                <div class="remember-me">
+                    <input type="checkbox" id="remember" name="remember" />
+                    <label for="remember">Nhớ mật khẩu</label>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn-login">Đăng Nhập</button>
+        </form>
         
         @if (!string.IsNullOrEmpty(ErrorMessage))
         {
@@ -195,26 +197,18 @@
 </style>
 
 @code {
+    [SupplyParameterFromQuery] public string? error { get; set; }
+    
     private string Username { get; set; } = "ChiHaiKute";
     private string Password { get; set; } = "0939532769";
     private bool RememberMe { get; set; } = false;
     private string ErrorMessage { get; set; } = "";
 
-    private void HandleLogin()
+    protected override void OnInitialized()
     {
-        // For demonstration, we accept the specific username and any non-empty password
-        if (Username == "ChiHaiKute" && !string.IsNullOrEmpty(Password))
+        if (error == "1")
         {
-            // Login success, redirect to home
-            Navigation.NavigateTo("/dashboard");
-        }
-        else if (string.IsNullOrEmpty(Password))
-        {
-            ErrorMessage = "Vui lòng nhập mật khẩu!";
-        }
-        else
-        {
-            ErrorMessage = "Tài khoản không chính xác!";
+            ErrorMessage = "Tài khoản hoặc mật khẩu không chính xác!";
         }
     }
 }

@@ -1,4 +1,5 @@
 @page "/dashboard"
+@attribute [Authorize]
 @using KhoHang.Models
 @using KhoHang.Services
 @inject WarehouseService WarehouseService
@@ -279,8 +280,10 @@
         {
             // Only capture materials that are TRULY low in this project
             var lowInProject = p.Materials.Where(m => 
-                (m.TotalQty > 0 && m.RemainingQty <= (m.TotalQty * 0.15)) || // Under 15% of projected total
-                m.RemainingQty <= 3 // Or critically low absolute quantity
+                (m.Material == null || !m.Material.IsDeleted) && (
+                    (m.TotalQty > 0 && m.RemainingQty <= (m.TotalQty * 0.15)) || // Under 15% of projected total
+                    m.RemainingQty <= 3 // Or critically low absolute quantity
+                )
             ).OrderBy(m => m.RemainingQty).ToList();
 
             if (lowInProject.Any())

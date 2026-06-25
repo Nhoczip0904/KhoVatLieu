@@ -39,6 +39,7 @@ public class Material
     public double StockQty { get; set; } = 0;
     public double MinStockLevel { get; set; } = 0;
     public string? ImageUrl { get; set; }
+    public bool IsDeleted { get; set; } = false;
     
     public int? CategoryId { get; set; }
     public Category? Category { get; set; }
@@ -231,6 +232,39 @@ public class CustomerReturnItem
     public ProjectMaterial? ProjectMaterial { get; set; }
     public double Qty { get; set; }
     public decimal Price { get; set; }
+    public decimal Subtotal { get; set; }
+    public string? LotNumber { get; set; }
+}
+
+// --- RETAIL SALES ---
+public class RetailOrder
+{
+    public int Id { get; set; }
+    [Required]
+    public string CustomerName { get; set; } = string.Empty;
+    public string? Phone { get; set; }
+    public string? Address { get; set; }
+    public DateTime Timestamp { get; set; } = DateTime.Now;
+    
+    public decimal TotalAmount { get; set; }
+    public decimal AmountPaid { get; set; } // For tracking payment, even though it's 100% paid
+    public string? Note { get; set; }
+    
+    public List<RetailOrderItem> Items { get; set; } = new();
+}
+
+public class RetailOrderItem
+{
+    public int Id { get; set; }
+    public int RetailOrderId { get; set; }
+    public RetailOrder? RetailOrder { get; set; }
+    public int MaterialId { get; set; }
+    public Material? Material { get; set; }
+    
+    public string Name { get; set; } = string.Empty;
+    public string Unit { get; set; } = string.Empty;
+    public decimal Price { get; set; }
+    public double Qty { get; set; }
     public decimal Subtotal { get; set; }
     public string? LotNumber { get; set; }
 }

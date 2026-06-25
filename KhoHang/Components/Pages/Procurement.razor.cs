@@ -157,7 +157,7 @@ namespace KhoHang.Components.Pages
         {
             await LoadData();
             suppliers = await WarehouseSvc.GetSuppliersAsync();
-            materials = await WarehouseSvc.GetMasterMaterialsAsync();
+            materials = await WarehouseSvc.GetMasterMaterialsAsync(includeDeleted: true);
             categories = await WarehouseSvc.GetCategoriesAsync();
         }
 
@@ -506,7 +506,7 @@ namespace KhoHang.Components.Pages
             {
                 await WarehouseSvc.LinkMaterialToSupplierAsync(material.Id, supplierId);
                 // Refresh danh sách material để UI cập nhật các nút bấm NCC
-                materials = await WarehouseSvc.GetMasterMaterialsAsync();
+                materials = await WarehouseSvc.GetMasterMaterialsAsync(includeDeleted: true);
                 
                 // Cập nhật tham chiếu material trong item hiện tại
                 item.Material = materials.FirstOrDefault(m => m.Id == item.MaterialId);
