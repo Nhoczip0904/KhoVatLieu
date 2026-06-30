@@ -3,6 +3,8 @@
 @using Microsoft.AspNetCore.Components.Web
 @inject AiService AiService
 @inject WarehouseService WarehouseService
+@inject AiActionBridgeService AiActionBridgeService
+@inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
 
@@ -103,6 +105,21 @@
                                                             <span class="action-data-value">@kv.Value</span>
                                                         </div>
                                                     }
+                                                }
+                                                @if (action.Materials != null && action.Materials.Any())
+                                                {
+                                                    <div style="margin-top: 0.5rem; border-top: 1px dashed #7dd3fc; padding-top: 0.5rem;">
+                                                        <div style="font-size: 0.7rem; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 0.25rem;">Vật tư chốt dự kiến:</div>
+                                                        @foreach (var mat in action.Materials)
+                                                        {
+                                                            <div class="action-data-row" style="justify-content: space-between;">
+                                                                <span class="action-data-value" style="color: #0c4a6e;">• @mat.Name</span>
+                                                                <span class="action-data-value" style="color: #0f172a; font-weight: 700;">
+                                                                    @mat.Qty.ToString("0.##") @(mat.Price > 0 ? $"x {mat.Price:N0}đ" : "")
+                                                                </span>
+                                                            </div>
+                                                        }
+                                                    </div>
                                                 }
                                             </div>
                                         </div>
@@ -1101,15 +1118,14 @@
             switch (action.Type)
             {
                 case "create_project":
-                    var project = new Project
-                    {
-                        CustomerName = action.Data.GetValueOrDefault("customerName", ""),
-                        Phone = action.Data.GetValueOrDefault("phone"),
-                        Address = action.Data.GetValueOrDefault("address"),
-                        CreatedAt = DateTime.Now
-                    };
-                    await WarehouseService.CreateProjectAsync(project);
-                    resultMessage = $"✅ **Đã tạo dự án thành công!** Dự án cho khách hàng **{project.CustomerName}** đã được khởi tạo trong hệ thống.";
+                    // Phát sự kiện sang trang Projects để mở form điền sẵn
+                    AiActionBridgeService.TriggerAction("create_project", action.Data, action.Materials);
+                    
+                    // Chuyển hướng và đóng drawer
+                    NavigationManager.NavigateTo("/projects");
+                    CloseDrawer();
+                    
+                    resultMessage = $"🔄 **Đang chuyển hướng...** Đã mở form thiết lập dự án mới cho khách hàng **{action.Data.GetValueOrDefault("customerName", "")}**.";
                     break;
 
                 case "add_customer":

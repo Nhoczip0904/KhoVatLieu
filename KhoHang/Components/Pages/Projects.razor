@@ -3,7 +3,9 @@
 @using KhoHang.Models
 @using KhoHang.Services
 @inject WarehouseService WarehouseService
+@inject AiActionBridgeService AiActionBridge
 @inject NavigationManager Nav
+@implements IDisposable
 @rendermode InteractiveServer
 
 <PageTitle>Quản lý Dự án & Khách hàng</PageTitle>
@@ -256,6 +258,105 @@
     {
         await LoadData();
         customers = await WarehouseService.GetCustomersAsync();
+        AiActionBridge.OnActionTriggered += HandleAiAction;
+    }
+
+    public void Dispose()
+    {
+        AiActionBridge.OnActionTriggered -= HandleAiAction;
+    }
+
+    private async void HandleAiAction(AiActionMessage msg)
+    {
+        if (msg.ActionType == "create_project")
+        {
+            // 1. Mở form thiết lập dự án mới
+            isAdding = true;
+
+            // 2. Thiết lập thông tin dự án/khách hàng
+            newProject = new Project
+            {
+                CustomerName = msg.Data.GetValueOrDefault("customerName", ""),
+                Phone = msg.Data.GetValueOrDefault("phone"),
+                Address = msg.Data.GetValueOrDefault("address"),
+                InvoiceMode = 1 // HĐ tính cọc mặc định
+            };
+
+            // 3. Khớp vật tư thông minh từ danh sách AI gửi về
+            selectedMaterials.Clear();
+            promisedWarnings.Clear();
+            var allDbMaterials = await WarehouseService.GetMasterMaterialsAsync();
+
+            foreach (var aiMat in msg.Materials)
+            {
+                // So khớp tìm kiếm sản phẩm gần giống nhất dựa vào tên
+                var matchedMat = allDbMaterials
+                    .Where(m => !m.IsDeleted)
+                    .OrderByDescending(m => CalculateSimilarity(m.Name, aiMat.Name))
+                    .FirstOrDefault();
+
+                if (matchedMat != null)
+                {
+                    // Kiểm tra xem độ tương đồng có đủ tin cậy không (tên chứa từ khóa của nhau hoặc tương đồng > 35%)
+                    bool isMatch = matchedMat.Name.Contains(aiMat.Name, StringComparison.OrdinalIgnoreCase) || 
+                                   aiMat.Name.Contains(matchedMat.Name, StringComparison.OrdinalIgnoreCase) || 
+                                   CalculateSimilarity(matchedMat.Name, aiMat.Name) > 0.35;
+
+                    if (isMatch)
+                    {
+                        var lots = await WarehouseService.GetMaterialLotsAsync(matchedMat.Id);
+                        availableLots[matchedMat.Id] = lots;
+
+                        var usedLots = selectedMaterials
+                            .Where(existing => existing.MaterialId == matchedMat.Id)
+                            .Select(existing => existing.TargetLotNumber)
+                            .ToList();
+
+                        var firstAvailLot = lots.FirstOrDefault(l => !usedLots.Contains(l.LotNumber)) ?? lots.FirstOrDefault();
+
+                        var projMat = new ProjectMaterial
+                        {
+                            MaterialId = matchedMat.Id,
+                            Name = matchedMat.Name,
+                            Unit = matchedMat.Unit,
+                            CustomPrice = aiMat.Price > 0 ? aiMat.Price : (firstAvailLot?.BasePrice ?? 0),
+                            TotalQty = aiMat.Qty,
+                            RemainingQty = aiMat.Qty,
+                            ImageUrl = matchedMat.ImageUrl,
+                            TargetLotNumber = firstAvailLot?.LotNumber ?? ""
+                        };
+
+                        selectedMaterials.Add(projMat);
+                        
+                        // Check cảnh báo tồn kho hứa hẹn luôn
+                        await CheckPromisedAvailability(projMat);
+                    }
+                }
+            }
+
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private double CalculateSimilarity(string s1, string s2)
+    {
+        if (string.IsNullOrEmpty(s1) || string.IsNullOrEmpty(s2)) return 0;
+        var words1 = s1.ToLower().Split(new[] { ' ', '-', ',', '.', '/' }, StringSplitOptions.RemoveEmptyEntries);
+        var words2 = s2.ToLower().Split(new[] { ' ', '-', ',', '.', '/' }, StringSplitOptions.RemoveEmptyEntries);
+
+        int matchCount = 0;
+        foreach (var w1 in words1)
+        {
+            foreach (var w2 in words2)
+            {
+                if (w1 == w2 || w1.Contains(w2) || w2.Contains(w1))
+                {
+                    matchCount++;
+                    break;
+                }
+            }
+        }
+        return (double)matchCount / Math.Max(words1.Length, words2.Length);
     }
 
     private async Task LoadData()

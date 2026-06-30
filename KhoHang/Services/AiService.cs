@@ -39,6 +39,7 @@ public class AiService
         public string Type { get; set; } = string.Empty; // "create_project", "record_payment", "add_customer"
         public string Summary { get; set; } = string.Empty; // Human-readable summary
         public Dictionary<string, string> Data { get; set; } = new();
+        public List<AiActionMaterialDto> Materials { get; set; } = new();
     }
 
     /// <summary>
@@ -257,11 +258,13 @@ public class AiService
             2. Kèm theo một khối JSON action ở cuối tin nhắn với format chính xác sau:
 
             ```action
-            {"type": "<action_type>", "summary": "<mô tả ngắn>", "data": {...fields...} }
+            {"type": "<action_type>", "summary": "<mô tả ngắn>", "data": {...fields...}, "materials": [...] }
             ```
 
             Các action_type hỗ trợ:
-            - **create_project**: Tạo dự án mới. Data: {"customerName": "...", "phone": "...", "address": "..."}
+            - **create_project**: Tạo dự án mới. 
+              - Data: {"customerName": "...", "phone": "...", "address": "..."}
+              - Materials: Mảng các vật tư được yêu cầu chốt (nếu có). Định dạng mỗi vật tư: {"name": "tên vật tư", "qty": số_lượng, "price": giá_bán} (Nếu không nói giá bán, đặt là 0). Ví dụ: [{"name": "gạch ống", "qty": 2000, "price": 1200}, {"name": "cát tô", "qty": 5, "price": 300000}]
             - **add_customer**: Thêm khách hàng. Data: {"name": "...", "phone": "...", "address": "...", "note": "..."}
             - **record_payment**: Ghi nhận thanh toán. Data: {"projectId": "...", "amount": "...", "method": "Tiền mặt/Chuyển khoản", "note": "..."}
 

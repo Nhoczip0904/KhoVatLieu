@@ -23,6 +23,7 @@ builder.Services.AddScoped<WarehouseService>();
 builder.Services.AddScoped<SessionState>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<AiService>();
+builder.Services.AddScoped<AiActionBridgeService>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
