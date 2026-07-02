@@ -31,6 +31,9 @@ public class AiService
         public string Persona { get; set; } = "friendly";
         public string UserNickname { get; set; } = "Quản lý";
         public string LanguageStyle { get; set; } = "normal";
+        public string Provider { get; set; } = "gemini"; // "gemini" or "ollama"
+        public string OllamaUrl { get; set; } = "http://localhost:11434";
+        public string OllamaModel { get; set; } = "qwen2.5:7b";
     }
 
     // Agentic AI: structured action from AI response
@@ -86,7 +89,68 @@ public class AiService
 
     public async Task<string> GenerateResponseAsync(List<ChatMessage> history, AiSettings settings)
     {
-        // 1. Resolve API Key (from settings, environment variable, or appsettings.json)
+        // 1. Fetch Warehouse Context
+        var contextBuilder = new StringBuilder();
+        await BuildWarehouseContextAsync(contextBuilder);
+
+        // 2. Define Persona Instructions
+        var personaInstruction = GetPersonaInstruction(settings);
+
+        // 3. Build Payload System Instruction
+        var systemInstructionText = $"{personaInstruction}\n\nĐÂY LÀ DỮ LIỆU KHO HÀNG THỰC TẾ HIỆN TẠI CỦA CỬA HÀNG/DOANH NGHIỆP:\n{contextBuilder}";
+
+        // --- NHÀ CUNG CẤP LOCAL AI (OLLAMA) ---
+        if (settings.Provider == "ollama")
+        {
+            var messagesList = new List<object>
+            {
+                new { role = "system", content = systemInstructionText }
+            };
+            foreach (var msg in history)
+            {
+                messagesList.Add(new
+                {
+                    role = msg.Role == "user" ? "user" : "assistant",
+                    content = msg.Text
+                });
+            }
+
+            var requestBody = new
+            {
+                model = settings.OllamaModel,
+                messages = messagesList,
+                temperature = 0.5
+            };
+
+            try
+            {
+                var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
+                var requestBodyJson = JsonSerializer.Serialize(requestBody, options);
+                var rawResponse = await _jsRuntime.InvokeAsync<string>("callOllamaApi", settings.OllamaUrl, requestBodyJson);
+
+                var jsonResult = JsonSerializer.Deserialize<OpenAiResponse>(rawResponse);
+                var text = jsonResult?.Choices?[0]?.Message?.Content;
+
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    using var doc = JsonDocument.Parse(rawResponse);
+                    if (doc.RootElement.TryGetProperty("error", out var errEl))
+                    {
+                        var errMsg = errEl.TryGetProperty("message", out var msgEl) ? msgEl.GetString() : "Unknown error";
+                        return $"❌ **Lỗi từ Ollama Service:** {errMsg}";
+                    }
+                    return "🤖 Không nhận được câu trả lời hợp lệ từ mô hình Ollama cục bộ. Hãy kiểm tra xem bạn đã chạy Ollama và tải model đó về chưa (ví dụ: chạy `ollama run qwen2.5:7b` trong cmd).";
+                }
+
+                return text;
+            }
+            catch (Exception ex)
+            {
+                return $"❌ **Lỗi kết nối Ollama:** {ex.Message}";
+            }
+        }
+
+        // --- NHÀ CUNG CẤP CLOUD AI (GEMINI) ---
         var apiKey = settings.ApiKey;
         if (string.IsNullOrWhiteSpace(apiKey))
         {
@@ -98,16 +162,6 @@ public class AiService
             return "⚠️ **Thiếu API Key:** Vui lòng cấu hình Gemini API Key trong bảng Cài đặt AI (bấm vào biểu tượng bánh răng bên góc phải hộp thoại) hoặc trong `appsettings.json` để trò chuyện với Trợ lý AI.";
         }
 
-        // 2. Fetch Warehouse Context
-        var contextBuilder = new StringBuilder();
-        await BuildWarehouseContextAsync(contextBuilder);
-
-        // 3. Define Persona Instructions
-        var personaInstruction = GetPersonaInstruction(settings);
-
-        // 4. Build Payload for Gemini
-        var systemInstructionText = $"{personaInstruction}\n\nĐÂY LÀ DỮ LIỆU KHO HÀNG THỰC TẾ HIỆN TẠI CỦA CỬA HÀNG/DOANH NGHIỆP:\n{contextBuilder}";
-
         var contentsList = new List<object>();
         foreach (var msg in history)
         {
@@ -118,7 +172,7 @@ public class AiService
             });
         }
 
-        var requestBody = new
+        var geminiRequestBody = new
         {
             contents = contentsList,
             systemInstruction = new
@@ -136,7 +190,7 @@ public class AiService
         {
             // Gọi API qua JavaScript (trình duyệt) để tránh bị chặn địa lý trên server Azure
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower };
-            var requestBodyJson = JsonSerializer.Serialize(requestBody, options);
+            var requestBodyJson = JsonSerializer.Serialize(geminiRequestBody, options);
             var rawResponse = await _jsRuntime.InvokeAsync<string>("callGeminiApi", apiKey, requestBodyJson);
 
             var jsonResult = JsonSerializer.Deserialize<GeminiResponse>(rawResponse);
@@ -330,5 +384,24 @@ public class AiService
     {
         [JsonPropertyName("text")]
         public string Text { get; set; } = string.Empty;
+    }
+
+    // JSON parsing models for OpenAI / Ollama API response
+    private class OpenAiResponse
+    {
+        [JsonPropertyName("choices")]
+        public List<OpenAiChoice>? Choices { get; set; }
+    }
+
+    private class OpenAiChoice
+    {
+        [JsonPropertyName("message")]
+        public OpenAiMessage? Message { get; set; }
+    }
+
+    private class OpenAiMessage
+    {
+        [JsonPropertyName("content")]
+        public string Content { get; set; } = string.Empty;
     }
 }

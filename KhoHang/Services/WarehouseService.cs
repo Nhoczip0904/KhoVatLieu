@@ -1464,4 +1464,53 @@ public class WarehouseService
 
         return await query.OrderByDescending(r => r.Timestamp).ToListAsync();
     }
+
+    public class MaterialDeliveryHistoryDto
+    {
+        public DateTime Date { get; set; }
+        public double Qty { get; set; }
+    }
+
+    public async Task<List<MaterialDeliveryHistoryDto>> GetMaterialDeliveryHistoryAsync(int materialId)
+    {
+        using var context = _dbFactory.CreateDbContext();
+        
+        // Lấy từ lịch sử giao hàng của các dự án (Join thủ công di -> d -> pm)
+        var projectDeliveries = await context.DeliveryItems
+            .Where(di => di.ProjectMaterialId != 0)
+            .Join(context.Deliveries,
+                di => di.DeliveryId,
+                d => d.Id,
+                (di, d) => new { di, d })
+            .Join(context.ProjectMaterials,
+                combined => combined.di.ProjectMaterialId,
+                pm => pm.Id,
+                (combined, pm) => new { combined.di, combined.d, pm })
+            .Where(x => x.pm.MaterialId == materialId)
+            .Select(x => new MaterialDeliveryHistoryDto
+            {
+                Date = x.d.Timestamp,
+                Qty = x.di.Qty
+            })
+            .ToListAsync();
+
+        // Lấy thêm từ lịch sử bán lẻ (RetailOrder)
+        var retailDeliveries = await context.RetailOrderItems
+            .Where(roi => roi.MaterialId == materialId)
+            .Join(context.RetailOrders,
+                roi => roi.RetailOrderId,
+                ro => ro.Id,
+                (roi, ro) => new { roi, ro })
+            .Select(x => new MaterialDeliveryHistoryDto
+            {
+                Date = x.ro.Timestamp,
+                Qty = x.roi.Qty
+            })
+            .ToListAsync();
+
+        return projectDeliveries
+            .Concat(retailDeliveries)
+            .OrderBy(x => x.Date)
+            .ToList();
+    }
 }

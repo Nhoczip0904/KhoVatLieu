@@ -229,17 +229,42 @@
                     </div>
 
                     <div class="setting-group">
-                        <label class="setting-label">Gemini API Key</label>
-                        <div style="position: relative;">
-                            <input type="@(showApiKey ? "text" : "password")" class="setting-input" @bind="settings.ApiKey" placeholder="AIzaSy..." style="padding-right: 2.5rem;" />
-                            <button class="eye-btn" @onclick="ToggleApiKeyVisibility" type="button">
-                                <i class="bi @(showApiKey ? "bi-eye-slash-fill" : "bi-eye-fill")"></i>
-                            </button>
-                        </div>
-                        <span class="setting-desc">
-                            API Key được lưu trực tiếp dưới trình duyệt của bạn (LocalStorage). Nếu để trống, hệ thống sẽ sử dụng key mặc định từ máy chủ nếu có.
-                        </span>
+                        <label class="setting-label">Nhà cung cấp AI (Provider)</label>
+                        <select class="setting-select" @bind="settings.Provider">
+                            <option value="gemini">☁️ Google Gemini Cloud (Online)</option>
+                            <option value="ollama">💻 Ollama Local AI (Offline/Cục bộ)</option>
+                        </select>
                     </div>
+
+                    @if (settings.Provider == "ollama")
+                    {
+                        <div class="setting-group">
+                            <label class="setting-label">Ollama Service URL</label>
+                            <input type="text" class="setting-input" @bind="settings.OllamaUrl" placeholder="http://localhost:11434" />
+                            <span class="setting-desc">Địa chỉ chạy dịch vụ Ollama (mặc định: http://localhost:11434).</span>
+                        </div>
+
+                        <div class="setting-group">
+                            <label class="setting-label">Tên Mô hình (Model Name)</label>
+                            <input type="text" class="setting-input" @bind="settings.OllamaModel" placeholder="qwen2.5:7b" />
+                            <span class="setting-desc">Tên model đã cài đặt trong Ollama (ví dụ: qwen2.5:7b, llama3:8b).</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="setting-group">
+                            <label class="setting-label">Gemini API Key</label>
+                            <div style="position: relative;">
+                                <input type="@(showApiKey ? "text" : "password")" class="setting-input" @bind="settings.ApiKey" placeholder="AIzaSy..." style="padding-right: 2.5rem;" />
+                                <button class="eye-btn" @onclick="ToggleApiKeyVisibility" type="button">
+                                    <i class="bi @(showApiKey ? "bi-eye-slash-fill" : "bi-eye-fill")"></i>
+                                </button>
+                            </div>
+                            <span class="setting-desc">
+                                API Key được lưu trực tiếp dưới trình duyệt của bạn (LocalStorage). Nếu để trống, hệ thống sẽ sử dụng key mặc định từ máy chủ nếu có.
+                            </span>
+                        </div>
+                    }
 
                     <button class="save-settings-btn" @onclick="SaveSettingsAsync">
                         <i class="bi bi-check-circle-fill"></i> Lưu cài đặt
@@ -897,11 +922,17 @@
                 var storedPersona = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "ai_persona");
                 var storedStyle = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "ai_style");
                 var storedApiKey = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "ai_apikey");
+                var storedProvider = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "ai_provider");
+                var storedOllamaUrl = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "ai_ollama_url");
+                var storedOllamaModel = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "ai_ollama_model");
 
                 if (!string.IsNullOrEmpty(storedNickname)) settings.UserNickname = storedNickname;
                 if (!string.IsNullOrEmpty(storedPersona)) settings.Persona = storedPersona;
                 if (!string.IsNullOrEmpty(storedStyle)) settings.LanguageStyle = storedStyle;
                 if (!string.IsNullOrEmpty(storedApiKey)) settings.ApiKey = storedApiKey;
+                if (!string.IsNullOrEmpty(storedProvider)) settings.Provider = storedProvider;
+                if (!string.IsNullOrEmpty(storedOllamaUrl)) settings.OllamaUrl = storedOllamaUrl;
+                if (!string.IsNullOrEmpty(storedOllamaModel)) settings.OllamaModel = storedOllamaModel;
 
                 StateHasChanged();
             }
@@ -946,6 +977,9 @@
             await JSRuntime.InvokeVoidAsync("localStorage.setItem", "ai_persona", settings.Persona);
             await JSRuntime.InvokeVoidAsync("localStorage.setItem", "ai_style", settings.LanguageStyle);
             await JSRuntime.InvokeVoidAsync("localStorage.setItem", "ai_apikey", settings.ApiKey);
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "ai_provider", settings.Provider);
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "ai_ollama_url", settings.OllamaUrl);
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "ai_ollama_model", settings.OllamaModel);
 
             showSavedAlert = true;
             

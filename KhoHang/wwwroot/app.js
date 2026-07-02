@@ -170,3 +170,19 @@ window.callGeminiApi = async (apiKey, requestBodyJson) => {
     }
 };
 
+// Gọi Ollama API chạy local ở máy khách hàng (tránh bị chặn do khác mạng khi server đặt trên Azure)
+window.callOllamaApi = async (endpointUrl, requestBodyJson) => {
+    const url = `${endpointUrl.replace(/\/+$/, '')}/v1/chat/completions`;
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: requestBodyJson
+        });
+        const text = await response.text();
+        return text;
+    } catch (err) {
+        return JSON.stringify({ error: { message: `Không thể kết nối đến Ollama chạy local tại ${endpointUrl}. Lỗi: ${err.message}. Hãy chắc chắn Ollama đã chạy và cấu hình OLLAMA_ORIGINS="*"`, status: 'OLLAMA_ERROR' } });
+    }
+};
+

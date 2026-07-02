@@ -24,6 +24,7 @@ builder.Services.AddScoped<SessionState>();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<AiService>();
 builder.Services.AddScoped<AiActionBridgeService>();
+builder.Services.AddScoped<MlForecastService>();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>

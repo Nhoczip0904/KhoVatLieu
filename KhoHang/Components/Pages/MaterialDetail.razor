@@ -3,6 +3,7 @@
 @using KhoHang.Models
 @using KhoHang.Services
 @inject WarehouseService WarehouseService
+@inject MlForecastService MlForecastService
 @inject NavigationManager Nav
 @rendermode InteractiveServer
 
@@ -286,81 +287,207 @@
                         }
                     </div>
 
-                    <!-- Section: Transaction History -->
-                    <div class="glass-card" style="background: white;">
-                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-                            <h3 style="font-size: 1.1rem; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="bi bi-clock-history text-primary"></i> Lịch sử Xuất - Nhập - Trả
-                            </h3>
-                        </div>
+            <!-- Section 4: History & AI/ML Prediction Grid -->
+            <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1.5rem; margin-top: 1.5rem; align-items: start;">
+                
+                <!-- Left Box: Transaction History -->
+                <div class="glass-card" style="background: white; padding: 2rem; border-radius: 24px; border: 1px solid #f1f5f9; box-shadow: 0 10px 40px rgba(0,0,0,0.03); margin: 0;">
+                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h3 style="font-size: 1.1rem; font-weight: 850; color: #064e3b; margin: 0; display: flex; align-items: center; gap: 0.5rem;">
+                            <i class="bi bi-clock-history" style="color: #10b981;"></i> Lịch sử Xuất - Nhập - Trả
+                        </h3>
+                    </div>
 
-                        <!-- History Filters -->
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #e2e8f0;">
-                            <div>
-                                <label style="font-size: 0.65rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.35rem; display: block;">Loại</label>
-                                <select class="form-select-modern" style="padding: 0.35rem; font-size: 0.8rem;" @bind="filterType" @bind:after="ApplyFilters">
-                                    <option value="">Tất cả</option>
-                                    <option value="Nhập">Nhập kho</option>
-                                    <option value="Xuất">Xuất kho</option>
-                                    <option value="Trả hàng">Trả hàng</option>
-                                    <option value="Điều chỉnh">Điều chỉnh</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label style="font-size: 0.65rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.35rem; display: block;">Từ ngày</label>
-                                <input type="date" class="form-input-modern" style="padding: 0.35rem; font-size: 0.8rem;" @bind="fromDate" @bind:after="ApplyFilters" />
-                            </div>
-                            <div>
-                                <label style="font-size: 0.65rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.35rem; display: block;">Đến ngày</label>
-                                <input type="date" class="form-input-modern" style="padding: 0.35rem; font-size: 0.8rem;" @bind="toDate" @bind:after="ApplyFilters" />
-                            </div>
+                    <!-- History Filters -->
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; background: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #e2e8f0;">
+                        <div>
+                            <label style="font-size: 0.65rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.35rem; display: block;">Loại</label>
+                            <select class="form-select-modern" style="padding: 0.35rem; font-size: 0.8rem;" @bind="filterType" @bind:after="ApplyFilters">
+                                <option value="">Tất cả</option>
+                                <option value="Nhập">Nhập kho</option>
+                                <option value="Xuất">Xuất kho</option>
+                                <option value="Trả hàng">Trả hàng</option>
+                                <option value="Điều chỉnh">Điều chỉnh</option>
+                            </select>
                         </div>
+                        <div>
+                            <label style="font-size: 0.65rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.35rem; display: block;">Từ ngày</label>
+                            <input type="date" class="form-input-modern" style="padding: 0.35rem; font-size: 0.8rem;" @bind="fromDate" @bind:after="ApplyFilters" />
+                        </div>
+                        <div>
+                            <label style="font-size: 0.65rem; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.35rem; display: block;">Đến ngày</label>
+                            <input type="date" class="form-input-modern" style="padding: 0.35rem; font-size: 0.8rem;" @bind="toDate" @bind:after="ApplyFilters" />
+                        </div>
+                    </div>
 
-                        <div style="max-height: 500px; overflow-y: auto; padding-right: 0.5rem; scrollbar-width: thin;">
-                            @if (!pagedTransactions.Any())
+                    <div style="max-height: 400px; overflow-y: auto; padding-right: 0.5rem; scrollbar-width: thin;">
+                        @if (!pagedTransactions.Any())
+                        {
+                            <div style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.9rem;">Không có lịch sử giao dịch nào phù hợp.</div>
+                        }
+                        else
+                        {
+                            @foreach (var trans in pagedTransactions)
                             {
-                                <div style="text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.9rem;">Không có lịch sử giao dịch nào phù hợp.</div>
+                                <div style="display: flex; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #f1f5f9; margin-bottom: 1rem;">
+                                    <div style="flex-shrink: 0; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: @(GetTransBg(trans.Type)); color: @(GetTransColor(trans.Type));">
+                                        <i class="bi @(GetTransIcon(trans.Type))" style="font-size: 1.2rem;"></i>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                            <div style="font-weight: 700; color: #1e293b;">@trans.Type</div>
+                                            <div style="font-weight: 900; font-size: 1.1rem; color: @(trans.QtyChange > 0 ? "var(--success)" : "var(--error)");">
+                                                @(trans.QtyChange > 0 ? "+" : "")@trans.QtyChange.ToString("0.##")
+                                            </div>
+                                        </div>
+                                        <div style="font-size: 0.85rem; color: #64748b; margin-top: 0.25rem;">
+                                            @if (!string.IsNullOrEmpty(trans.LotNumber)) { <span style="font-weight: 700; color: var(--accent-primary);">Lô: @trans.LotNumber</span> <text>|</text> }
+                                            <span>@trans.Note</span>
+                                        </div>
+                                        <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.4rem;">
+                                            <i class="bi bi-clock"></i> @trans.Timestamp.ToString("HH:mm dd/MM/yyyy")
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                    
+                    @if (totalPages > 1)
+                    {
+                        <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #f1f5f9;">
+                            <button class="btn-outline" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" disabled="@(currentPage == 1)" @onclick="() => { currentPage--; }">Trước</button>
+                            <span style="font-size: 0.8rem; font-weight: 700; color: #64748b;">Trang @currentPage / @totalPages</span>
+                            <button class="btn-outline" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" disabled="@(currentPage >= totalPages)" @onclick="() => { currentPage++; }">Tiếp</button>
+                        </div>
+                    }
+                </div>
+
+                <!-- Right Box: AI/ML Demand Forecast -->
+                <div class="glass-card" style="background: white; padding: 2rem; border-radius: 24px; border: 1px solid #f1f5f9; box-shadow: 0 10px 40px rgba(0,0,0,0.03); margin: 0; min-height: 480px; display: flex; flex-direction: column;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem;">
+                        <div style="width: 38px; height: 38px; border-radius: 10px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                            <i class="bi bi-cpu-fill"></i>
+                        </div>
+                        <div>
+                            <h3 style="font-size: 1.1rem; font-weight: 850; color: #0c4a6e; margin: 0;">Dự Báo Nhu Cầu (AI/ML)</h3>
+                            <p style="margin: 0; font-size: 0.75rem; color: #94a3b8; font-weight: 600;">Thuật toán học máy chuỗi thời gian ML.NET SSA</p>
+                        </div>
+                    </div>
+
+                    @if (isMlLoading)
+                    {
+                        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; flex: 1; gap: 0.75rem; min-height: 250px;">
+                            <div class="spinner-border text-info" style="width: 2rem; height: 2rem;" role="status"></div>
+                            <span style="font-size: 0.8rem; color: #64748b; font-weight: 600;">Đang tính toán mô hình học máy...</span>
+                        </div>
+                    }
+                    else if (forecastResults == null || !forecastResults.Any())
+                    {
+                        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; flex: 1; text-align: center; padding: 2rem; min-height: 250px;">
+                            <div style="width: 60px; height: 60px; border-radius: 50%; background: #f1f5f9; color: #94a3b8; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; margin-bottom: 1rem;">
+                                <i class="bi bi-graph-up-arrow"></i>
+                            </div>
+                            <div style="font-weight: 800; color: #475569; font-size: 0.9rem; margin-bottom: 0.5rem;">Chưa đủ dữ liệu dự báo</div>
+                            <p style="font-size: 0.78rem; color: #94a3b8; line-height: 1.4; max-width: 250px; margin: 0;">
+                                Cần tối thiểu **5 ngày có phát sinh giao dịch xuất kho** của vật tư này để huấn luyện mô hình học máy cục bộ.
+                            </p>
+                        </div>
+                    }
+                    else
+                    {
+                        var day1to5 = forecastResults.Take(5).Sum(r => r.Quantity);
+                        var day6to10 = forecastResults.Skip(5).Take(5).Sum(r => r.Quantity);
+                        var day11to15 = forecastResults.Skip(10).Take(5).Sum(r => r.Quantity);
+                        var maxSegment = Math.Max(0.1f, Math.Max(day1to5, Math.Max(day6to10, day11to15)));
+
+                        <div style="display: flex; flex-direction: column; gap: 1.25rem; flex: 1;">
+                            
+                            <!-- AI Smart Insight Card -->
+                            @if (estimatedDepletionDays >= 0 && estimatedDepletionDays <= 15)
+                            {
+                                <div style="background: #fff1f2; border: 1px solid #fecaca; padding: 1rem; border-radius: 16px; display: flex; gap: 10px; align-items: flex-start;">
+                                    <i class="bi bi-exclamation-triangle-fill" style="color: #e11d48; font-size: 1.2rem; margin-top: 1px;"></i>
+                                    <div>
+                                        <div style="font-weight: 800; color: #9f1239; font-size: 0.85rem; text-transform: uppercase; margin-bottom: 2px;">Cảnh báo cạn kho (AI)</div>
+                                        <p style="margin: 0; font-size: 0.78rem; color: #be123c; line-height: 1.45; font-weight: 600;">
+                                            Dự kiến tiêu thụ **@totalForecastedQty.ToString("0.#") @material.Unit** trong 15 ngày tới. Tồn kho hiện tại chỉ đủ dùng trong khoảng **@estimatedDepletionDays ngày**.
+                                        </p>
+                                        <button class="btn-outline" style="margin-top: 0.5rem; padding: 4px 10px; font-size: 0.7rem; border-color: #fca5a5; color: #be123c; background: white; font-weight: 800;" @onclick='() => Nav.NavigateTo("/procurement")'>
+                                            <i class="bi bi-cart-plus"></i> Đặt mua thêm vật tư
+                                        </button>
+                                    </div>
+                                </div>
                             }
                             else
                             {
-                                @foreach (var trans in pagedTransactions)
-                                {
-                                    <div style="display: flex; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #f1f5f9; margin-bottom: 1rem;">
-                                        <div style="flex-shrink: 0; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: @(GetTransBg(trans.Type)); color: @(GetTransColor(trans.Type));">
-                                            <i class="bi @(GetTransIcon(trans.Type))" style="font-size: 1.2rem;"></i>
+                                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1rem; border-radius: 16px; display: flex; gap: 10px; align-items: flex-start;">
+                                    <i class="bi bi-shield-check" style="color: #16a34a; font-size: 1.2rem; margin-top: 1px;"></i>
+                                    <div>
+                                        <div style="font-weight: 800; color: #166534; font-size: 0.85rem; text-transform: uppercase; margin-bottom: 2px;">Tồn kho an toàn</div>
+                                        <p style="margin: 0; font-size: 0.78rem; color: #15803d; line-height: 1.45; font-weight: 600;">
+                                            Mô hình dự báo nhu cầu xuất kho trong 15 ngày tới là **@totalForecastedQty.ToString("0.#") @material.Unit**. Tồn kho hiện tại (@material.StockQty.ToString("0.##") @material.Unit) hoàn toàn đảm bảo.
+                                        </p>
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- CSS Bar Chart (Forecast Segments) -->
+                            <div>
+                                <h4 style="font-size: 0.8rem; font-weight: 800; color: #475569; text-transform: uppercase; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                                    <span>Lượng Xuất Dự Kiến Theo Chặng</span>
+                                    <span style="font-size: 0.75rem; color: #0284c7; font-weight: 700;">Tổng: @totalForecastedQty.ToString("0.#") @material.Unit</span>
+                                </h4>
+                                
+                                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                    
+                                    <!-- Chặng 1 -->
+                                    <div>
+                                        <div style="display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 4px; font-weight: 700;">
+                                            <span style="color: #64748b;">5 ngày đầu (Hôm nay - @DateTime.Today.AddDays(5).ToString("dd/MM"))</span>
+                                            <span style="color: #1e293b;">@day1to5.ToString("0.#") @material.Unit</span>
                                         </div>
-                                        <div style="flex: 1;">
-                                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                                                <div style="font-weight: 700; color: #1e293b;">@trans.Type</div>
-                                                <div style="font-weight: 900; font-size: 1.1rem; color: @(trans.QtyChange > 0 ? "var(--success)" : "var(--error)");">
-                                                    @(trans.QtyChange > 0 ? "+" : "")@trans.QtyChange.ToString("0.##")
-                                                </div>
-                                            </div>
-                                            <div style="font-size: 0.85rem; color: #64748b; margin-top: 0.25rem;">
-                                                @if (!string.IsNullOrEmpty(trans.LotNumber)) { <span style="font-weight: 700; color: var(--accent-primary);">Lô: @trans.LotNumber</span> <text>|</text> }
-                                                <span>@trans.Note</span>
-                                            </div>
-                                            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.4rem;">
-                                                <i class="bi bi-clock"></i> @trans.Timestamp.ToString("HH:mm dd/MM/yyyy")
-                                            </div>
+                                        <div style="width: 100%; height: 10px; background: #f1f5f9; border-radius: 8px; overflow: hidden; position: relative;">
+                                            <div style="position: absolute; left: 0; top: 0; height: 100%; width: @(day1to5 * 100 / maxSegment)%; background: linear-gradient(90deg, #38bdf8, #0284c7); border-radius: 8px;"></div>
                                         </div>
                                     </div>
-                                }
-                            }
-                        </div>
-                        
-                        <!-- Pagination (Outside scroll area for visibility) -->
-                        @if (totalPages > 1)
-                        {
-                            <div style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #f1f5f9;">
-                                <button class="btn-outline" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" disabled="@(currentPage == 1)" @onclick="() => { currentPage--; }">Trước</button>
-                                <span style="font-size: 0.8rem; font-weight: 700; color: #64748b;">Trang @currentPage / @totalPages</span>
-                                <button class="btn-outline" style="padding: 0.25rem 0.75rem; font-size: 0.75rem;" disabled="@(currentPage >= totalPages)" @onclick="() => { currentPage++; }">Tiếp</button>
-                            </div>
-                        }
-                    </div>
 
+                                    <!-- Chặng 2 -->
+                                    <div>
+                                        <div style="display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 4px; font-weight: 700;">
+                                            <span style="color: #64748b;">5 ngày giữa (@DateTime.Today.AddDays(6).ToString("dd/MM") - @DateTime.Today.AddDays(10).ToString("dd/MM"))</span>
+                                            <span style="color: #1e293b;">@day6to10.ToString("0.#") @material.Unit</span>
+                                        </div>
+                                        <div style="width: 100%; height: 10px; background: #f1f5f9; border-radius: 8px; overflow: hidden; position: relative;">
+                                            <div style="position: absolute; left: 0; top: 0; height: 100%; width: @(day6to10 * 100 / maxSegment)%; background: linear-gradient(90deg, #60a5fa, #2563eb); border-radius: 8px;"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Chặng 3 -->
+                                    <div>
+                                        <div style="display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 4px; font-weight: 700;">
+                                            <span style="color: #64748b;">5 ngày cuối (@DateTime.Today.AddDays(11).ToString("dd/MM") - @DateTime.Today.AddDays(15).ToString("dd/MM"))</span>
+                                            <span style="color: #1e293b;">@day11to15.ToString("0.#") @material.Unit</span>
+                                        </div>
+                                        <div style="width: 100%; height: 10px; background: #f1f5f9; border-radius: 8px; overflow: hidden; position: relative;">
+                                            <div style="position: absolute; left: 0; top: 0; height: 100%; width: @(day11to15 * 100 / maxSegment)%; background: linear-gradient(90deg, #a78bfa, #7c3aed); border-radius: 8px;"></div>
+                                        </div>
+                                    </div>
+                                    
+                                </div>
+                            </div>
+                            
+                            <!-- Method Detail Alert -->
+                            <div style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.75rem 1rem; border-radius: 12px; font-size: 0.7rem; color: #64748b; line-height: 1.45; margin-top: auto;">
+                                <i class="bi bi-info-circle-fill" style="color: #94a3b8; margin-right: 4px;"></i>
+                                Thuật toán **SSA (Phân tích quang phổ đơn)** tự động trích xuất các thành phần xu hướng (trend) và tính tuần hoàn (seasonality) từ lịch sử giao dịch để đưa ra dự đoán dài hạn.
+                            </div>
+
+                        </div>
+                    }
                 </div>
+            </div>
+        </div>
     }
 </div>
 
@@ -371,6 +498,12 @@
     private List<InventoryTransaction> transactions = new();
     private List<ProjectMaterial> commitments = new();
     private bool isLoading = true;
+
+    // ML.NET Forecast fields
+    private List<MlForecastService.ForecastResult> forecastResults = new();
+    private bool isMlLoading = true;
+    private double totalForecastedQty = 0;
+    private int estimatedDepletionDays = -1;
 
     // Filters & Pagination
     private string filterType = "";
@@ -400,6 +533,24 @@
         {
             transactions = await WarehouseService.GetInventoryTransactionsByMaterialIdAsync(Id);
             commitments = await WarehouseService.GetActiveProjectCommitmentsAsync(Id);
+            
+            // Tính toán dự báo nhu cầu bằng mô hình ML.NET cục bộ
+            try
+            {
+                forecastResults = await MlForecastService.ForecastDemandAsync(Id, 15);
+                totalForecastedQty = forecastResults.Sum(r => r.Quantity);
+
+                if (totalForecastedQty > 0)
+                {
+                    double avgDailyUsage = totalForecastedQty / 15.0;
+                    estimatedDepletionDays = (int)Math.Floor(material.StockQty / avgDailyUsage);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error calculating ML demand forecast: {ex.Message}");
+            }
+            isMlLoading = false;
         }
         isLoading = false;
     }
