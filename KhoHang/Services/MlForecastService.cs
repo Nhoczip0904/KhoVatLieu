@@ -65,7 +65,7 @@ namespace KhoHang.Services
             // Tạo chuỗi thời gian liên tục từ ngày đầu tiên đến hiện tại để tránh đứt gãy dữ liệu
             var startDate = groupedData.First().Date;
             var endDate = DateTime.Today;
-            
+
             var totalDays = (endDate - startDate).Days + 1;
             if (totalDays < 10) totalDays = 10; // Đảm bảo độ dài chuỗi tối thiểu
 

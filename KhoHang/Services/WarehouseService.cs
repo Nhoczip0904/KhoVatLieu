@@ -1474,7 +1474,7 @@ public class WarehouseService
     public async Task<List<MaterialDeliveryHistoryDto>> GetMaterialDeliveryHistoryAsync(int materialId)
     {
         using var context = _dbFactory.CreateDbContext();
-        
+
         // Lấy từ lịch sử giao hàng của các dự án (Join thủ công di -> d -> pm)
         var projectDeliveries = await context.DeliveryItems
             .Where(di => di.ProjectMaterialId != 0)
